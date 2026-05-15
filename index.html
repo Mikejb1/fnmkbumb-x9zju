@@ -79,14 +79,14 @@
   .screen.active { display: block; }
 
   /* === LOGIN / SETUP === */
-  #loginScreen, #setupScreen {
+  #loginScreen, #setupScreen, #gateScreen {
     min-height: 100vh;
     display: none;
     align-items: center;
     justify-content: center;
     padding: 24px;
   }
-  #loginScreen.active, #setupScreen.active { display: flex; }
+  #loginScreen.active, #setupScreen.active, #gateScreen.active { display: flex; }
   .auth-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -505,6 +505,20 @@
 </head>
 <body>
 
+<!-- ============ GATE-SCREEN ============ -->
+<div id="gateScreen">
+  <div class="auth-card">
+    <h1>Zugang</h1>
+    <div class="subtitle">Diese App ist privat. Bitte den Master-Zugangscode eingeben.</div>
+    <div class="auth-step">
+      <label>Master-Code</label>
+      <input type="password" class="auth-input" id="gatePw" placeholder="Code eingeben" autocomplete="off" autofocus>
+    </div>
+    <button class="auth-btn" id="gateBtn">Entsperren</button>
+    <div class="auth-error" id="gateError"></div>
+  </div>
+</div>
+
 <!-- ============ SETUP-SCREEN ============ -->
 <div id="setupScreen">
   <div class="auth-card">
@@ -637,6 +651,44 @@
 <script>
 'use strict';
 
+// ============ MASTER GATE (SHA-256 Hash, vor Setup/Login) ============
+const MASTER_HASH = '1e739119ee4155211f266e2b187e279243b65690a1877669ceb6634b6b03f375';
+const GATE_KEY = 'portfolio_gate_passed_v1';
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isGatePassed() {
+  try { return localStorage.getItem(GATE_KEY) === '1'; } catch (e) { return false; }
+}
+
+function markGatePassed() {
+  try { localStorage.setItem(GATE_KEY, '1'); } catch (e) {}
+}
+
+function clearGate() {
+  try { localStorage.removeItem(GATE_KEY); } catch (e) {}
+}
+
+async function handleGate() {
+  const code = document.getElementById('gatePw').value;
+  const errEl = document.getElementById('gateError');
+  errEl.classList.remove('visible');
+  if (!code) { showErr(errEl, 'Bitte Code eingeben.'); return; }
+  const hash = await sha256Hex(code);
+  if (hash === MASTER_HASH) {
+    markGatePassed();
+    document.getElementById('gatePw').value = '';
+    // Weiter zu Setup oder Login
+    if (STORE.hasData()) showScreen('loginScreen');
+    else showScreen('setupScreen');
+  } else {
+    showErr(errEl, 'Falscher Code.');
+  }
+}
+
 // ============ ENCRYPTION (Web Crypto API, AES-GCM) ============
 const ENC = {
   async deriveKey(password, salt) {
@@ -741,7 +793,7 @@ function initTheme() {
 
 // ============ NAVIGATION ============
 function showScreen(id) {
-  ['setupScreen', 'loginScreen', 'appScreen'].forEach(s => {
+  ['gateScreen', 'setupScreen', 'loginScreen', 'appScreen'].forEach(s => {
     const el = document.getElementById(s);
     if (s === id) el.classList.add('active');
     else el.classList.remove('active');
@@ -821,11 +873,12 @@ function handleLogout() {
 }
 
 async function handleReset() {
-  if (!confirm('ACHTUNG: Alle Portfolio-Daten werden GELÖSCHT. Sicher?')) return;
+  if (!confirm('ACHTUNG: Alle Portfolio-Daten und der Gate-Zugang werden GELÖSCHT. Sicher?')) return;
   STORE.clear();
+  clearGate();
   appData = null;
   appPassword = null;
-  showScreen('setupScreen');
+  showScreen('gateScreen');
 }
 
 // ============ DATA FETCHING (CoinGecko + manuelle Preise) ============
@@ -1117,6 +1170,10 @@ async function saveGoalIfChanged() {
 
 // ============ EVENT WIRING ============
 function wireEvents() {
+  document.getElementById('gateBtn').addEventListener('click', handleGate);
+  document.getElementById('gatePw').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleGate();
+  });
   document.getElementById('setupBtn').addEventListener('click', handleSetup);
   document.getElementById('loginBtn').addEventListener('click', handleLogin);
   document.getElementById('resetBtn').addEventListener('click', handleReset);
@@ -1162,8 +1219,13 @@ function wireEvents() {
 function bootstrap() {
   initTheme();
   wireEvents();
-  if (STORE.hasData()) showScreen('loginScreen');
-  else showScreen('setupScreen');
+  if (!isGatePassed()) {
+    showScreen('gateScreen');
+  } else if (STORE.hasData()) {
+    showScreen('loginScreen');
+  } else {
+    showScreen('setupScreen');
+  }
 }
 
 if (document.readyState === 'loading') {
