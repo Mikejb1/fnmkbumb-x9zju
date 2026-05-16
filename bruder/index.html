@@ -386,6 +386,19 @@
   .metal-meta { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
   .metal-gram-input { width: 74px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); padding: 5px 6px; font-size: 12px; text-align: right; font-family: inherit; }
   .metal-gram-input:focus { outline: none; border-color: var(--positive); }
+  .metal-lots { background: var(--bg-secondary); border-radius: 8px; padding: 8px; margin-top: 8px; }
+  .metal-lots-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+  .metal-lot-metric { font-size: 10px; color: var(--text-tertiary); }
+  .metal-lot-metric strong { display: block; color: var(--text-primary); font-size: 11px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .metal-lot-metric strong.positive { color: var(--positive); }
+  .metal-lot-metric strong.negative { color: var(--negative); }
+  .metal-lot-row { display: grid; grid-template-columns: 72px 1fr 74px 28px; gap: 6px; align-items: center; font-size: 11px; color: var(--text-secondary); padding: 5px 0; border-top: 1px solid var(--border-light); }
+  .metal-lot-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .metal-lot-del, .metal-lot-add { border: 1px solid var(--border); background: var(--bg-input); color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-family: inherit; }
+  .metal-lot-del { width: 24px; height: 24px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; justify-self: end; }
+  .metal-lot-add { width: 100%; padding: 6px 8px; font-size: 11px; margin-top: 7px; }
+  .metal-lot-del:hover, .metal-lot-add:hover { color: var(--text-primary); background: var(--bg-card); }
+  @media (max-width: 520px) { .metal-lots-summary { grid-template-columns: 1fr 1fr; } .metal-lot-row { grid-template-columns: 64px 1fr 68px 26px; font-size: 10px; } }
   /* ===== SPARPLAN-SIMULATION ===== */
   .savings-sim-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .savings-sim-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0 0 8px 0; }
@@ -870,9 +883,23 @@ const METALS = [
 ];
 function ensureGoal() { if (!appData.goal) appData.goal = {}; return appData.goal; }
 function metalPrice(metal) { return appData?.goal?.[metal.priceKey] || metal.fallbackPrice; }
-function metalGrams(metal) { return appData?.goal?.[metal.gramsKey] || 0; }
+function metalLots(metal) { return Array.isArray(appData?.goal?.metalLots?.[metal.key]) ? appData.goal.metalLots[metal.key] : []; }
+function hasMetalLots(metal) { return metalLots(metal).length > 0; }
+function metalGrams(metal) { const lots = metalLots(metal); return lots.length ? lots.reduce((sum, lot) => sum + (Number(lot.grams) || 0), 0) : (appData?.goal?.[metal.gramsKey] || 0); }
+function metalCost(metal) { const lots = metalLots(metal); return lots.reduce((sum, lot) => sum + (Number(lot.value) || 0), 0); }
+function metalAvgCost(metal) { const grams = metalGrams(metal); return grams > 0 ? metalCost(metal) / grams : 0; }
 function metalValue(metal) { return metalGrams(metal) * metalPrice(metal); }
 function metalsTotalValue() { return METALS.reduce((sum, metal) => sum + metalValue(metal), 0); }
+function metalsTotalCost() { return METALS.reduce((sum, metal) => sum + (hasMetalLots(metal) ? metalCost(metal) : metalValue(metal)), 0); }
+function metalGramsAtDate(metal, date) {
+  const lots = metalLots(metal);
+  if (!lots.length) return metalGrams(metal);
+  const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
+  return lots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.grams) || 0) : sum, 0);
+}
+function metalsValueAtDate(date, isToday) {
+  return METALS.reduce((sum, metal) => sum + metalGramsAtDate(metal, date) * metalPrice(metal), 0);
+}
 function startMetalsProgress() {
   const wrap = document.getElementById('metalsProgress'), fill = document.getElementById('metalsProgressFill'), eta = document.getElementById('metalsProgressEta'), text = document.getElementById('metalsProgressText'), btn = document.getElementById('metalsRefreshBtn');
   if (!wrap || !fill) return;
@@ -937,7 +964,7 @@ function buildAllSpecialPositions() {
   METALS.forEach(metal => {
     const grams = metalGrams(metal);
     const price = metalPrice(metal);
-    if (grams > 0) list.push({ id: `__${metal.key}`, special: 'metal', metalKey: metal.key, name: metal.name, type: 'Edelmetall', symbol: `${price.toFixed(2)} €/g`, shares: grams, costPrice: price, manualPrice: price });
+    if (grams > 0) list.push({ id: `__${metal.key}`, special: 'metal', metalKey: metal.key, name: metal.name, type: 'Edelmetall', symbol: `${price.toFixed(2)} €/g`, shares: grams, costPrice: hasMetalLots(metal) ? metalAvgCost(metal) : price, manualPrice: price });
   });
   const cash = appData.goal?.cash || 0;
   if (cash > 0) list.push({ id: '__cash', special: 'cash', name: 'Cash', type: 'Bargeld', symbol: 'Verrechnungskonto', shares: 1, costPrice: cash, manualPrice: cash });
@@ -1209,6 +1236,7 @@ async function refreshMetalsOnly() {
   renderAllocation(totals);
   const goal = renderGoal(totals);
   renderSavingsSim(totals, goal);
+  renderHistory();
 }
 
 async function fetchCryptoWeekly(cgId) {
@@ -1330,6 +1358,83 @@ function buildCard(pos, totals, alloc) {
   return wrap;
 }
 
+function formatDateAT(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = String(iso).split('-');
+  return y && m && d ? `${d}.${m}.${y}` : String(iso);
+}
+function buildMetalLotsBlock(metal) {
+  const lots = metalLots(metal);
+  const grams = metalGrams(metal);
+  const currentValue = metalValue(metal);
+  const cost = metalCost(metal);
+  const avg = metalAvgCost(metal);
+  const pnl = lots.length ? currentValue - cost : 0;
+  const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+  const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+  const rows = lots.map((lot, idx) => {
+    const perGram = lot.grams > 0 ? lot.value / lot.grams : 0;
+    return `<div class="metal-lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.grams, lot.grams % 1 ? 3 : 0)} g</span><span>${fmtNum(perGram, 2)} €/g</span><button class="metal-lot-del" data-metal-del="${metal.key}" data-lot-index="${idx}" type="button" title="Kauf löschen" aria-label="Kauf löschen">×</button></div>`;
+  }).join('');
+  const empty = lots.length ? '' : `<div class="metal-lot-row"><span>—</span><span>Noch keine Käufe</span><span>—</span><span></span></div>`;
+  return `<div class="metal-lots">
+    <div class="metal-lots-summary">
+      <div class="metal-lot-metric">Einstand<strong>${lots.length ? fmt.format(cost) : '—'}</strong></div>
+      <div class="metal-lot-metric">Ø Einkauf<strong>${lots.length ? fmtNum(avg, 2) + ' €/g' : '—'}</strong></div>
+      <div class="metal-lot-metric">Aktuell<strong>${fmt.format(currentValue)}</strong></div>
+      <div class="metal-lot-metric">Entwicklung<strong class="${pnlClass}">${lots.length ? `${pnl >= 0 ? '+' : ''}${fmt.format(pnl)} (${fmtPct(pnlPct)})` : '—'}</strong></div>
+    </div>
+    ${rows || empty}
+    <button class="metal-lot-add" data-metal-add="${metal.key}" type="button">+ ${metal.name}-Kauf hinzufügen</button>
+    <div class="metal-meta" style="margin-top:6px;">${lots.length ? `${fmtNum(grams, grams % 1 ? 3 : 0)} g aus Kaufdaten` : 'Ohne Kaufdaten gilt der Regler als Bestand.'}</div>
+  </div>`;
+}
+async function rerenderMetalsOpen() {
+  const details = document.querySelector('#card-metals details');
+  const wasOpen = !!details?.open;
+  const totals = renderTotals();
+  renderPositions(totals);
+  const nextDetails = document.querySelector('#card-metals details');
+  if (nextDetails) nextDetails.open = wasOpen || true;
+  renderAllocation(totals);
+  const goal = renderGoal(totals);
+  renderSavingsSim(totals, goal);
+  renderHistory();
+  await savePositionsToKV();
+}
+async function addMetalLot(metalKey) {
+  const metal = METALS.find(m => m.key === metalKey);
+  if (!metal) return;
+  const today = toIsoDate(new Date());
+  const date = prompt(`${metal.name}-Kaufdatum (YYYY-MM-DD)`, today);
+  if (!date) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte Datum als YYYY-MM-DD eingeben.'); return; }
+  const gramsRaw = prompt(`${metal.name}: Wie viele Gramm?`, '1');
+  if (!gramsRaw) return;
+  const grams = parseFloat(String(gramsRaw).replace(',', '.'));
+  if (!isFinite(grams) || grams <= 0) { alert('Bitte gültige Gramm eingeben.'); return; }
+  const valueRaw = prompt(`${metal.name}: Kaufwert gesamt in Euro?`, (grams * metalPrice(metal)).toFixed(2));
+  if (!valueRaw) return;
+  const value = parseFloat(String(valueRaw).replace(',', '.'));
+  if (!isFinite(value) || value <= 0) { alert('Bitte gültigen Kaufwert eingeben.'); return; }
+  const goalState = ensureGoal();
+  if (!goalState.metalLots) goalState.metalLots = {};
+  if (!Array.isArray(goalState.metalLots[metal.key])) goalState.metalLots[metal.key] = [];
+  goalState.metalLots[metal.key].push({ date, grams, value });
+  goalState.metalLots[metal.key].sort((a, b) => a.date.localeCompare(b.date));
+  goalState[metal.gramsKey] = metalGrams(metal);
+  await rerenderMetalsOpen();
+}
+async function deleteMetalLot(metalKey, index) {
+  const metal = METALS.find(m => m.key === metalKey);
+  const lots = metal ? metalLots(metal) : [];
+  if (!metal || !lots[index]) return;
+  if (!confirm(`${metal.name}-Kauf vom ${formatDateAT(lots[index].date)} löschen?`)) return;
+  ensureGoal().metalLots[metal.key].splice(index, 1);
+  ensureGoal()[metal.gramsKey] = metalGrams(metal);
+  await rerenderMetalsOpen();
+}
+
 function buildSpecialCard(kind, totals) {
   const wrap = document.createElement('div');
   wrap.className = 'card special';
@@ -1373,17 +1478,19 @@ function buildSpecialCard(kind, totals) {
             const grams = metalGrams(metal);
             const price = metalPrice(metal);
             const metalVal = grams * price;
+            const locked = hasMetalLots(metal);
             return `
               <div class="metal-control" data-metal="${metal.key}">
                 <div class="metal-control-head">
                   <div><span class="metal-title">${metal.name}</span><span class="metal-meta"> · ${fmtNum(price, 2)} €/g · <span id="${metal.key}Value">${fmt.format(metalVal)}</span></span></div>
-                  <input type="number" class="metal-gram-input" id="${metal.key}GramsInput" min="0" max="${metal.max}" step="1" value="${grams}" aria-label="${metal.name} Gramm">
+                  <input type="number" class="metal-gram-input" id="${metal.key}GramsInput" min="0" max="${metal.max}" step="1" value="${fmtNum(grams, grams % 1 ? 3 : 0).replace(/\./g, '').replace(',', '.')}" aria-label="${metal.name} Gramm" ${locked ? 'disabled' : ''}>
                 </div>
                 <div class="special-slider-wrap ${metal.key}">
                   <span class="special-slider-min">0 g</span>
-                  <input type="range" class="metal-slider" id="${metal.key}Slider" data-metal="${metal.key}" min="0" max="${metal.max}" step="1" value="${grams}">
-                  <span class="special-slider-val" id="${metal.key}SliderVal">${fmtNum(grams, 0)} g</span>
+                  <input type="range" class="metal-slider" id="${metal.key}Slider" data-metal="${metal.key}" min="0" max="${metal.max}" step="1" value="${Math.min(metal.max, Math.round(grams))}" ${locked ? 'disabled' : ''}>
+                  <span class="special-slider-val" id="${metal.key}SliderVal">${fmtNum(grams, grams % 1 ? 3 : 0)} g</span>
                 </div>
+                ${buildMetalLotsBlock(metal)}
               </div>`;
           }).join('')}
         </div>
@@ -1468,7 +1575,7 @@ function renderTotals() {
   const metalValueTotal = metalsTotalValue();
   const cashValue = appData.goal?.cash || 0;
   totalCur += metalValueTotal + cashValue;
-  totalCost += metalValueTotal + cashValue; // Edelmetalle/Cash haben keinen separaten Einstandspreis
+  totalCost += metalsTotalCost() + cashValue;
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
   document.getElementById('totalValue').textContent = fmt.format(totalCur);
@@ -1577,15 +1684,19 @@ function purchaseEventsForDate(date) {
       if (lot.date === iso) events.push(`Kauf: ${pos.name} · ${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)} Stk · ${fmt.format(lot.value || lot.shares * lot.costPrice)}`);
     });
   });
+  METALS.forEach(metal => {
+    metalLots(metal).forEach(lot => {
+      if (lot.date === iso) events.push(`Kauf: ${metal.name} · ${fmtNum(lot.grams, lot.grams % 1 ? 3 : 0)} g · ${fmt.format(lot.value)}`);
+    });
+  });
   return events;
 }
 function buildPortfolioHistory(period) {
   const today = new Date();
   const start = historyStartDate(period, today);
-  const metalValueTotal = metalsTotalValue();
   const cashValue = appData.goal?.cash || 0;
-  const extra = metalValueTotal + cashValue;
-  const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t + extra; })();
+  const extraToday = metalsTotalValue() + cashValue;
+  const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t + extraToday; })();
   const points = [];
   for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
     const isToday = toIsoDate(d) === toIsoDate(today);
@@ -1593,7 +1704,7 @@ function buildPortfolioHistory(period) {
     appData.positions.forEach(pos => {
       dayTotal += priceForHistoryDate(pos, d, isToday) * sharesAtDate(pos, d);
     });
-    dayTotal += extra; // Cash + Edelmetalle (Annahme: aktueller Bestand)
+    dayTotal += metalsValueAtDate(d, isToday) + cashValue;
     const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
     const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
     points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value: isToday ? currentTotals : dayTotal, events: purchaseEventsForDate(d) });
@@ -1806,6 +1917,10 @@ function wireEvents() {
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryPeriod = tab.dataset.history || '12M'; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => {
+    const metalAdd = e.target.closest('[data-metal-add]');
+    if (metalAdd) { e.preventDefault(); e.stopPropagation(); addMetalLot(metalAdd.dataset.metalAdd); return; }
+    const metalDel = e.target.closest('[data-metal-del]');
+    if (metalDel) { e.preventDefault(); e.stopPropagation(); deleteMetalLot(metalDel.dataset.metalDel, parseInt(metalDel.dataset.lotIndex, 10)); return; }
     const quickEdit = e.target.closest('[data-quickedit-id]');
     if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
     const editBtn = e.target.closest('[data-edit-id]');
