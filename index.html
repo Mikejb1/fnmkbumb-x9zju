@@ -178,6 +178,47 @@
   .chat-send svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
   .chat-hint { font-size: 10px; color: var(--text-muted); margin-top: 10px; text-align: center; font-style: italic; }
   .chat-error { background: var(--error-bg); color: var(--error-text); padding: 8px 12px; border-radius: 8px; font-size: 12px; line-height: 1.4; }
+  .add-position-section { background: rgba(34,197,94,0.05); border: 1px dashed var(--positive); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  body.light .add-position-section { background: rgba(22,163,74,0.06); border-color: var(--positive-strong); }
+  .add-pos-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 14px; font-weight: 500; }
+  .add-pos-head svg { width: 16px; height: 16px; stroke: var(--positive); fill: none; }
+  .add-pos-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .add-pos-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; color: var(--text-primary); cursor: pointer; font-size: 12px; font-family: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s, transform 0.1s; }
+  .add-pos-btn:hover { background: var(--bg-secondary); }
+  .add-pos-btn:active { transform: scale(0.97); }
+  .add-pos-btn svg { width: 20px; height: 20px; stroke: var(--text-tertiary); fill: none; }
+  .add-pos-btn.primary { background: rgba(34,197,94,0.12); border-color: var(--positive-strong); color: var(--badge-live-text); }
+  .add-pos-btn.primary svg { stroke: var(--badge-live-text); }
+  .add-pos-hint { font-size: 10px; color: var(--text-muted); margin-top: 8px; text-align: center; line-height: 1.4; }
+  .card-action-row { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); display: flex; gap: 8px; justify-content: flex-end; }
+  .pos-action-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; color: var(--text-secondary); cursor: pointer; font-size: 11px; font-family: inherit; display: inline-flex; align-items: center; gap: 4px; transition: background 0.15s; }
+  .pos-action-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .pos-action-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+  .pos-action-btn.danger { color: var(--negative); }
+  .pos-action-btn.danger:hover { background: var(--error-bg); }
+  .usage-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .usage-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+  .usage-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0; }
+  .usage-title svg { width: 16px; height: 16px; stroke: var(--positive); fill: none; }
+  .usage-spent { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .usage-bar-wrap { margin-bottom: 12px; }
+  .usage-bar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; }
+  .usage-bar-meta .pct { color: var(--positive); }
+  .usage-bar { width: 100%; height: 6px; background: var(--bg-track); border-radius: 3px; overflow: hidden; }
+  .usage-bar-fill { height: 100%; background: linear-gradient(90deg, var(--positive-strong), var(--positive)); border-radius: 3px; transition: width 0.4s ease; }
+  .usage-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .usage-metric { background: var(--bg-input); border-radius: 8px; padding: 8px 10px; }
+  .usage-metric-label { font-size: 10px; color: var(--text-tertiary); }
+  .usage-metric-value { font-size: 16px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .usage-metric-unit { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .usage-hint { font-size: 10px; color: var(--text-muted); margin-top: 10px; text-align: center; font-style: italic; }
+  .ss-preview-wrap { display: none; text-align: center; margin: 10px 0; }
+  .ss-preview-wrap.visible { display: block; }
+  .ss-preview-img { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); }
+  .ss-status { display: none; padding: 10px; background: var(--bg-input); border-radius: 8px; font-size: 12px; color: var(--text-secondary); margin: 10px 0; line-height: 1.5; }
+  .ss-status.visible { display: block; }
+  .ss-status.error { background: var(--error-bg); color: var(--error-text); }
+  .modal-field select { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; }
   .footer { text-align: center; color: var(--text-muted); font-size: 10px; padding: 16px 0; }
   .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
   .modal-backdrop.active { display: flex; }
@@ -225,6 +266,23 @@
     <div class="total-value-line"><div class="total-value" id="totalValue">—</div><div class="total-pnl" id="totalPnl">—</div></div>
   </div>
   <div class="positions" id="positions"></div>
+  <div class="add-position-section">
+    <div class="add-pos-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Position hinzufügen</span>
+    </div>
+    <div class="add-pos-buttons">
+      <button class="add-pos-btn" id="addPosManualBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Manuell eingeben</span>
+      </button>
+      <button class="add-pos-btn primary" id="addPosScreenshotBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Per Screenshot &amp; KI</span>
+      </button>
+    </div>
+    <div class="add-pos-hint">Screenshot deines Depot-Eintrags hochladen — Haiku liest Stück, Einstand und Kurs automatisch aus</div>
+  </div>
   <div class="history-section">
     <div class="history-head">
       <h2 class="history-title">Depot-Entwicklung</h2>
@@ -264,6 +322,41 @@
     <div class="analysis-text" id="analysisText">—</div>
     <div class="analysis-disclaimer">Keine Finanzberatung. Eigenrecherche oder Fachperson für Investmentempfehlungen.</div>
   </div>
+  <div class="usage-section">
+    <div class="usage-head">
+      <h2 class="usage-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>API-Nutzung</span>
+      </h2>
+      <span class="usage-spent" id="usageSpent">— € verbraucht</span>
+    </div>
+    <div class="usage-bar-wrap">
+      <div class="usage-bar-meta">
+        <span>Guthaben (Anthropic-Topup)</span>
+        <span class="pct" id="usagePct">—</span>
+      </div>
+      <div class="usage-bar"><div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div></div>
+    </div>
+    <div class="usage-stats">
+      <div class="usage-metric">
+        <div class="usage-metric-label">Heute</div>
+        <div class="usage-metric-value" id="usageToday">0</div>
+        <div class="usage-metric-unit">Aufrufe</div>
+      </div>
+      <div class="usage-metric">
+        <div class="usage-metric-label">Diese Woche</div>
+        <div class="usage-metric-value" id="usageWeek">0</div>
+        <div class="usage-metric-unit">Aufrufe</div>
+      </div>
+      <div class="usage-metric">
+        <div class="usage-metric-label">Ø Kosten</div>
+        <div class="usage-metric-value" id="usageAvg">—</div>
+        <div class="usage-metric-unit">€/Aufruf</div>
+      </div>
+    </div>
+    <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
+  </div>
+
   <div class="chat-section">
     <div class="chat-head">
       <h2 class="chat-title">
@@ -295,6 +388,44 @@
     <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
     <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="editCancel">Abbrechen</button><button class="auth-btn" id="editSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="addPosModal">
+  <div class="modal">
+    <h3 id="addPosTitle">Position hinzufügen</h3>
+    <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="apName" placeholder="z.B. Apple Inc"></div>
+    <div class="modal-field"><label>Symbol / Ticker (optional)</label><input type="text" class="auth-input" id="apSymbol" placeholder="z.B. AAPL"></div>
+    <div class="modal-field"><label>Typ</label>
+      <select id="apType" class="auth-input">
+        <option value="ETF">ETF</option>
+        <option value="Aktie">Aktie</option>
+        <option value="Crypto">Crypto</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="apShares" placeholder="z.B. 25"></div>
+    <div class="modal-field"><label>Einstandspreis € pro Stück</label><input type="number" step="0.01" class="auth-input" id="apCost" placeholder="z.B. 145.50"></div>
+    <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
+    <div class="modal-field" id="apCgIdField" style="display:none;"><label>CoinGecko-ID (für Live-Krypto)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="screenshotModal">
+  <div class="modal">
+    <h3>Screenshot auswerten</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height: 1.4;">Wähle einen Screenshot deiner Depotposition. Haiku liest Name, Stück, Einstand und Kurs automatisch aus und füllt das Formular vor.</p>
+    <div class="modal-field">
+      <input type="file" id="ssFile" accept="image/*" class="auth-input" style="padding: 8px; font-size: 12px;">
+    </div>
+    <div class="ss-preview-wrap" id="ssPreviewWrap">
+      <img id="ssPreviewImg" class="ss-preview-img" alt="Vorschau">
+    </div>
+    <div class="ss-status" id="ssStatus"></div>
+    <div class="modal-actions">
+      <button class="auth-btn secondary" id="ssCancel">Abbrechen</button>
+      <button class="auth-btn" id="ssAnalyze" disabled>Mit KI auswerten</button>
+    </div>
   </div>
 </div>
 
@@ -342,6 +473,7 @@ async function callAIWorker(prompt) {
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+    if (data.usage) recordUsage(data.usage);
     return data.text;
   } catch (e) { console.warn('AI Worker failed:', e); return null; }
 }
@@ -438,7 +570,9 @@ const BAKED_BLOB ={"v":1,"s":"bHz+GC5Dlzb44Ichg7l5xg==","i":"nRjM3WWozJWw4Lye","
 const ENC = {
   async deriveKey(password, salt) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']); return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, k, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); },
   async decrypt(enc, password) { const salt = this._fromB64(enc.s); const iv = this._fromB64(enc.i); const ct = this._fromB64(enc.c); const key = await this.deriveKey(password, salt); const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct); return JSON.parse(new TextDecoder().decode(pt)); },
-  _fromB64(str) { const s = atob(str); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+  async encrypt(obj, password) { const salt = crypto.getRandomValues(new Uint8Array(16)); const iv = crypto.getRandomValues(new Uint8Array(12)); const key = await this.deriveKey(password, salt); const pt = new TextEncoder().encode(JSON.stringify(obj)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, pt); return { v: 1, s: this._toB64(salt), i: this._toB64(iv), c: this._toB64(new Uint8Array(ct)) }; },
+  _fromB64(str) { const s = atob(str); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; },
+  _toB64(buf) { let s = ''; const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
 let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryMonths = 12;
@@ -467,6 +601,14 @@ async function handleGate() {
     appPassword = code;
     document.getElementById('gatePw').value = '';
     showScreen('appScreen');
+    // Falls KV-Daten vorhanden, mit gebakten Daten zusammenführen (KV gewinnt)
+    try {
+      const kvData = await loadPositionsFromKV();
+      if (kvData && kvData.positions && Array.isArray(kvData.positions) && kvData.positions.length > 0) {
+        appData.positions = kvData.positions;
+        if (kvData.goal) appData.goal = kvData.goal;
+      }
+    } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
@@ -555,7 +697,16 @@ function buildCard(pos) {
     </div>
     <div class="pnl-row"><span class="pnl-label">Gewinn / Verlust</span><div style="text-align:right"><div class="pnl-value ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div><div class="pnl-pct ${pnlClass}">${fmtPct(pnlPct)}</div></div></div>
     <div class="chart-section"><div class="chart-label">Wochenchart</div><div class="chart-wrap"><canvas id="spark-${pos.id}"></canvas></div><div class="chart-stamp" id="stamp-${pos.id}">—</div></div>
-    <div class="card-action"><button class="link-btn" data-edit-id="${pos.id}">Werte bearbeiten</button></div>`;
+    <div class="card-action-row">
+      <button class="pos-action-btn" data-edit-id="${pos.id}">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Bearbeiten</span>
+      </button>
+      <button class="pos-action-btn danger" data-remove-id="${pos.id}">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        <span>Entfernen</span>
+      </button>
+    </div>`;
   return wrap;
 }
 
@@ -686,7 +837,7 @@ function renderAnalysisLocal(totals, goal) {
 
 let editingId = null;
 function openEditModal(posId) { const pos = appData.positions.find(p => p.id === posId); if (!pos) return; editingId = posId; document.getElementById('editTitle').textContent = pos.name; const live = currentPrices[posId] || { price: pos.costPrice }; document.getElementById('editPrice').value = live.price.toFixed(2); document.getElementById('editShares').value = pos.shares; document.getElementById('editCost').value = pos.costPrice; document.getElementById('editModal').classList.add('active'); }
-async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await refreshUI(); }
+async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await savePositionsToKV(); await refreshUI(); }
 function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
 
 async function refreshUI(opts = {}) {
@@ -720,6 +871,7 @@ async function initApp() {
   chatHistory = [];
   document.getElementById('chatMessages').innerHTML = '';
   chatShowWelcome();
+  renderUsage();
   await refreshUI({ skipAI: true });
   await fetchCryptoPrices();
   await fetchAllWeeklyCharts();
@@ -733,15 +885,32 @@ function wireEvents() {
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
-  ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); }); });
+  ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
-  document.getElementById('positions').addEventListener('click', e => { const btn = e.target.closest('[data-edit-id]'); if (btn) openEditModal(btn.dataset.editId); });
+  document.getElementById('positions').addEventListener('click', e => {
+    const editBtn = e.target.closest('[data-edit-id]');
+    if (editBtn) { openEditModal(editBtn.dataset.editId); return; }
+    const removeBtn = e.target.closest('[data-remove-id]');
+    if (removeBtn) { removePosition(removeBtn.dataset.removeId); return; }
+  });
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   document.getElementById('editSave').addEventListener('click', saveEditModal);
   document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
+  // Position-Management
+  document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
+  document.getElementById('addPosScreenshotBtn').addEventListener('click', openScreenshotModal);
+  document.getElementById('apType').addEventListener('change', updateAddPosTypeFields);
+  document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
+  document.getElementById('apSave').addEventListener('click', saveNewPosition);
+  document.getElementById('addPosModal').addEventListener('click', e => { if (e.target.id === 'addPosModal') closeAddPositionModal(); });
+  // Screenshot-Modal
+  document.getElementById('ssFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) handleScreenshotFile(f); });
+  document.getElementById('ssCancel').addEventListener('click', closeScreenshotModal);
+  document.getElementById('ssAnalyze').addEventListener('click', analyzeScreenshot);
+  document.getElementById('screenshotModal').addEventListener('click', e => { if (e.target.id === 'screenshotModal') closeScreenshotModal(); });
 }
 
 // ===== Chatbot =====
@@ -821,6 +990,7 @@ async function chatSend() {
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+    if (data.usage) recordUsage(data.usage);
     const reply = (data.text || '(leere Antwort)').trim();
     chatHistory.push({ role: 'assistant', content: reply });
     chatAppendMessage('ai', reply);
@@ -849,6 +1019,216 @@ function chatShowWelcome() {
   const c = document.getElementById('chatMessages');
   if (c && c.children.length === 0) {
     chatAppendMessage('ai', 'Hi! Ich kenne dein Portfolio. Frag mich zu Allokation, Risiken, Sparplänen oder Marktbewegungen.');
+  }
+}
+
+// ===== KV-SYNC (Cloudflare KV via Worker) =====
+async function loadPositionsFromKV() {
+  if (!appPassword) return null;
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'get-positions' })
+    });
+    if (!res.ok) throw new Error('KV get HTTP ' + res.status);
+    const result = await res.json();
+    if (!result.data) return null;
+    const blob = JSON.parse(result.data);
+    return await ENC.decrypt(blob, appPassword);
+  } catch (e) { console.warn('KV load failed:', e); return null; }
+}
+
+let kvSaveTimer = null;
+async function savePositionsToKV(debounceMs = 0) {
+  if (!appPassword || !appData) return false;
+  if (debounceMs > 0) {
+    if (kvSaveTimer) clearTimeout(kvSaveTimer);
+    kvSaveTimer = setTimeout(() => savePositionsToKV(0), debounceMs);
+    return true;
+  }
+  try {
+    const dataToStore = { positions: appData.positions, goal: appData.goal, version: 2 };
+    const blob = await ENC.encrypt(dataToStore, appPassword);
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'put-positions', data: JSON.stringify(blob) })
+    });
+    return res.ok;
+  } catch (e) { console.warn('KV save failed:', e); return false; }
+}
+
+// ===== USAGE-TRACKING (lokaler Zähler) =====
+const USAGE_KEY = 'portfolio_usage_v1';
+const USAGE_BUDGET = 5.00;
+const HAIKU_INPUT_COST = 0.80 / 1000000;
+const HAIKU_OUTPUT_COST = 4.00 / 1000000;
+
+function loadUsageState() {
+  try { const raw = localStorage.getItem(USAGE_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+  return { totalCalls: 0, totalCost: 0, callsToday: 0, callsThisWeek: 0, lastDay: '', lastWeek: '' };
+}
+function saveUsageState(state) { try { localStorage.setItem(USAGE_KEY, JSON.stringify(state)); } catch (e) {} }
+function getWeekKey(date) {
+  const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const yStart = new Date(d.getFullYear(), 0, 1);
+  return d.getFullYear() + '-W' + String(Math.ceil(((d-yStart)/86400000+1)/7)).padStart(2,'0');
+}
+function recordUsage(usage) {
+  let cost = 0.002;
+  if (usage && usage.input_tokens != null && usage.output_tokens != null) {
+    cost = usage.input_tokens * HAIKU_INPUT_COST + usage.output_tokens * HAIKU_OUTPUT_COST;
+  }
+  const state = loadUsageState();
+  const today = new Date().toISOString().slice(0,10);
+  if (state.lastDay !== today) { state.callsToday = 0; state.lastDay = today; }
+  const week = getWeekKey(new Date());
+  if (state.lastWeek !== week) { state.callsThisWeek = 0; state.lastWeek = week; }
+  state.callsToday++; state.callsThisWeek++; state.totalCalls++; state.totalCost += cost;
+  saveUsageState(state);
+  renderUsage();
+}
+function renderUsage() {
+  const state = loadUsageState();
+  const spent = state.totalCost;
+  const pct = Math.min(100, (spent / USAGE_BUDGET) * 100);
+  const avg = state.totalCalls > 0 ? (state.totalCost / state.totalCalls) : 0;
+  const elS = document.getElementById('usageSpent'); if (elS) elS.textContent = `~${spent.toFixed(2)} € verbraucht`;
+  const elP = document.getElementById('usagePct'); if (elP) elP.textContent = `${(100 - pct).toFixed(1)} % verfügbar`;
+  const elB = document.getElementById('usageBarFill'); if (elB) elB.style.width = pct + '%';
+  const elT = document.getElementById('usageToday'); if (elT) elT.textContent = state.callsToday;
+  const elW = document.getElementById('usageWeek'); if (elW) elW.textContent = state.callsThisWeek;
+  const elA = document.getElementById('usageAvg'); if (elA) elA.textContent = avg > 0 ? avg.toFixed(4) : '—';
+}
+
+// ===== POSITION-MANAGEMENT =====
+function openAddPositionModal(prefill) {
+  prefill = prefill || {};
+  document.getElementById('apName').value = prefill.name || '';
+  document.getElementById('apSymbol').value = prefill.symbol || '';
+  document.getElementById('apType').value = prefill.type || 'ETF';
+  document.getElementById('apShares').value = prefill.shares != null ? prefill.shares : '';
+  document.getElementById('apCost').value = prefill.costPrice != null ? prefill.costPrice : '';
+  document.getElementById('apPrice').value = prefill.manualPrice != null ? prefill.manualPrice : '';
+  document.getElementById('apCgId').value = prefill.cgId || '';
+  updateAddPosTypeFields();
+  document.getElementById('addPosModal').classList.add('active');
+}
+function closeAddPositionModal() { document.getElementById('addPosModal').classList.remove('active'); }
+function updateAddPosTypeFields() {
+  const type = document.getElementById('apType').value;
+  document.getElementById('apCgIdField').style.display = type === 'Crypto' ? '' : 'none';
+}
+async function saveNewPosition() {
+  const name = document.getElementById('apName').value.trim();
+  const symbol = document.getElementById('apSymbol').value.trim();
+  const type = document.getElementById('apType').value;
+  const shares = parseFloat(document.getElementById('apShares').value);
+  const costPrice = parseFloat(document.getElementById('apCost').value);
+  const priceStr = document.getElementById('apPrice').value;
+  const manualPrice = priceStr ? parseFloat(priceStr) : costPrice;
+  const cgId = document.getElementById('apCgId').value.trim();
+  if (!name || isNaN(shares) || isNaN(costPrice) || shares <= 0 || costPrice <= 0) {
+    alert('Bitte Name, Stück und Einstandspreis korrekt ausfüllen.');
+    return;
+  }
+  const id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  const newPos = { id, name, symbol, type, shares, costPrice };
+  if (type === 'Crypto' && cgId) newPos.cgId = cgId;
+  else newPos.manualPrice = manualPrice;
+  appData.positions.push(newPos);
+  closeAddPositionModal();
+  await savePositionsToKV();
+  await fetchCryptoPrices();
+  await fetchAllWeeklyCharts();
+  await refreshUI();
+}
+async function removePosition(posId) {
+  const pos = appData.positions.find(p => p.id === posId);
+  if (!pos) return;
+  if (!confirm(`Position "${pos.name}" wirklich entfernen?`)) return;
+  appData.positions = appData.positions.filter(p => p.id !== posId);
+  delete currentPrices[posId];
+  delete weeklyData[posId];
+  await savePositionsToKV();
+  await refreshUI();
+}
+
+// ===== SCREENSHOT-EXTRAKTION (Vision via Worker) =====
+let ssBase64 = null, ssMime = null;
+function openScreenshotModal() {
+  ssBase64 = null; ssMime = null;
+  document.getElementById('ssFile').value = '';
+  document.getElementById('ssPreviewWrap').classList.remove('visible');
+  const status = document.getElementById('ssStatus'); status.classList.remove('visible', 'error'); status.textContent = '';
+  document.getElementById('ssAnalyze').disabled = true;
+  document.getElementById('screenshotModal').classList.add('active');
+}
+function closeScreenshotModal() { document.getElementById('screenshotModal').classList.remove('active'); }
+function handleScreenshotFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    document.getElementById('ssPreviewImg').src = dataUrl;
+    document.getElementById('ssPreviewWrap').classList.add('visible');
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      ssMime = match[1]; ssBase64 = match[2];
+      document.getElementById('ssAnalyze').disabled = false;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+async function analyzeScreenshot() {
+  if (!ssBase64) return;
+  const status = document.getElementById('ssStatus');
+  const btn = document.getElementById('ssAnalyze');
+  status.classList.remove('error'); status.classList.add('visible');
+  status.textContent = 'Haiku liest den Screenshot — kann ~5-10 Sek dauern …';
+  btn.disabled = true;
+  const prompt = `Du bekommst einen Screenshot einer Depotposition aus einer Banking-App.
+Lies die Daten präzise aus.
+
+Gib AUSSCHLIESSLICH ein JSON-Objekt zurück (kein Text drumherum, keine Markdown-Codeblöcke):
+{
+  "name": "<vollständiger Name des Wertpapiers>",
+  "symbol": "<Tickersymbol oder WKN, falls sichtbar>",
+  "type": "<ETF | Aktie | Crypto>",
+  "shares": <Stückzahl als Zahl>,
+  "costPrice": <Einstandspreis pro Stück in EUR als Zahl>,
+  "manualPrice": <aktueller Kurs pro Stück in EUR als Zahl, falls sichtbar>
+}
+
+Wichtig:
+- Stückzahl, Einstand und Kurs als reine Zahlen (z.B. 12.59 nicht "12,59 €")
+- Bei deutschem Format (Komma als Dezimaltrennzeichen) in Punkt konvertieren
+- Wenn ein Feld nicht erkennbar ist: ganz weglassen (NICHT null oder "")
+- Typ: ETF bei ETF/Fonds, Aktie bei Einzelaktien, Crypto bei Kryptowährungen
+
+NUR JSON, sonst nichts.`;
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ image: ssBase64, imageMediaType: ssMime, prompt, maxTokens: 400, temperature: 0 })
+    });
+    if (!res.ok) throw new Error('Worker HTTP ' + res.status);
+    const result = await res.json();
+    if (result.usage) recordUsage(result.usage);
+    if (result.error) throw new Error(result.error);
+    const text = (result.text || '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Keine JSON-Daten erkannt — bitte manuell eingeben');
+    const data = JSON.parse(jsonMatch[0]);
+    if (!data.name || !data.shares || !data.costPrice) throw new Error('Wichtige Felder fehlen (Name/Stück/Einstand) — bitte manuell ergänzen');
+    closeScreenshotModal();
+    openAddPositionModal(data);
+  } catch (e) {
+    status.classList.add('error');
+    status.textContent = 'Fehler: ' + e.message;
+    btn.disabled = false;
   }
 }
 
