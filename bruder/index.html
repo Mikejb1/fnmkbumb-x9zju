@@ -1723,6 +1723,8 @@ function wireEvents() {
 // ===== Chatbot =====
 let chatHistory = [];
 let chatBusy = false;
+let chatMemorySummary = '';
+let memorySummaryBusy = false;
 
 async function loadChatMemory() {
   try {
@@ -1734,6 +1736,7 @@ async function loadChatMemory() {
     if (!res.ok) throw new Error('Memory get HTTP ' + res.status);
     const data = await res.json();
     if (Array.isArray(data.memory)) chatHistory = data.memory;
+    if (typeof data.summary === 'string') chatMemorySummary = data.summary;
   } catch (e) {
     console.warn('Memory load failed:', e);
   }
@@ -1744,10 +1747,22 @@ async function saveChatMemory() {
     await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-memory', userKey: USER_KEY, messages: chatHistory.slice(-50) })
+      body: JSON.stringify({ action: 'put-memory', userKey: USER_KEY, messages: chatHistory.slice(-500) })
     });
   } catch (e) {
     console.warn('Memory save failed:', e);
+  }
+}
+
+async function saveChatMemorySummary() {
+  try {
+    await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'put-memory-summary', userKey: USER_KEY, summary: chatMemorySummary })
+    });
+  } catch (e) {
+    console.warn('Memory summary save failed:', e);
   }
 }
 
@@ -1766,6 +1781,41 @@ async function clearChatMemory() {
 function renderChatHistory() {
   document.getElementById('chatMessages').innerHTML = '';
   chatHistory.forEach(msg => chatAppendMessage(msg.role, msg.content));
+}
+
+async function updateChatMemorySummary() {
+  if (memorySummaryBusy || chatHistory.length < 2) return;
+  memorySummaryBusy = true;
+  try {
+    const recent = chatHistory.slice(-30).map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    const prompt = `Aktualisiere das Langzeitgedaechtnis fuer diesen Portfolio-Chat.
+
+Bestehendes Langzeitgedaechtnis:
+${chatMemorySummary || '(leer)'}
+
+Neue Chat-Ausschnitte:
+${recent}
+
+Erstelle eine kompakte, robuste Zusammenfassung auf Deutsch. Behalte Fakten, Zahlen, Ziele, Praeferenzen, Entscheidungen, offene Fragen und wiederkehrende Denkweisen des Nutzers. Loesche unwichtige Hoeflichkeit und Dopplungen. Maximal 900 Woerter. Schreibe nur die aktualisierte Zusammenfassung.`;
+
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ prompt, maxTokens: 1200, temperature: 0.2 })
+    });
+    if (!res.ok) throw new Error('Memory summary HTTP ' + res.status);
+    const data = await res.json();
+    if (data.usage) recordUsage(data.usage);
+    const summary = (data.text || '').trim();
+    if (summary) {
+      chatMemorySummary = summary;
+      await saveChatMemorySummary();
+    }
+  } catch (e) {
+    console.warn('Memory summary update failed:', e);
+  } finally {
+    memorySummaryBusy = false;
+  }
 }
 
 function chatAppendMessage(role, content, opts = {}) {
@@ -1791,7 +1841,7 @@ function chatRemoveTyping() {
 }
 
 function buildChatSystemPrompt() {
-  if (!appData) return 'Du bist ein nüchterner Portfolio-Berater. Antworte auf Deutsch, kurz und mit konkreten Zahlen wo möglich. Keine Anlageberatung.';
+  if (!appData) return 'Du bist ein intelligenter, hilfreicher KI-Chat fuer komplexe Fragen. Antworte auf Deutsch, klar, tiefgehend und praktisch. Nutze vorhandenes Gedaechtnis, wenn es relevant ist.';
   let totalCur = 0, totalCost = 0;
   appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; totalCost += pos.costPrice * pos.shares; });
   const totalPnl = totalCur - totalCost;
@@ -1804,7 +1854,18 @@ function buildChatSystemPrompt() {
     return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${pos.shares} Stk × ${live.price.toFixed(2)} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
   }).join('\n');
   const goal = appData.goal || { year: 2026, amount: 15000 };
-  return `Du bist ein nüchterner Portfolio-Berater. Sprache: Deutsch. Antworte kurz, klar, faktisch — mit konkreten Zahlen und Beträgen. Keine Floskeln. Bei Empfehlungen immer konkret mit Betrag und Aktion. Du bist KEIN Finanzberater — gibst nur Informationen und Optionen.
+  return `Du bist ein intelligenter KI-Chat fuer dieses Portfolio und fuer komplexe Fragen des Nutzers. Sprache: Deutsch.
+
+Arbeitsweise:
+- Antworte nicht kuenstlich knapp. Wenn die Frage komplex ist, gib eine strukturierte, gruendlich durchdachte Antwort.
+- Nutze Zahlen, Annahmen, Szenarien und konkrete Optionen, wenn sie helfen.
+- Du darfst ueber Portfolio, Strategie, Risiko, Planung, Psychologie, Organisation und allgemeine Fragen sprechen.
+- Sei direkt und ehrlich, aber nicht abweisend. Wenn etwas unklar ist, nenne deine Annahmen und arbeite damit.
+- Wenn der Nutzer nach frueheren Aussagen fragt, pruefe zuerst das Langzeitgedaechtnis und den Chatverlauf. Sage nicht vorschnell, dass du keinen Zugriff hast.
+- Bei Anlageentscheidungen gib keine verbindliche Finanzberatung, sondern Optionen, Risiken und Rechenwege.
+
+LANGZEITGEDAECHTNIS:
+${chatMemorySummary || '(Noch keine dauerhafte Zusammenfassung vorhanden.)'}
 
 AKTUELLES PORTFOLIO:
 ${positions}
@@ -1816,7 +1877,7 @@ P&L: ${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)} € (${totalPnlPct.toFixe
 ZIEL des Nutzers: ${goal.amount} € bis Ende ${goal.year}
 SPARRATE des Nutzers: ${goal.savingsRate || 0} €/Monat (regelmäßige Einzahlung)
 
-Beantworte die Fragen mit Bezug auf diese Daten. Wenn jemand z.B. fragt "Soll ich X verkaufen?", antworte mit konkreten Zahlen aus dem Portfolio oben und nenne 1-2 Alternativen. Erinnere am Ende NICHT bei jeder Antwort an Disclaimer — nur wenn die Frage konkrete Empfehlungen verlangt.`;
+Beantworte die aktuelle Frage mit Bezug auf Portfolio, Langzeitgedaechtnis und Chatverlauf. Erinnere am Ende NICHT bei jeder Antwort an Disclaimer - nur wenn die Frage konkrete Anlageempfehlungen verlangt.`;
 }
 
 async function chatSend() {
@@ -1832,7 +1893,7 @@ async function chatSend() {
   chatAppendMessage('ai', '', { typing: true });
   try {
     const system = buildChatSystemPrompt();
-    const messages = chatHistory.slice(-20);
+    const messages = chatHistory.slice(-500);
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
@@ -1847,6 +1908,7 @@ async function chatSend() {
     chatHistory.push({ role: 'assistant', content: reply });
     chatAppendMessage('ai', reply);
     await saveChatMemory();
+    setTimeout(() => updateChatMemorySummary(), 0);
   } catch (e) {
     chatRemoveTyping();
     const errWrap = document.createElement('div');
@@ -1864,6 +1926,7 @@ async function chatSend() {
 async function chatClear() {
   if (chatHistory.length > 0 && !confirm('Chat-Verlauf löschen?')) return;
   chatHistory = [];
+  chatMemorySummary = '';
   document.getElementById('chatMessages').innerHTML = '';
   await clearChatMemory();
   chatShowWelcome();
