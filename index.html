@@ -123,7 +123,26 @@
   .slider-value { font-size: 13px; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
   .goal-meta { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
   .analysis-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
-  .analysis-section h2 { margin: 0 0 10px 0; font-size: 14px; font-weight: 500; }
+  .analysis-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+  .analysis-section h2 { margin: 0; font-size: 14px; font-weight: 500; }
+  .ai-refresh-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); padding: 0; transition: background 0.15s, transform 0.1s; }
+  .ai-refresh-btn:hover:not(:disabled) { background: var(--bg-card); color: var(--text-primary); }
+  .ai-refresh-btn:active:not(:disabled) { transform: scale(0.93); }
+  .ai-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ai-refresh-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .ai-refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ai-progress { display: none; margin-bottom: 12px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+  .ai-progress.active { display: block; }
+  .ai-progress-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .ai-progress-eta { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .ai-progress-bar { width: 100%; height: 6px; background: var(--bg-track); border-radius: 3px; overflow: hidden; }
+  .ai-progress-fill { height: 100%; background: linear-gradient(90deg, var(--positive-strong), var(--positive)); border-radius: 3px; width: 0%; }
+  .ai-progress-done .ai-progress-fill { background: var(--positive); }
+  .ai-text.fading { opacity: 0.3; transition: opacity 0.25s; }
+  .ai-source-badge { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 3px; margin-left: 6px; vertical-align: 1px; }
+  .ai-source-live { background: var(--badge-live-bg); color: var(--badge-live-text); }
+  .ai-source-local { background: var(--badge-stale-bg); color: var(--badge-stale-text); }
   .analysis-text { font-size: 13px; line-height: 1.6; }
   .analysis-text strong { color: var(--text-primary); font-weight: 600; }
   .analysis-text .block { margin-bottom: 12px; }
@@ -202,7 +221,16 @@
     <div class="goal-meta" id="goalMeta">—</div>
   </div>
   <div class="analysis-section">
-    <h2>Analyse & Tipps</h2>
+    <div class="analysis-head">
+      <h2>Analyse & Tipps<span class="ai-source-badge ai-source-local" id="aiSourceBadge">lokal</span></h2>
+      <button class="ai-refresh-btn" id="aiRefreshBtn" title="Neue KI-Analyse erstellen">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
+      </button>
+    </div>
+    <div class="ai-progress" id="aiProgress">
+      <div class="ai-progress-row"><span id="aiProgressText">KI-Analyse wird erstellt…</span><span class="ai-progress-eta" id="aiProgressEta">—</span></div>
+      <div class="ai-progress-bar"><div class="ai-progress-fill" id="aiProgressFill"></div></div>
+    </div>
     <div class="analysis-text" id="analysisText">—</div>
     <div class="analysis-disclaimer">Keine Finanzberatung. Eigenrecherche oder Fachperson für Investmentempfehlungen.</div>
   </div>
@@ -221,7 +249,121 @@
 
 <script>
 'use strict';
-const BAKED_BLOB = {"v":1,"s":"bHz+GC5Dlzb44Ichg7l5xg==","i":"nRjM3WWozJWw4Lye","c":"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"};
+// ===== AI-Worker (Cloudflare + Anthropic) =====
+const AI_WORKER_URL = 'https://morning-tree-9bb.michael-bummer.workers.dev';
+const AI_APP_TOKEN = 'pmtj-7Xq2-mB9k-Aw3L-vN4f-portfolio-2026';
+const AI_DURATION_KEY = 'ai_avg_duration_ms';
+const AI_DEFAULT_DURATION = 10000;
+let aiProgressState = null, aiRegenTimer = null;
+
+function getEstimatedAIDuration() { try { const v = parseInt(localStorage.getItem(AI_DURATION_KEY), 10); if (v > 1000 && v < 60000) return v; } catch (e) {} return AI_DEFAULT_DURATION; }
+function saveEstimatedAIDuration(ms) { try { const prev = getEstimatedAIDuration(); localStorage.setItem(AI_DURATION_KEY, String(Math.round(prev * 0.6 + ms * 0.4))); } catch (e) {} }
+
+function startAIProgress() {
+  const p = document.getElementById('aiProgress'), f = document.getElementById('aiProgressFill'), eta = document.getElementById('aiProgressEta'), tx = document.getElementById('aiProgressText'), summary = document.getElementById('analysisText');
+  if (aiProgressState?.etaInterval) clearInterval(aiProgressState.etaInterval);
+  summary.classList.add('fading');
+  p.classList.add('active'); p.classList.remove('ai-progress-done');
+  f.style.transition = 'none'; f.style.width = '0%';
+  const duration = getEstimatedAIDuration(), startTime = Date.now();
+  tx.textContent = 'KI-Analyse wird erstellt…';
+  f.offsetWidth;
+  requestAnimationFrame(() => { f.style.transition = `width ${duration}ms linear`; f.style.width = '95%'; });
+  const update = () => { const elapsed = Date.now() - startTime; const remain = Math.max(0, Math.ceil((duration - elapsed) / 1000)); eta.textContent = remain > 0 ? `Noch ca. ${remain} Sek` : 'Fast fertig…'; };
+  update(); const etaInterval = setInterval(update, 500);
+  aiProgressState = { startTime, etaInterval, duration };
+}
+function completeAIProgress(success) {
+  const p = document.getElementById('aiProgress'), f = document.getElementById('aiProgressFill'), eta = document.getElementById('aiProgressEta'), summary = document.getElementById('analysisText');
+  if (!aiProgressState) return;
+  clearInterval(aiProgressState.etaInterval);
+  if (success) { const ms = Date.now() - aiProgressState.startTime; saveEstimatedAIDuration(ms); eta.textContent = `Fertig in ${(ms / 1000).toFixed(1)} Sek`; }
+  else eta.textContent = 'Fallback: lokale Analyse';
+  f.style.transition = 'width 0.35s ease'; f.style.width = '100%';
+  p.classList.add('ai-progress-done'); summary.classList.remove('fading');
+  setTimeout(() => p.classList.remove('active'), 1200);
+  aiProgressState = null;
+}
+
+async function callAIWorker(prompt) {
+  try {
+    const res = await fetch(AI_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN }, body: JSON.stringify({ prompt }) });
+    if (!res.ok) throw new Error('Worker HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.text;
+  } catch (e) { console.warn('AI Worker failed:', e); return null; }
+}
+
+function buildAIPrompt(totals, goal) {
+  const positions = appData.positions.map(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    const value = live.price * pos.shares;
+    const pct = (value / totals.totalCur) * 100;
+    const pnlPct = ((live.price - pos.costPrice) / pos.costPrice) * 100;
+    return `- ${pos.name} (${pos.type}): ${fmt.format(value)} = ${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%`;
+  }).join('\n');
+  const today = new Date().toLocaleDateString('de-AT');
+  return `Du bist ein nüchterner Portfolio-Analyst (KEIN Finanzberater). Sprache: Deutsch. Antworte direkt, ohne Floskeln, mit konkreten Zahlen und Beträgen.
+
+PORTFOLIO HEUTE (${today}):
+${positions}
+Gesamtwert: ${fmt.format(totals.totalCur)}
+Einstand gesamt: ${fmt.format(totals.totalCost)}
+P&L gesamt: ${totals.totalPnl >= 0 ? '+' : ''}${fmt.format(totals.totalPnl)} (${totals.totalPnlPct.toFixed(1)}%)
+
+ZIEL: ${fmt.format(goal.amount)} bis Ende ${goal.year}
+GAP zum Ziel: ${fmt.format(goal.gap)}
+Zeit bis Jahresende: ~${goal.monthsToGoal} Monate
+Benötigte Gesamt-Rendite: ${goal.requiredReturnPct.toFixed(1)}% in ${goal.monthsToGoal} Monaten
+Bei reinem Sparen ohne Rendite: ${fmt.format(goal.monthlyNeeded)}/Monat
+
+Strukturiere die Antwort EXAKT so (Markdown-fähig, KEINE Headlines, nutze fette Begriffe und Listen):
+
+**Lage heute:** [1 Satz zur Marktbewegung des Portfolios heute]
+
+**Allokation:** [1-2 Sätze: größte Konzentrationsrisiken? Krypto-Anteil? US-Aktien-Anteil?]
+
+**Ziel-Realität:** [1-2 Sätze: Ist das Ziel mit reiner Marktentwicklung erreichbar oder braucht es Zufluss? Konkrete Zahlen.]
+
+**3 konkrete Optionen (keine Empfehlung):**
+1. [Option mit konkretem Betrag/Aktion, z.B. "Monatlicher ETF-Sparplan 800 €..."]
+2. [Option mit konkretem Betrag/Aktion]
+3. [Option mit konkretem Betrag/Aktion]
+
+**Hinweis:** Keine Finanzberatung. Eigenrecherche oder Fachberatung empfohlen.
+
+Max 220 Wörter. Sei direkt und zahlenorientiert. Nutze die ECHTEN Portfolio-Beträge oben.`;
+}
+
+function markdownLite(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+}
+
+async function generateAIAnalysis(totals, goal) {
+  const btn = document.getElementById('aiRefreshBtn');
+  const badge = document.getElementById('aiSourceBadge');
+  if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+  startAIProgress();
+  const prompt = buildAIPrompt(totals, goal);
+  const text = await callAIWorker(prompt);
+  if (text) {
+    document.getElementById('analysisText').innerHTML = '<p>' + markdownLite(text.trim()) + '</p>';
+    badge.textContent = 'Haiku live';
+    badge.className = 'ai-source-badge ai-source-live';
+    completeAIProgress(true);
+  } else {
+    renderAnalysisLocal(totals, goal);
+    badge.textContent = 'lokal (Worker offline)';
+    badge.className = 'ai-source-badge ai-source-local';
+    completeAIProgress(false);
+  }
+  if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+}
+
+const BAKED_BLOB ={"v":1,"s":"bHz+GC5Dlzb44Ichg7l5xg==","i":"nRjM3WWozJWw4Lye","c":"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"};
 
 const ENC = {
   async deriveKey(password, salt) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']); return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, k, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); },
@@ -250,8 +392,13 @@ async function handleGate() {
   const errEl = document.getElementById('gateError');
   errEl.classList.remove('visible');
   if (!code) { showErr(errEl, 'Bitte Code eingeben.'); return; }
-  try { appData = await ENC.decrypt(BAKED_BLOB, code); appPassword = code; document.getElementById('gatePw').value = ''; showScreen('appScreen'); await initApp(); }
-  catch (e) { showErr(errEl, 'Falscher Code.'); }
+  try {
+    appData = await ENC.decrypt(BAKED_BLOB, code);
+    appPassword = code;
+    document.getElementById('gatePw').value = '';
+    showScreen('appScreen');
+    await initApp();
+  } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
 function handleLogout() { appData = null; appPassword = null; currentPrices = {}; weeklyData = {}; chartRegistry = {}; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
@@ -272,6 +419,7 @@ async function fetchCryptoWeekly(cgId) {
     if (!res.ok) return [];
     const data = await res.json();
     const pts = data.prices || [];
+    // ~24 stündliche Punkte / Tag, wir nehmen 1 Punkt pro Tag (alle 24h)
     const step = Math.max(1, Math.floor(pts.length / 7));
     const sampled = [];
     for (let i = 0; i < pts.length; i += step) sampled.push(pts[i]);
@@ -280,7 +428,9 @@ async function fetchCryptoWeekly(cgId) {
   } catch (e) { return []; }
 }
 
-async function fetchAllWeeklyCharts() { await Promise.all(appData.positions.filter(p => p.cgId).map(async pos => { const data = await fetchCryptoWeekly(pos.cgId); if (data.length > 1) weeklyData[pos.id] = data; })); }
+async function fetchAllWeeklyCharts() {
+  await Promise.all(appData.positions.filter(p => p.cgId).map(async pos => { const data = await fetchCryptoWeekly(pos.cgId); if (data.length > 1) weeklyData[pos.id] = data; }));
+}
 
 function loadManualPrices() {
   appData.positions.forEach(pos => {
@@ -307,7 +457,9 @@ function renderChart(canvasId, points, valueKey, opts) {
   });
 }
 
-function reRenderAllCharts() { Object.entries(chartRegistry).forEach(([id, entry]) => { if (entry?.points) renderChart(id, entry.points, entry.valueKey, entry.opts); }); }
+function reRenderAllCharts() {
+  Object.entries(chartRegistry).forEach(([id, entry]) => { if (entry?.points) renderChart(id, entry.points, entry.valueKey, entry.opts); });
+}
 
 function buildCard(pos) {
   const wrap = document.createElement('div');
@@ -380,7 +532,8 @@ function buildPortfolioHistory(monthsBack) {
         let matched = null;
         for (const e of sorted) { if (e.date <= ym) matched = e; }
         if (!matched && sorted.length > 0) matched = sorted[0];
-        monthTotal += (matched ? matched.price : pos.costPrice) * pos.shares;
+        const p = matched ? matched.price : pos.costPrice;
+        monthTotal += p * pos.shares;
       } else {
         const live = currentPrices[pos.id] || { price: pos.costPrice };
         monthTotal += live.price * pos.shares;
@@ -430,7 +583,7 @@ function renderGoal(totals) {
   return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress };
 }
 
-function renderAnalysis(totals, goal) {
+function renderAnalysisLocal(totals, goal) {
   const allocations = appData.positions.map(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; const value = live.price * pos.shares; return { name: pos.name, type: pos.type || '?', value, pct: (value / totals.totalCur) * 100, pnlPct: ((live.price - pos.costPrice) / pos.costPrice) * 100 }; }).sort((a, b) => b.pct - a.pct);
   const cryptoShare = allocations.filter(a => a.type === 'Crypto').reduce((s, a) => s + a.pct, 0);
   const stockShare = allocations.filter(a => a.type === 'Aktie').reduce((s, a) => s + a.pct, 0);
@@ -466,19 +619,35 @@ function openEditModal(posId) { const pos = appData.positions.find(p => p.id ===
 async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await refreshUI(); }
 function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
 
-async function refreshUI() {
+async function refreshUI(opts = {}) {
   loadManualPrices();
   renderPositions();
   const totals = renderTotals();
   renderHistory();
   const goal = renderGoal(totals);
-  renderAnalysis(totals, goal);
+  if (opts.skipAI) {
+    renderAnalysisLocal(totals, goal);
+  } else {
+    // Erst lokal anzeigen (sofort), dann durch AI ersetzen
+    renderAnalysisLocal(totals, goal);
+    await generateAIAnalysis(totals, goal);
+  }
+}
+
+function scheduleAIRefresh() {
+  if (aiRegenTimer) clearTimeout(aiRegenTimer);
+  aiRegenTimer = setTimeout(async () => {
+    if (!appData) return;
+    const totals = renderTotals();
+    const goal = renderGoal(totals);
+    await generateAIAnalysis(totals, goal);
+  }, 1500);
 }
 
 async function initApp() {
   if (appData.goal) { document.getElementById('goalYear').value = String(appData.goal.year); document.getElementById('goalAmount').value = String(appData.goal.amount); }
   loadManualPrices();
-  await refreshUI();
+  await refreshUI({ skipAI: true });
   await fetchCryptoPrices();
   await fetchAllWeeklyCharts();
   await refreshUI();
@@ -490,7 +659,8 @@ function wireEvents() {
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
-  ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysis(totals, goal); }); });
+  document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
+  ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); }); });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => { const btn = e.target.closest('[data-edit-id]'); if (btn) openEditModal(btn.dataset.editId); });
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
