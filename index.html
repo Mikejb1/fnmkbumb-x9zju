@@ -167,9 +167,13 @@
   .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
   .chat-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0; }
   .chat-title svg { width: 18px; height: 18px; stroke: var(--positive); fill: none; }
+  .chat-head-actions { display: inline-flex; gap: 6px; }
   .chat-clear { background: transparent; border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; color: var(--text-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   .chat-clear:hover { background: var(--bg-secondary); color: var(--text-primary); }
   .chat-clear svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .chat-clear.chat-wipe { color: var(--negative); border-color: var(--negative); }
+  .chat-clear.chat-wipe:hover { background: var(--error-bg); }
+  .chat-memory-status { font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; padding: 4px 8px; background: var(--bg-secondary); border-radius: 6px; font-style: italic; }
   .chat-messages { background: var(--bg-page); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; min-height: 220px; max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
   .chat-msg { max-width: 82%; display: flex; flex-direction: column; }
   .chat-msg-ai { align-self: flex-start; }
@@ -555,6 +559,7 @@
       <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
       <div class="history-disclaimer">Tagespunkte aus Kaufdaten und verfügbaren historischen Kursen. Bei manuellen Titeln ohne Tageskurs wird der passende Monatskurs verwendet.</div>
+      <div class="history-disclaimer" id="cashHistoryNote" style="display:none;">Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.</div>
     </div>
   </div>
   <div class="goal-section">
@@ -648,10 +653,16 @@
         <span>KI-Chat</span>
         <span class="badge badge-live">Haiku</span>
       </h2>
-      <button class="chat-clear" id="chatClearBtn" title="Verlauf löschen" aria-label="Verlauf löschen">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-      </button>
+      <div class="chat-head-actions">
+        <button class="chat-clear" id="chatClearBtn" title="Chat leeren (Gedächtnis bleibt)" aria-label="Chat leeren">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        <button class="chat-clear chat-wipe" id="chatWipeBtn" title="Gedächtnis wirklich löschen" aria-label="Gedächtnis löschen">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </button>
+      </div>
     </div>
+    <div class="chat-memory-status" id="chatMemoryStatus">Gedächtnis aktiv</div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-row">
       <input type="text" id="chatInput" class="chat-input" placeholder="Frage zu deinem Portfolio…" autocomplete="off">
@@ -701,6 +712,33 @@
     <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
     <div class="modal-field" id="apCgIdField" style="display:none;"><label>CoinGecko-ID (für Live-Krypto)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="metalLotModal">
+  <div class="modal">
+    <h3 id="metalLotTitle">Edelmetall-Kauf hinzufügen</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="mlDate"></div>
+    <div class="modal-field"><label>Gramm</label><input type="number" step="0.001" min="0" class="auth-input" id="mlGrams" placeholder="z.B. 31.1"></div>
+    <div class="modal-field"><label>Kaufwert gesamt (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="mlValue" placeholder="z.B. 2200.00"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="mlFees" placeholder="z.B. 25.00"></div>
+    <div class="modal-field"><label>Lagerart</label>
+      <select id="mlStorage" class="auth-input">
+        <option value="physisch">Physisch (zuhause)</option>
+        <option value="tresor">Tresor</option>
+        <option value="haendler">Beim Händler</option>
+        <option value="muenze">Münze</option>
+        <option value="barren">Barren</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Bewertungsart</label>
+      <select id="mlValuation" class="auth-input">
+        <option value="spot">Spotpreis</option>
+        <option value="dealer">Händler-Ankaufspreis</option>
+        <option value="conservative">Konservativer Abschlag (−2 %)</option>
+      </select>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="mlCancel">Abbrechen</button><button class="auth-btn" id="mlSave">Speichern</button></div>
   </div>
 </div>
 
@@ -1537,27 +1575,53 @@ async function rerenderMetalsOpen() {
   renderHistory();
   await savePositionsToKV();
 }
-async function addMetalLot(metalKey) {
+let pendingMetalKey = null;
+function addMetalLot(metalKey) {
+  // Öffnet das Modal — eigentliches Speichern in saveMetalLotModal
   const metal = METALS.find(m => m.key === metalKey);
   if (!metal) return;
+  pendingMetalKey = metalKey;
   const today = toIsoDate(new Date());
-  const date = prompt(`${metal.name}-Kaufdatum (YYYY-MM-DD)`, today);
-  if (!date) return;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte Datum als YYYY-MM-DD eingeben.'); return; }
-  const gramsRaw = prompt(`${metal.name}: Wie viele Gramm?`, '1');
-  if (!gramsRaw) return;
-  const grams = parseFloat(String(gramsRaw).replace(',', '.'));
-  if (!isFinite(grams) || grams <= 0) { alert('Bitte gültige Gramm eingeben.'); return; }
-  const valueRaw = prompt(`${metal.name}: Kaufwert gesamt in Euro?`, (grams * metalPrice(metal)).toFixed(2));
-  if (!valueRaw) return;
-  const value = parseFloat(String(valueRaw).replace(',', '.'));
+  document.getElementById('metalLotTitle').textContent = `${metal.name}-Kauf hinzufügen`;
+  document.getElementById('mlDate').value = today;
+  document.getElementById('mlGrams').value = '';
+  document.getElementById('mlValue').value = '';
+  document.getElementById('mlFees').value = '';
+  document.getElementById('mlStorage').value = 'physisch';
+  document.getElementById('mlValuation').value = 'spot';
+  document.getElementById('metalLotModal').classList.add('active');
+  setTimeout(() => document.getElementById('mlGrams').focus(), 50);
+}
+
+function closeMetalLotModal() {
+  document.getElementById('metalLotModal').classList.remove('active');
+  pendingMetalKey = null;
+}
+
+async function saveMetalLotModal() {
+  if (!pendingMetalKey) return;
+  const metal = METALS.find(m => m.key === pendingMetalKey);
+  if (!metal) return closeMetalLotModal();
+  const date = document.getElementById('mlDate').value;
+  const grams = parseFloat(String(document.getElementById('mlGrams').value).replace(',', '.'));
+  const value = parseFloat(String(document.getElementById('mlValue').value).replace(',', '.'));
+  const fees = parseFloat(String(document.getElementById('mlFees').value || '0').replace(',', '.'));
+  const storage = document.getElementById('mlStorage').value;
+  const valuation = document.getElementById('mlValuation').value;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum wählen.'); return; }
+  if (!isFinite(grams) || grams <= 0) { alert('Bitte gültige Gramm-Zahl eingeben.'); return; }
   if (!isFinite(value) || value <= 0) { alert('Bitte gültigen Kaufwert eingeben.'); return; }
   const goalState = ensureGoal();
   if (!goalState.metalLots) goalState.metalLots = {};
   if (!Array.isArray(goalState.metalLots[metal.key])) goalState.metalLots[metal.key] = [];
-  goalState.metalLots[metal.key].push({ date, grams, value });
+  const lot = { date, grams, value };
+  if (isFinite(fees) && fees > 0) lot.fees = fees;
+  if (storage) lot.storage = storage;
+  if (valuation) lot.valuation = valuation;
+  goalState.metalLots[metal.key].push(lot);
   goalState.metalLots[metal.key].sort((a, b) => a.date.localeCompare(b.date));
   goalState[metal.gramsKey] = metalGrams(metal);
+  closeMetalLotModal();
   await rerenderMetalsOpen();
 }
 async function deleteMetalLot(metalKey, index) {
@@ -1857,6 +1921,13 @@ function renderHistory() {
   document.getElementById('historyStartValue').textContent = fmt.format(first.value);
   document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
+  // Cash-Historie-Hinweis einblenden, wenn Cash > 0 und (noch) keine Cash-Transaktionen vorhanden
+  const cashNoteEl = document.getElementById('cashHistoryNote');
+  if (cashNoteEl) {
+    const hasCash = (appData.goal?.cash || 0) > 0;
+    const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
+    cashNoteEl.style.display = (hasCash && !hasCashTx) ? '' : 'none';
+  }
 }
 
 function renderGoal(totals) {
@@ -1913,16 +1984,36 @@ function renderGoal(totals) {
 }
 
 function renderAnalysisLocal(totals, goal) {
-  const allocations = appData.positions.map(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; const value = live.price * pos.shares; return { name: pos.name, type: pos.type || '?', value, pct: (value / totals.totalCur) * 100, pnlPct: ((live.price - pos.costPrice) / pos.costPrice) * 100 }; }).sort((a, b) => b.pct - a.pct);
+  // Nutze getAllPositions() — bezieht Edelmetalle und Cash mit ein
+  const allocations = getAllPositions().map(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    let value, pnlPct;
+    if (pos.special === 'cash') {
+      value = appData.goal?.cash || 0;
+      pnlPct = 0;
+    } else if (pos.special === 'metals' || pos.type === 'Edelmetall') {
+      // Edelmetalle: Wert aus metalsTotalValue/metalValue, kein direkter pnlPct
+      value = (typeof metalsTotalValue === 'function' && pos.special === 'metals') ? metalsTotalValue() : (live.price * (pos.shares || 0));
+      pnlPct = 0;
+    } else {
+      value = live.price * pos.shares;
+      pnlPct = pos.costPrice > 0 ? ((live.price - pos.costPrice) / pos.costPrice) * 100 : 0;
+    }
+    return { name: pos.name, type: pos.type || '?', special: pos.special, value, pct: totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0, pnlPct };
+  }).sort((a, b) => b.pct - a.pct);
   const cryptoShare = allocations.filter(a => a.type === 'Crypto').reduce((s, a) => s + a.pct, 0);
   const stockShare = allocations.filter(a => a.type === 'Aktie').reduce((s, a) => s + a.pct, 0);
   const etfShare = allocations.filter(a => a.type === 'ETF').reduce((s, a) => s + a.pct, 0);
+  const metalShare = allocations.filter(a => a.special === 'metals' || a.type === 'Edelmetall').reduce((s, a) => s + a.pct, 0);
+  const cashShare = allocations.filter(a => a.special === 'cash').reduce((s, a) => s + a.pct, 0);
   const largestPos = allocations[0];
   const obs = [];
   if (cryptoShare > 30) obs.push(`Krypto-Anteil ${fmtNum(cryptoShare, 0)}% — hoher Volatilitätsanteil.`);
   if (stockShare > 35) obs.push(`Einzelaktien-Anteil ${fmtNum(stockShare, 0)}% — Einzelwert-Konzentration prüfen.`);
   if (etfShare < 30) obs.push(`ETF-Anteil nur ${fmtNum(etfShare, 0)}% — breit gestreute Kernpositionen sind klassischer Stabilisator.`);
-  if (largestPos.pct > 40) obs.push(`Größte Einzelposition (${largestPos.name}): ${fmtNum(largestPos.pct, 0)}% — überproportionales Klumpenrisiko.`);
+  if (cashShare < 5) obs.push(`Cash-Anteil nur ${fmtNum(cashShare, 0)}% — Reserve für Marktrücksetzer fehlt.`);
+  if (metalShare > 25) obs.push(`Edelmetall-Anteil ${fmtNum(metalShare, 0)}% — hoher Sachwertanteil.`);
+  if (largestPos.pct > 40) obs.push(`Größte Position (${largestPos.name}): ${fmtNum(largestPos.pct, 0)}% — überproportionales Klumpenrisiko.`);
   if (obs.length === 0) obs.push('Allokation wirkt ausgewogen.');
   const allocLines = allocations.map(a => `<div>• ${escapeHtml(a.name)} (${a.type}): <strong>${fmtNum(a.pct, 1)}%</strong> · ${fmt.format(a.value)} · ${fmtPct(a.pnlPct)}</div>`).join('');
   let goalRealityText;
@@ -2028,6 +2119,7 @@ async function initApp() {
   await loadChatMemory();
   renderChatHistory();
   chatShowWelcome();
+  renderChatMemoryStatus();
   renderUsage();
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
   usageRefreshTimer = setInterval(renderUsage, 60000);
@@ -2147,6 +2239,7 @@ function wireEvents() {
   document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
+  document.getElementById('chatWipeBtn').addEventListener('click', chatWipeMemory);
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
   // Position-Management
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
@@ -2155,6 +2248,10 @@ function wireEvents() {
   document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
   document.getElementById('apSave').addEventListener('click', saveNewPosition);
   document.getElementById('addPosModal').addEventListener('click', e => { if (e.target.id === 'addPosModal') closeAddPositionModal(); });
+  // Edelmetall-Kauf Modal
+  document.getElementById('mlCancel').addEventListener('click', closeMetalLotModal);
+  document.getElementById('mlSave').addEventListener('click', saveMetalLotModal);
+  document.getElementById('metalLotModal').addEventListener('click', e => { if (e.target.id === 'metalLotModal') closeMetalLotModal(); });
   // Screenshot-Modal
   document.getElementById('ssFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) handleScreenshotFile(f); });
   document.getElementById('ssCancel').addEventListener('click', closeScreenshotModal);
@@ -2351,6 +2448,7 @@ async function chatSend() {
     chatHistory.push({ role: 'assistant', content: reply });
     chatAppendMessage('ai', reply);
     await saveChatMemory();
+    renderChatMemoryStatus();
     setTimeout(() => updateChatMemorySummary(), 0);
   } catch (e) {
     chatRemoveTyping();
@@ -2367,12 +2465,33 @@ async function chatSend() {
 }
 
 async function chatClear() {
-  if (chatHistory.length > 0 && !confirm('Chat-Verlauf löschen?')) return;
+  if (chatHistory.length > 0 && !confirm('Sichtbaren Chat leeren? Das Gedächtnis bleibt erhalten.')) return;
+  // Letzten Stand noch ins Gedächtnis übernehmen, dann sichtbaren Verlauf leeren
   await clearVisibleChatButKeepMemory();
-  chatMemorySummary = '';
   document.getElementById('chatMessages').innerHTML = '';
-  await loadChatMemory();
   chatShowWelcome();
+  renderChatMemoryStatus();
+}
+
+async function chatWipeMemory() {
+  if (!confirm('Möchtest du das Langzeit-Gedächtnis WIRKLICH unwiderruflich löschen?')) return;
+  if (!confirm('Wirklich sicher? Alle gespeicherten Fakten, Ziele und Präferenzen aus früheren Chats gehen verloren.')) return;
+  chatMemorySummary = '';
+  chatHistory = [];
+  await saveChatMemorySummary();
+  await saveChatMemory();
+  document.getElementById('chatMessages').innerHTML = '';
+  chatShowWelcome();
+  renderChatMemoryStatus();
+  alert('Gedächtnis gelöscht.');
+}
+
+function renderChatMemoryStatus() {
+  const el = document.getElementById('chatMemoryStatus');
+  if (!el) return;
+  const msgCount = chatHistory.length;
+  const hasSummary = (chatMemorySummary || '').trim().length > 0;
+  el.textContent = `Gedächtnis aktiv · ${msgCount} Nachricht${msgCount === 1 ? '' : 'en'} · ${hasSummary ? 'Zusammenfassung gespeichert' : 'keine Zusammenfassung'}`;
 }
 
 function chatShowWelcome() {
@@ -2389,7 +2508,7 @@ async function loadPositionsFromKV() {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'get-positions' })
+      body: JSON.stringify({ action: 'get-positions', userKey: USER_KEY })
     });
     if (!res.ok) throw new Error('KV get HTTP ' + res.status);
     const result = await res.json();
@@ -2413,7 +2532,7 @@ async function savePositionsToKV(debounceMs = 0) {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-positions', data: JSON.stringify(blob) })
+      body: JSON.stringify({ action: 'put-positions', data: JSON.stringify(blob), userKey: USER_KEY })
     });
     return res.ok;
   } catch (e) { console.warn('KV save failed:', e); return false; }
