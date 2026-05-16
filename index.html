@@ -304,6 +304,22 @@ function buildAIPrompt(totals, goal) {
     return `- ${pos.name} (${pos.type}): ${fmt.format(value)} = ${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%`;
   }).join('\n');
   const today = new Date().toLocaleDateString('de-AT');
+
+  const focuses = [
+    'Fokussiere auf Konzentrationsrisiken und schlage konkrete Reduktionen vor.',
+    'Beleuchte den Zeithorizont — ist das Ziel realistisch? Welche Sparrate macht den Unterschied?',
+    'Bewerte die Diversifikation zwischen ETF, Aktie und Krypto und schlage Umschichtungen vor.',
+    'Konzentriere dich auf Sparplan-Optionen: welche monatlichen ETF-Sparpläne würden helfen?',
+    'Hinterfrage die Allokation: welche Position ist überproportional? Welche Trim/Aufstockung wäre sinnvoll?',
+    'Vergleiche die Positionen untereinander — Performance, Volatilität, Trend.',
+    'Berücksichtige Krypto-Volatilität: ist der Krypto-Anteil angemessen für den Zeithorizont?',
+    'Spiele Szenarien durch: Was wenn der Markt 10% fällt? Was wenn er 20% steigt?',
+    'Denke an Steuern und Realisierung: gibt es Positionen die man für Verlustverrechnung verkaufen könnte?',
+    'Bewerte ob Nachkauf bei schwachen Positionen sinnvoll wäre (Cost-Averaging) oder eher Stop-Loss.'
+  ];
+  const focus = focuses[Math.floor(Math.random() * focuses.length)];
+  const nonce = Math.random().toString(36).slice(2, 8);
+
   return `Du bist ein nüchterner Portfolio-Analyst (KEIN Finanzberater). Sprache: Deutsch. Antworte direkt, ohne Floskeln, mit konkreten Zahlen und Beträgen.
 
 PORTFOLIO HEUTE (${today}):
@@ -318,22 +334,25 @@ Zeit bis Jahresende: ~${goal.monthsToGoal} Monate
 Benötigte Gesamt-Rendite: ${goal.requiredReturnPct.toFixed(1)}% in ${goal.monthsToGoal} Monaten
 Bei reinem Sparen ohne Rendite: ${fmt.format(goal.monthlyNeeded)}/Monat
 
-Strukturiere die Antwort EXAKT so (Markdown-fähig, KEINE Headlines, nutze fette Begriffe und Listen):
+AKZENT FÜR DIESE ANALYSE (variiert pro Aufruf): ${focus}
+Session-Nonce (für Variabilität, ignorieren): ${nonce}
 
-**Lage heute:** [1 Satz zur Marktbewegung des Portfolios heute]
+Strukturiere die Antwort so (Markdown-fähig, fette Begriffe, Listen):
 
-**Allokation:** [1-2 Sätze: größte Konzentrationsrisiken? Krypto-Anteil? US-Aktien-Anteil?]
+**Lage heute:** [1 Satz]
 
-**Ziel-Realität:** [1-2 Sätze: Ist das Ziel mit reiner Marktentwicklung erreichbar oder braucht es Zufluss? Konkrete Zahlen.]
+**Allokation:** [1-2 Sätze: größte Konzentrationsrisiken]
+
+**Ziel-Realität:** [1-2 Sätze mit konkreten Zahlen]
 
 **3 konkrete Optionen (keine Empfehlung):**
-1. [Option mit konkretem Betrag/Aktion, z.B. "Monatlicher ETF-Sparplan 800 €..."]
-2. [Option mit konkretem Betrag/Aktion]
-3. [Option mit konkretem Betrag/Aktion]
+1. [Option mit Betrag/Aktion — variiert je nach AKZENT oben]
+2. [Option mit Betrag/Aktion]
+3. [Option mit Betrag/Aktion]
 
 **Hinweis:** Keine Finanzberatung. Eigenrecherche oder Fachberatung empfohlen.
 
-Max 220 Wörter. Sei direkt und zahlenorientiert. Nutze die ECHTEN Portfolio-Beträge oben.`;
+Max 220 Wörter. Sei direkt und zahlenorientiert. Variiere die Formulierung im Vergleich zu früheren Antworten.`;
 }
 
 function markdownLite(text) {
