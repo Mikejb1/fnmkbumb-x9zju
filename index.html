@@ -14,145 +14,62 @@
 <style>
   :root {
     color-scheme: dark light;
-    --bg-page: #0d0d0d;
-    --bg-card: #181818;
-    --bg-secondary: #1f1f1f;
-    --bg-track: #2a2a2a;
-    --bg-input: #1f1f1f;
-    --text-primary: #ededed;
-    --text-secondary: #aaa;
-    --text-tertiary: #888;
-    --text-muted: #666;
-    --border: #2a2a2a;
-    --border-light: #1f1f1f;
-    --positive: #22c55e;
-    --positive-strong: #16a34a;
-    --negative: #f87171;
-    --badge-live-bg: rgba(34,197,94,0.18);
-    --badge-live-text: #4ade80;
-    --badge-stale-bg: rgba(245,158,11,0.18);
-    --badge-stale-text: #fbbf24;
-    --tooltip-bg: rgba(245,245,245,0.96);
-    --tooltip-text: #111;
-    --chart-grid: #2a2a2a;
-    --error-bg: rgba(248,113,113,0.15);
-    --error-text: #fca5a5;
+    --bg-page: #0d0d0d; --bg-card: #181818; --bg-secondary: #1f1f1f; --bg-track: #2a2a2a; --bg-input: #1f1f1f;
+    --text-primary: #ededed; --text-secondary: #aaa; --text-tertiary: #888; --text-muted: #666;
+    --border: #2a2a2a; --border-light: #1f1f1f;
+    --positive: #22c55e; --positive-strong: #16a34a; --negative: #f87171;
+    --badge-live-bg: rgba(34,197,94,0.18); --badge-live-text: #4ade80;
+    --badge-stale-bg: rgba(245,158,11,0.18); --badge-stale-text: #fbbf24;
+    --tooltip-bg: rgba(245,245,245,0.96); --tooltip-text: #111;
+    --chart-grid: #2a2a2a; --chart-axis: #888;
+    --error-bg: rgba(248,113,113,0.15); --error-text: #fca5a5;
   }
   body.light {
     color-scheme: light;
-    --bg-page: #f5f5f7;
-    --bg-card: #ffffff;
-    --bg-secondary: #f0f0f0;
-    --bg-track: #e5e5e5;
-    --bg-input: #f5f5f5;
-    --text-primary: #111;
-    --text-secondary: #555;
-    --text-tertiary: #777;
-    --text-muted: #999;
-    --border: #e0e0e0;
-    --border-light: #ececec;
-    --positive: #16a34a;
-    --negative: #dc2626;
-    --badge-live-bg: #dcfce7;
-    --badge-live-text: #16a34a;
-    --badge-stale-bg: #fef3c7;
-    --badge-stale-text: #92400e;
-    --tooltip-bg: rgba(17,17,17,0.92);
-    --tooltip-text: #fff;
-    --chart-grid: #e5e5e5;
-    --error-bg: #fee;
-    --error-text: #b00;
+    --bg-page: #f5f5f7; --bg-card: #ffffff; --bg-secondary: #f0f0f0; --bg-track: #e5e5e5; --bg-input: #f5f5f5;
+    --text-primary: #111; --text-secondary: #555; --text-tertiary: #777; --text-muted: #999;
+    --border: #e0e0e0; --border-light: #ececec;
+    --positive: #16a34a; --negative: #dc2626;
+    --badge-live-bg: #dcfce7; --badge-live-text: #16a34a;
+    --badge-stale-bg: #fef3c7; --badge-stale-text: #92400e;
+    --tooltip-bg: rgba(17,17,17,0.92); --tooltip-text: #fff;
+    --chart-grid: #e5e5e5; --chart-axis: #777;
+    --error-bg: #fee; --error-text: #b00;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg-page);
-    color: var(--text-primary);
-    font-size: 15px;
-    line-height: 1.5;
-    min-height: 100vh;
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-top: env(safe-area-inset-top);
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-page); color: var(--text-primary); font-size: 15px; line-height: 1.5; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
   .screen { display: none; padding: 16px; max-width: 720px; margin: 0 auto; }
   .screen.active { display: block; }
-  #gateScreen {
-    min-height: 100vh;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
+  #gateScreen { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 24px; }
   #gateScreen.active { display: flex; }
-  .auth-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    width: 100%;
-    max-width: 380px;
-  }
+  .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; }
   .auth-card h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 600; }
   .auth-card .subtitle { color: var(--text-secondary); font-size: 13px; margin-bottom: 20px; }
   .auth-step { margin-bottom: 16px; }
-  .auth-step label {
-    display: block; font-size: 12px; color: var(--text-secondary);
-    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;
-  }
-  .auth-input {
-    width: 100%; padding: 12px 14px; background: var(--bg-input);
-    border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text-primary); font-size: 16px; font-family: inherit;
-    outline: none; transition: border-color 0.2s;
-  }
+  .auth-step label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .auth-input { width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 16px; font-family: inherit; outline: none; transition: border-color 0.2s; }
   .auth-input:focus { border-color: var(--positive); }
-  .auth-btn {
-    width: 100%; padding: 13px; background: var(--positive);
-    color: white; border: 0; border-radius: 8px;
-    font-size: 15px; font-weight: 600; cursor: pointer;
-    margin-top: 8px; font-family: inherit;
-    transition: opacity 0.2s, transform 0.1s;
-  }
+  .auth-btn { width: 100%; padding: 13px; background: var(--positive); color: white; border: 0; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; transition: opacity 0.2s, transform 0.1s; }
   .auth-btn:active { transform: scale(0.97); }
-  .auth-error {
-    background: var(--error-bg); color: var(--error-text);
-    padding: 10px 14px; border-radius: 8px;
-    font-size: 13px; margin-top: 10px; display: none;
-  }
+  .auth-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); margin-top: 8px; }
+  .auth-error { background: var(--error-bg); color: var(--error-text); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 10px; display: none; }
   .auth-error.visible { display: block; }
-  .header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 18px; padding-bottom: 14px;
-    border-bottom: 1px solid var(--border); gap: 12px;
-  }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border); gap: 12px; }
   .header h1 { font-size: 19px; margin: 0 0 2px 0; font-weight: 600; }
   .header .subtitle { font-size: 11px; color: var(--text-tertiary); }
   .header-actions { display: flex; gap: 8px; align-items: center; }
-  .icon-btn {
-    background: transparent; border: 1px solid var(--border);
-    border-radius: 999px; width: 36px; height: 36px;
-    display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-primary); padding: 0;
-    transition: background 0.2s, transform 0.1s;
-  }
+  .icon-btn { background: transparent; border: 1px solid var(--border); border-radius: 999px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); padding: 0; transition: background 0.2s, transform 0.1s; }
   .icon-btn:active { transform: scale(0.93); }
   .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
-  body:not(.light) .icon-sun { display: block; }
-  body:not(.light) .icon-moon { display: none; }
-  body.light .icon-sun { display: none; }
-  body.light .icon-moon { display: block; }
-  .total-bar {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
-    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
-  }
+  body:not(.light) .icon-sun { display: block; } body:not(.light) .icon-moon { display: none; }
+  body.light .icon-sun { display: none; } body.light .icon-moon { display: block; }
+  .total-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
   .total-label { font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
   .total-value-line { display: flex; flex-direction: column; align-items: flex-end; }
   .total-value { font-size: 22px; font-weight: 600; }
   .total-pnl { font-size: 13px; font-weight: 500; }
-  .positive { color: var(--positive); }
-  .negative { color: var(--negative); }
+  .positive { color: var(--positive); } .negative { color: var(--negative); }
   .positions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
   .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
   .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
@@ -171,8 +88,26 @@
   .pnl-label { color: var(--text-tertiary); font-size: 12px; }
   .pnl-value { font-weight: 500; font-size: 14px; }
   .pnl-pct { font-size: 11px; }
+  .chart-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); }
+  .chart-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .chart-wrap { position: relative; height: 130px; }
+  .chart-stamp { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right; }
   .card-action { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; }
   .link-btn { background: transparent; border: 0; color: var(--positive); font-size: 12px; cursor: pointer; padding: 4px 0; font-family: inherit; }
+  .history-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+  .history-title { font-size: 14px; font-weight: 500; margin: 0; }
+  .history-tabs { display: inline-flex; background: var(--bg-track); border-radius: 6px; padding: 2px; }
+  .history-tab { background: transparent; border: 0; color: var(--text-tertiary); font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
+  .history-tab.active { background: var(--bg-card); color: var(--text-primary); }
+  .history-chart-wrap { position: relative; height: 180px; margin-bottom: 14px; }
+  .history-summary { border-top: 1px solid var(--border-light); padding-top: 12px; }
+  .history-period-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; gap: 12px; }
+  .history-period-label { font-weight: 500; font-size: 15px; }
+  .history-delta { font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .history-balance-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); padding: 3px 0; font-variant-numeric: tabular-nums; }
+  .history-balance-row strong { color: var(--text-primary); font-weight: 500; }
+  .history-disclaimer { font-size: 10px; color: var(--text-muted); margin-top: 8px; font-style: italic; }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -203,8 +138,8 @@
   .modal-field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
   .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
   .modal-actions button { flex: 1; }
-  .auth-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); margin-top: 8px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
 </head>
 <body>
 
@@ -228,46 +163,41 @@
       <div class="subtitle" id="lastUpdate">Lade Daten…</div>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" id="refreshBtn" title="Live-Kurse holen">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
-      </button>
+      <button class="icon-btn" id="refreshBtn" title="Live-Kurse holen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg></button>
       <button class="icon-btn" id="themeToggleBtn" title="Hell/Dunkel">
         <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
-      <button class="icon-btn" id="logoutBtn" title="Abmelden">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </button>
+      <button class="icon-btn" id="logoutBtn" title="Abmelden"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
   </div>
   <div class="total-bar">
-    <div>
-      <div class="total-label">Gesamtwert</div>
-      <div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div>
-    </div>
-    <div class="total-value-line">
-      <div class="total-value" id="totalValue">—</div>
-      <div class="total-pnl" id="totalPnl">—</div>
-    </div>
+    <div><div class="total-label">Gesamtwert</div><div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div></div>
+    <div class="total-value-line"><div class="total-value" id="totalValue">—</div><div class="total-pnl" id="totalPnl">—</div></div>
   </div>
   <div class="positions" id="positions"></div>
-  <div class="goal-section">
-    <div class="goal-head">
-      <span class="goal-title" id="goalTitle">Ziel</span>
-      <span class="goal-pct" id="goalPct">—</span>
+  <div class="history-section">
+    <div class="history-head">
+      <h2 class="history-title">Depot-Entwicklung</h2>
+      <div class="history-tabs">
+        <button class="history-tab" data-months="6">6M</button>
+        <button class="history-tab active" data-months="12">12M</button>
+      </div>
     </div>
+    <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
+    <div class="history-summary">
+      <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
+      <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
+      <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
+      <div class="history-disclaimer">Berechnet aus aktueller Stückzahl × historischen Monatskursen (Annahme: gleicher Bestand zu allen Stichtagen).</div>
+    </div>
+  </div>
+  <div class="goal-section">
+    <div class="goal-head"><span class="goal-title" id="goalTitle">Ziel</span><span class="goal-pct" id="goalPct">—</span></div>
     <div class="goal-bar"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
     <div class="goal-sliders">
-      <div class="slider-row">
-        <label for="goalYear">Zieljahr</label>
-        <input type="range" id="goalYear" min="2026" max="2040" step="1" value="2026">
-        <span class="slider-value" id="goalYearVal">2026</span>
-      </div>
-      <div class="slider-row">
-        <label for="goalAmount">Zielbetrag</label>
-        <input type="range" id="goalAmount" min="5000" max="100000" step="500" value="15000">
-        <span class="slider-value" id="goalAmountVal">15.000 €</span>
-      </div>
+      <div class="slider-row"><label for="goalYear">Zieljahr</label><input type="range" id="goalYear" min="2026" max="2040" step="1" value="2026"><span class="slider-value" id="goalYearVal">2026</span></div>
+      <div class="slider-row"><label for="goalAmount">Zielbetrag</label><input type="range" id="goalAmount" min="5000" max="100000" step="500" value="15000"><span class="slider-value" id="goalAmountVal">15.000 €</span></div>
     </div>
     <div class="goal-meta" id="goalMeta">—</div>
   </div>
@@ -285,71 +215,45 @@
     <div class="modal-field"><label>Aktueller Kurs (EUR)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
     <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
     <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
-    <div class="modal-actions">
-      <button class="auth-btn secondary" id="editCancel">Abbrechen</button>
-      <button class="auth-btn" id="editSave">Speichern</button>
-    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="editCancel">Abbrechen</button><button class="auth-btn" id="editSave">Speichern</button></div>
   </div>
 </div>
 
 <script>
 'use strict';
-const BAKED_BLOB = {"v":1,"s":"e7mnOmX0Gk3k3D7xHCt7EQ==","i":"LQyEn6/6Qx1AzJFK","c":"4OAnM/6dTuVw5P2ryAN0TkJUQeq7o8f583e2cEDTIHLdOtjDb38FcQMLkmJpU5sMezUEYV+g6t86moG080XQnUphVGBle8hAHMV5ldPJh/iyYJ1U/gNayEATF22TvOhhnS8TT2IOIZIM1b3jxmF61aAEsA3L7rEFOl4ydbsQIcHMTR5Zg4BJ43SolGhAi3k1us1OGXpREP/EkR0SUG9jBcjJKxqlqQKBPZvrMl0abZz996C/aQ09pufSNa2n6t33tHUdos8LeH6udI7INO2z51DSiAU2q6s1nWNz/oOBvW+o1mSsOmCwSEzitlbn4uLPPCuNYlGIoEYOijukjFKM6hoYzgr1td0bFZN5Cha23emcyrzXUSMWyO63UWX+8SKhGJGXvuNpMeBJOgL/8MyYFQInhQd/IU7qT5A4n5Xj5csG/CvCRLXA1frm+n8Li+VGq0Dfj8uAP3VQZq+pberQ0aLpNBtpiyFAEM8irdqLHwguwEicTPrSYnbxPAc48gI1NgyOjwvK+VlwAXsiPoI6uNHvMgUD1vBATKAzaox3nWU9VD8HdW6iUialUbdiBuQ44iGMbf32+FPsHNhD2FcOBm8Hd7eSLUr/xtRo67aSmjqVZIIKooOJreZl5I+zFlSuunm3p3xE164OGOEOJqM8xaU0e8wfKL4uraU/svOAdQD5Uy07m31vW1mUBVzGDwCk/ZsvTjZLp1JLMIve7CNc3HSrxbAEr3hSi0CtyzpckhWoDp7wPAhFSQh7ofSYHexwHBYGuoIt+OsF5lY2VIWm1Oyo15Ezb82ATxr5Yq+3b8qqhTEbJ/w23o2kpWsaHl5RvA0hnwn+r1S5QduZiQXe7dV/BbryUjn627VDSHp9HX+nofAOb0iiDUczKbEL1z7i1QQxX8t/dVxc7NxAYhkBfsRuxo9FYseY70/zA7UhrLCnQ3GXd8lcFDLc90Rq+I02MKx385x1NnV1AjU9aJmezA2TI3X4Klavr3gUKl+u3YMp4sKHiC8="};
+const BAKED_BLOB = {"v":1,"s":"bHz+GC5Dlzb44Ichg7l5xg==","i":"nRjM3WWozJWw4Lye","c":"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"};
 
 const ENC = {
-  async deriveKey(password, salt) {
-    const passwordKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, passwordKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-  },
-  async decrypt(enc, password) {
-    const salt = this._fromB64(enc.s);
-    const iv = this._fromB64(enc.i);
-    const ciphertext = this._fromB64(enc.c);
-    const key = await this.deriveKey(password, salt);
-    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-    return JSON.parse(new TextDecoder().decode(plaintext));
-  },
-  _fromB64(str) {
-    const s = atob(str);
-    const bytes = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
-    return bytes;
-  }
+  async deriveKey(password, salt) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']); return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, k, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); },
+  async decrypt(enc, password) { const salt = this._fromB64(enc.s); const iv = this._fromB64(enc.i); const ct = this._fromB64(enc.c); const key = await this.deriveKey(password, salt); const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct); return JSON.parse(new TextDecoder().decode(pt)); },
+  _fromB64(str) { const s = atob(str); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
 };
-
-const STORE = {
-  THEME_KEY: 'portfolio_theme',
-  getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } },
-  setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} }
-};
-
-let appData = null, appPassword = null, currentPrices = {};
+const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
+let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryMonths = 12;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberFormat('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
+const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
-function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); }
-function toggleTheme() { const isLight = document.body.classList.contains('light'); const next = isLight ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
-function initTheme() { const saved = STORE.getTheme(); applyTheme(saved === 'light' ? 'light' : 'dark'); }
+function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
+function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
+function initTheme() { applyTheme(STORE.getTheme() === 'light' ? 'light' : 'dark'); }
 function showScreen(id) { ['gateScreen', 'appScreen'].forEach(s => { const el = document.getElementById(s); if (s === id) el.classList.add('active'); else el.classList.remove('active'); }); }
 function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
+function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function getThemeColors() { const cs = getComputedStyle(document.body); return { tooltipBg: cs.getPropertyValue('--tooltip-bg').trim(), tooltipText: cs.getPropertyValue('--tooltip-text').trim(), gridColor: cs.getPropertyValue('--chart-grid').trim(), axisText: cs.getPropertyValue('--chart-axis').trim() }; }
 
 async function handleGate() {
   const code = document.getElementById('gatePw').value;
   const errEl = document.getElementById('gateError');
   errEl.classList.remove('visible');
   if (!code) { showErr(errEl, 'Bitte Code eingeben.'); return; }
-  try {
-    const data = await ENC.decrypt(BAKED_BLOB, code);
-    appData = data; appPassword = code;
-    document.getElementById('gatePw').value = '';
-    showScreen('appScreen');
-    await initApp();
-  } catch (e) { showErr(errEl, 'Falscher Code.'); }
+  try { appData = await ENC.decrypt(BAKED_BLOB, code); appPassword = code; document.getElementById('gatePw').value = ''; showScreen('appScreen'); await initApp(); }
+  catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
-
-function handleLogout() { appData = null; appPassword = null; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
+function handleLogout() { appData = null; appPassword = null; currentPrices = {}; weeklyData = {}; chartRegistry = {}; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
   const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
@@ -358,23 +262,57 @@ async function fetchCryptoPrices() {
     const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`);
     if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
     const data = await res.json();
-    appData.positions.forEach(pos => {
-      if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true };
-    });
+    appData.positions.forEach(pos => { if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true }; });
   } catch (e) { console.warn('Crypto fetch failed:', e); }
 }
+
+async function fetchCryptoWeekly(cgId) {
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=eur&days=7`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const pts = data.prices || [];
+    const step = Math.max(1, Math.floor(pts.length / 7));
+    const sampled = [];
+    for (let i = 0; i < pts.length; i += step) sampled.push(pts[i]);
+    if (pts.length && sampled[sampled.length - 1] !== pts[pts.length - 1]) sampled.push(pts[pts.length - 1]);
+    return sampled.map(([ts, price]) => { const d = new Date(ts); return { date: String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0'), price }; });
+  } catch (e) { return []; }
+}
+
+async function fetchAllWeeklyCharts() { await Promise.all(appData.positions.filter(p => p.cgId).map(async pos => { const data = await fetchCryptoWeekly(pos.cgId); if (data.length > 1) weeklyData[pos.id] = data; })); }
 
 function loadManualPrices() {
   appData.positions.forEach(pos => {
     if (!pos.cgId) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, changePct: pos.manualChangePct ?? 0, live: false };
+    if (!pos.cgId && pos.weeklyHistory) weeklyData[pos.id] = pos.weeklyHistory;
   });
 }
 
-function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function renderChart(canvasId, points, valueKey, opts) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !points || points.length < 2 || typeof Chart === 'undefined') return;
+  chartRegistry[canvasId] = { points, valueKey, opts: opts || {} };
+  const existing = Chart.getChart && Chart.getChart(canvas);
+  if (existing) existing.destroy();
+  const theme = getThemeColors();
+  const values = points.map(p => p[valueKey]);
+  const isUp = values[values.length - 1] >= values[0];
+  const color = isUp ? '#22c55e' : '#f87171';
+  const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
+  new Chart(canvas, {
+    type: 'line',
+    data: { labels: points.map(p => p.label || p.date), datasets: [{ data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8, fill: true, tension: 0.3, pointRadius: opts?.bigPoints ? 3 : 2, pointHoverRadius: 5, pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1 }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: false, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => fmt.format(item.parsed.y) } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
+  });
+}
+
+function reRenderAllCharts() { Object.entries(chartRegistry).forEach(([id, entry]) => { if (entry?.points) renderChart(id, entry.points, entry.valueKey, entry.opts); }); }
 
 function buildCard(pos) {
   const wrap = document.createElement('div');
   wrap.className = 'card';
+  wrap.id = `card-${pos.id}`;
   const live = currentPrices[pos.id] || { price: pos.costPrice, changePct: 0, live: false };
   const valueEur = live.price * pos.shares;
   const pnlAbs = valueEur - (pos.costPrice * pos.shares);
@@ -384,14 +322,8 @@ function buildCard(pos) {
   const badge = live.live ? `<span class="badge badge-live">live</span>` : `<span class="badge badge-stale">manuell</span>`;
   wrap.innerHTML = `
     <div class="card-head">
-      <div style="min-width:0;">
-        <div class="card-name">${escapeHtml(pos.name)}</div>
-        <div class="card-meta">${pos.type || ''} · ${pos.symbol || ''}${badge}</div>
-      </div>
-      <div class="card-price">
-        <div class="price-value">${fmtNum(live.price)} €</div>
-        <div class="price-change ${changeClass}">${fmtPct(live.changePct)}</div>
-      </div>
+      <div style="min-width:0;"><div class="card-name">${escapeHtml(pos.name)}</div><div class="card-meta">${pos.type || ''} · ${pos.symbol || ''}${badge}</div></div>
+      <div class="card-price"><div class="price-value">${fmtNum(live.price)} €</div><div class="price-change ${changeClass}">${fmtPct(live.changePct)}</div></div>
     </div>
     <div class="card-body">
       <div class="row-label">Stück</div><div class="row-value">${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)}</div>
@@ -399,18 +331,26 @@ function buildCard(pos) {
       <div class="row-label">Einstandswert</div><div class="row-value">${fmt.format(pos.costPrice * pos.shares)}</div>
       <div class="row-label">Gesamtwert</div><div class="row-value">${fmt.format(valueEur)}</div>
     </div>
-    <div class="pnl-row">
-      <span class="pnl-label">Gewinn / Verlust</span>
-      <div style="text-align:right">
-        <div class="pnl-value ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div>
-        <div class="pnl-pct ${pnlClass}">${fmtPct(pnlPct)}</div>
-      </div>
-    </div>
+    <div class="pnl-row"><span class="pnl-label">Gewinn / Verlust</span><div style="text-align:right"><div class="pnl-value ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div><div class="pnl-pct ${pnlClass}">${fmtPct(pnlPct)}</div></div></div>
+    <div class="chart-section"><div class="chart-label">Wochenchart</div><div class="chart-wrap"><canvas id="spark-${pos.id}"></canvas></div><div class="chart-stamp" id="stamp-${pos.id}">—</div></div>
     <div class="card-action"><button class="link-btn" data-edit-id="${pos.id}">Werte bearbeiten</button></div>`;
   return wrap;
 }
 
-function renderPositions() { const container = document.getElementById('positions'); container.innerHTML = ''; appData.positions.forEach(pos => container.appendChild(buildCard(pos))); }
+function renderPositions() {
+  const container = document.getElementById('positions');
+  container.innerHTML = '';
+  appData.positions.forEach(pos => container.appendChild(buildCard(pos)));
+  appData.positions.forEach(pos => {
+    const wpts = weeklyData[pos.id];
+    const stampEl = document.getElementById(`stamp-${pos.id}`);
+    if (wpts && wpts.length >= 2) {
+      const enriched = wpts.map(p => ({ date: p.date, price: p.price, label: p.date }));
+      renderChart(`spark-${pos.id}`, enriched, 'price', {});
+      if (stampEl) stampEl.textContent = pos.cgId ? `Chart aktualisiert: ${new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })} · Live` : `Chart-Stand: Snapshot`;
+    } else { if (stampEl) stampEl.textContent = 'Keine Chart-Daten'; }
+  });
+}
 
 function renderTotals() {
   let totalCur = 0, totalCost = 0;
@@ -424,6 +364,49 @@ function renderTotals() {
   document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)}`;
   document.getElementById('lastUpdate').textContent = `Stand: ${new Date().toLocaleString('de-AT')}`;
   return { totalCur, totalCost, totalPnl, totalPnlPct };
+}
+
+function buildPortfolioHistory(monthsBack) {
+  const today = new Date();
+  const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t; })();
+  const points = [];
+  for (let i = monthsBack; i >= 1; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+    const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    let monthTotal = 0;
+    appData.positions.forEach(pos => {
+      if (pos.monthlyHistory) {
+        const sorted = pos.monthlyHistory.slice().sort((a, b) => a.date.localeCompare(b.date));
+        let matched = null;
+        for (const e of sorted) { if (e.date <= ym) matched = e; }
+        if (!matched && sorted.length > 0) matched = sorted[0];
+        monthTotal += (matched ? matched.price : pos.costPrice) * pos.shares;
+      } else {
+        const live = currentPrices[pos.id] || { price: pos.costPrice };
+        monthTotal += live.price * pos.shares;
+      }
+    });
+    points.push({ date: d, label: MONTHS_SHORT[d.getMonth()], labelLong: MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear(), value: monthTotal });
+  }
+  points.push({ date: today, label: MONTHS_SHORT[today.getMonth()] + '.', labelLong: MONTHS_LONG[today.getMonth()] + ' ' + today.getFullYear() + ' (heute)', value: currentTotals });
+  return points;
+}
+
+function renderHistory() {
+  const points = buildPortfolioHistory(currentHistoryMonths);
+  if (points.length < 2) return;
+  renderChart('historyChart', points, 'value', { compactY: true, bigPoints: true });
+  const first = points[0], last = points[points.length - 1];
+  const delta = last.value - first.value;
+  const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
+  document.getElementById('historyPeriodLabel').textContent = `${first.label}. – ${last.label}`;
+  const deltaEl = document.getElementById('historyDelta');
+  deltaEl.textContent = `${delta >= 0 ? '+' : ''}${fmt.format(delta)} (${delta >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} %)`;
+  deltaEl.className = 'history-delta ' + (delta >= 0 ? 'positive' : 'negative');
+  document.getElementById('historyStartLabel').textContent = `Depot Stand Ende ${first.labelLong}`;
+  document.getElementById('historyStartValue').textContent = fmt.format(first.value);
+  document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${MONTHS_LONG[last.date.getMonth()]} ${last.date.getFullYear()})` : `Depot Stand Ende ${last.labelLong}`;
+  document.getElementById('historyEndValue').textContent = fmt.format(last.value);
 }
 
 function renderGoal(totals) {
@@ -441,9 +424,7 @@ function renderGoal(totals) {
   const progress = Math.min(100, Math.max(0, (totals.totalCur / amount) * 100));
   document.getElementById('goalPct').textContent = `${fmtNum(progress, 1)}%`;
   document.getElementById('goalFill').style.width = `${progress}%`;
-  let meta;
-  if (gap <= 0) meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend`;
-  else meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
+  const meta = gap <= 0 ? `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend` : `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
   document.getElementById('goalMeta').innerHTML = meta;
   if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; }
   return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress };
@@ -485,16 +466,32 @@ function openEditModal(posId) { const pos = appData.positions.find(p => p.id ===
 async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await refreshUI(); }
 function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
 
-async function refreshUI() { loadManualPrices(); renderPositions(); const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysis(totals, goal); }
-async function initApp() { if (appData.goal) { document.getElementById('goalYear').value = String(appData.goal.year); document.getElementById('goalAmount').value = String(appData.goal.amount); } loadManualPrices(); await refreshUI(); await fetchCryptoPrices(); await refreshUI(); }
+async function refreshUI() {
+  loadManualPrices();
+  renderPositions();
+  const totals = renderTotals();
+  renderHistory();
+  const goal = renderGoal(totals);
+  renderAnalysis(totals, goal);
+}
+
+async function initApp() {
+  if (appData.goal) { document.getElementById('goalYear').value = String(appData.goal.year); document.getElementById('goalAmount').value = String(appData.goal.amount); }
+  loadManualPrices();
+  await refreshUI();
+  await fetchCryptoPrices();
+  await fetchAllWeeklyCharts();
+  await refreshUI();
+}
 
 function wireEvents() {
   document.getElementById('gateBtn').addEventListener('click', handleGate);
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await refreshUI(); });
+  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
   ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysis(totals, goal); }); });
+  document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => { const btn = e.target.closest('[data-edit-id]'); if (btn) openEditModal(btn.dataset.editId); });
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   document.getElementById('editSave').addEventListener('click', saveEditModal);
