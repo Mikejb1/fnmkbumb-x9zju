@@ -77,16 +77,14 @@
   }
   .screen { display: none; padding: 16px; max-width: 720px; margin: 0 auto; }
   .screen.active { display: block; }
-
-  /* === LOGIN / SETUP === */
-  #loginScreen, #setupScreen, #gateScreen {
+  #gateScreen {
     min-height: 100vh;
     display: none;
     align-items: center;
     justify-content: center;
     padding: 24px;
   }
-  #loginScreen.active, #setupScreen.active, #gateScreen.active { display: flex; }
+  #gateScreen.active { display: flex; }
   .auth-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -95,161 +93,47 @@
     width: 100%;
     max-width: 380px;
   }
-  .auth-card h1 {
-    margin: 0 0 6px 0;
-    font-size: 22px;
-    font-weight: 600;
-  }
-  .auth-card .subtitle {
-    color: var(--text-secondary);
-    font-size: 13px;
-    margin-bottom: 20px;
-  }
+  .auth-card h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 600; }
+  .auth-card .subtitle { color: var(--text-secondary); font-size: 13px; margin-bottom: 20px; }
   .auth-step { margin-bottom: 16px; }
   .auth-step label {
-    display: block;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    display: block; font-size: 12px; color: var(--text-secondary);
+    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;
   }
   .auth-input {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 16px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.2s;
+    width: 100%; padding: 12px 14px; background: var(--bg-input);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-primary); font-size: 16px; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
   }
   .auth-input:focus { border-color: var(--positive); }
-  .auth-textarea {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 13px;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    outline: none;
-    min-height: 160px;
-    resize: vertical;
-  }
-  .auth-textarea:focus { border-color: var(--positive); }
   .auth-btn {
-    width: 100%;
-    padding: 13px;
-    background: var(--positive);
-    color: white;
-    border: 0;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 8px;
-    font-family: inherit;
+    width: 100%; padding: 13px; background: var(--positive);
+    color: white; border: 0; border-radius: 8px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    margin-top: 8px; font-family: inherit;
     transition: opacity 0.2s, transform 0.1s;
   }
   .auth-btn:active { transform: scale(0.97); }
-  .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .auth-btn.secondary {
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
-    margin-top: 8px;
-  }
   .auth-error {
-    background: var(--error-bg);
-    color: var(--error-text);
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin-top: 10px;
-    display: none;
+    background: var(--error-bg); color: var(--error-text);
+    padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; margin-top: 10px; display: none;
   }
   .auth-error.visible { display: block; }
-  .auth-hint {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-top: 6px;
-    line-height: 1.4;
-  }
-  .auth-tabs {
-    display: flex;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--border-light);
-  }
-  .auth-tab {
-    flex: 1;
-    padding: 10px;
-    background: transparent;
-    border: 0;
-    color: var(--text-tertiary);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    font-family: inherit;
-  }
-  .auth-tab.active {
-    color: var(--text-primary);
-    border-bottom-color: var(--positive);
-  }
-  .pw-toggle {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: 0;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-  .input-wrap { position: relative; }
-
-  /* === MAIN APP === */
   .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 18px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--border);
-    gap: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 18px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--border); gap: 12px;
   }
-  .header h1 {
-    font-size: 19px;
-    margin: 0 0 2px 0;
-    font-weight: 600;
-  }
-  .header .subtitle {
-    font-size: 11px;
-    color: var(--text-tertiary);
-  }
-  .header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+  .header h1 { font-size: 19px; margin: 0 0 2px 0; font-weight: 600; }
+  .header .subtitle { font-size: 11px; color: var(--text-tertiary); }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
   .icon-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-primary);
-    padding: 0;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 999px; width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-primary); padding: 0;
     transition: background 0.2s, transform 0.1s;
   }
   .icon-btn:active { transform: scale(0.93); }
@@ -258,17 +142,10 @@
   body:not(.light) .icon-moon { display: none; }
   body.light .icon-sun { display: none; }
   body.light .icon-moon { display: block; }
-
   .total-bar {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
   }
   .total-label { font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
   .total-value-line { display: flex; flex-direction: column; align-items: flex-end; }
@@ -276,291 +153,74 @@
   .total-pnl { font-size: 13px; font-weight: 500; }
   .positive { color: var(--positive); }
   .negative { color: var(--negative); }
-
   .positions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 13px 14px;
-  }
-  .card-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-    gap: 10px;
-  }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
   .card-name { font-size: 14px; font-weight: 500; margin: 0 0 2px 0; }
   .card-meta { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
-  .badge {
-    display: inline-block;
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 3px;
-    background: var(--bg-track);
-    color: var(--text-tertiary);
-    margin-left: 4px;
-    vertical-align: 1px;
-  }
+  .badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--bg-track); color: var(--text-tertiary); margin-left: 4px; vertical-align: 1px; }
   .badge-live { background: var(--badge-live-bg); color: var(--badge-live-text); }
   .badge-stale { background: var(--badge-stale-bg); color: var(--badge-stale-text); }
   .card-price { text-align: right; flex-shrink: 0; }
   .price-value { font-size: 15px; font-weight: 500; }
   .price-change { font-size: 11px; }
-  .card-body {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 4px 14px;
-    font-size: 12px;
-    margin-top: 6px;
-  }
+  .card-body { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 12px; margin-top: 6px; }
   .row-label { color: var(--text-tertiary); }
   .row-value { text-align: right; font-variant-numeric: tabular-nums; }
-  .pnl-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-light);
-  }
+  .pnl-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); }
   .pnl-label { color: var(--text-tertiary); font-size: 12px; }
   .pnl-value { font-weight: 500; font-size: 14px; }
   .pnl-pct { font-size: 11px; }
-  .card-action {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-light);
-    display: flex;
-    justify-content: flex-end;
-  }
-  .link-btn {
-    background: transparent;
-    border: 0;
-    color: var(--positive);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 4px 0;
-    font-family: inherit;
-  }
-
-  /* === GOAL === */
-  .goal-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-  }
-  .goal-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 8px;
-  }
+  .card-action { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; }
+  .link-btn { background: transparent; border: 0; color: var(--positive); font-size: 12px; cursor: pointer; padding: 4px 0; font-family: inherit; }
+  .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
   .goal-pct { font-size: 14px; font-weight: 600; color: var(--positive); }
-  .goal-bar {
-    width: 100%;
-    height: 8px;
-    background: var(--bg-track);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 8px;
-  }
-  .goal-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--positive-strong), var(--positive));
-    transition: width 0.5s ease;
-  }
-  .goal-sliders {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 12px 0 10px;
-    padding: 10px 0 4px;
-    border-top: 1px solid var(--border-light);
-  }
-  .slider-row {
-    display: grid;
-    grid-template-columns: 80px 1fr 100px;
-    align-items: center;
-    gap: 10px;
-  }
-  .slider-row label {
-    font-size: 11px;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-  .slider-row input[type=range] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    background: var(--bg-track);
-    border-radius: 2px;
-    outline: none;
-    margin: 0;
-  }
-  .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px;
-    height: 22px;
-    background: var(--positive);
-    border-radius: 50%;
-    border: 2px solid var(--bg-card);
-    box-shadow: 0 0 0 1px var(--positive), 0 1px 4px rgba(0,0,0,0.3);
-  }
-  .slider-row input[type=range]::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
-    background: var(--positive);
-    border-radius: 50%;
-    border: 2px solid var(--bg-card);
-  }
-  .slider-value {
-    font-size: 13px;
-    font-weight: 500;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
+  .goal-bar { width: 100%; height: 8px; background: var(--bg-track); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .goal-fill { height: 100%; background: linear-gradient(90deg, var(--positive-strong), var(--positive)); transition: width 0.5s ease; }
+  .goal-sliders { display: flex; flex-direction: column; gap: 12px; margin: 12px 0 10px; padding: 10px 0 4px; border-top: 1px solid var(--border-light); }
+  .slider-row { display: grid; grid-template-columns: 80px 1fr 100px; align-items: center; gap: 10px; }
+  .slider-row label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
+  .slider-row input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--bg-track); border-radius: 2px; outline: none; margin: 0; }
+  .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); box-shadow: 0 0 0 1px var(--positive), 0 1px 4px rgba(0,0,0,0.3); }
+  .slider-row input[type=range]::-moz-range-thumb { width: 22px; height: 22px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); }
+  .slider-value { font-size: 13px; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
   .goal-meta { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
-
-  /* === ANALYSIS === */
-  .analysis-section {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-  }
-  .analysis-section h2 {
-    margin: 0 0 10px 0;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .analysis-text {
-    font-size: 13px;
-    line-height: 1.6;
-  }
+  .analysis-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .analysis-section h2 { margin: 0 0 10px 0; font-size: 14px; font-weight: 500; }
+  .analysis-text { font-size: 13px; line-height: 1.6; }
   .analysis-text strong { color: var(--text-primary); font-weight: 600; }
   .analysis-text .block { margin-bottom: 12px; }
   .analysis-text .block:last-child { margin-bottom: 0; }
-  .analysis-disclaimer {
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-light);
-    font-size: 10px;
-    color: var(--text-muted);
-    font-style: italic;
-  }
-  .footer {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 10px;
-    padding: 16px 0;
-  }
-
-  /* === EDIT MODAL === */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    z-index: 100;
-  }
+  .analysis-disclaimer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); font-size: 10px; color: var(--text-muted); font-style: italic; }
+  .footer { text-align: center; color: var(--text-muted); font-size: 10px; padding: 16px 0; }
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
   .modal-backdrop.active { display: flex; }
-  .modal {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    width: 100%;
-    max-width: 380px;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
+  .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto; }
   .modal h3 { margin: 0 0 12px 0; font-size: 16px; }
   .modal-field { margin-bottom: 10px; }
-  .modal-field label {
-    display: block;
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-  .modal-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-  }
+  .modal-field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
   .modal-actions button { flex: 1; }
+  .auth-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); margin-top: 8px; }
 </style>
 </head>
 <body>
 
-<!-- ============ GATE-SCREEN ============ -->
 <div id="gateScreen">
   <div class="auth-card">
-    <h1>Zugang</h1>
-    <div class="subtitle">Diese App ist privat. Bitte den Master-Zugangscode eingeben.</div>
+    <h1>Portfolio</h1>
+    <div class="subtitle">Bitte Zugangscode eingeben um deine Daten zu entschlüsseln.</div>
     <div class="auth-step">
-      <label>Master-Code</label>
-      <input type="password" class="auth-input" id="gatePw" placeholder="Code eingeben" autocomplete="off" autofocus>
+      <label>Zugangscode</label>
+      <input type="password" class="auth-input" id="gatePw" placeholder="Code" autocomplete="current-password" autofocus>
     </div>
     <button class="auth-btn" id="gateBtn">Entsperren</button>
     <div class="auth-error" id="gateError"></div>
   </div>
 </div>
 
-<!-- ============ SETUP-SCREEN ============ -->
-<div id="setupScreen">
-  <div class="auth-card">
-    <h1>Erstmaliger Setup</h1>
-    <div class="subtitle">Schütze deine Portfolio-Daten mit einem Passwort. Die Verschlüsselung erfolgt lokal in deinem Browser — das Passwort verlässt dein Gerät nie.</div>
-    <div class="auth-step">
-      <label>Passwort wählen</label>
-      <div class="input-wrap">
-        <input type="password" class="auth-input" id="setupPw1" placeholder="Mindestens 6 Zeichen" autocomplete="new-password">
-      </div>
-      <div class="auth-hint">Wichtig: Wenn du dieses Passwort vergisst, sind die Daten verloren — es gibt keinen Reset.</div>
-    </div>
-    <div class="auth-step">
-      <label>Passwort wiederholen</label>
-      <input type="password" class="auth-input" id="setupPw2" placeholder="Nochmal eingeben" autocomplete="new-password">
-    </div>
-    <div class="auth-step">
-      <label>Portfolio-Daten (JSON)</label>
-      <textarea class="auth-textarea" id="setupJson" placeholder='Siehe README.md - paste hier dein JSON ein'></textarea>
-      <div class="auth-hint">Beispiel-JSON für deine Positionen findest du in der README.md. Du kannst die Werte später jederzeit in der App bearbeiten.</div>
-    </div>
-    <button class="auth-btn" id="setupBtn">Setup abschließen & verschlüsseln</button>
-    <div class="auth-error" id="setupError"></div>
-  </div>
-</div>
-
-<!-- ============ LOGIN-SCREEN ============ -->
-<div id="loginScreen">
-  <div class="auth-card">
-    <h1>Portfolio</h1>
-    <div class="subtitle">Bitte Passwort eingeben um deine Daten zu entschlüsseln.</div>
-    <div class="auth-step">
-      <label>Passwort</label>
-      <input type="password" class="auth-input" id="loginPw" placeholder="Dein Passwort" autocomplete="current-password" autofocus>
-    </div>
-    <button class="auth-btn" id="loginBtn">Entsperren</button>
-    <div class="auth-error" id="loginError"></div>
-    <button class="auth-btn secondary" id="resetBtn">Setup zurücksetzen (alle Daten löschen)</button>
-  </div>
-</div>
-
-<!-- ============ MAIN-APP ============ -->
 <div id="appScreen" class="screen">
   <div class="header">
     <div>
@@ -580,7 +240,6 @@
       </button>
     </div>
   </div>
-
   <div class="total-bar">
     <div>
       <div class="total-label">Gesamtwert</div>
@@ -591,9 +250,7 @@
       <div class="total-pnl" id="totalPnl">—</div>
     </div>
   </div>
-
   <div class="positions" id="positions"></div>
-
   <div class="goal-section">
     <div class="goal-head">
       <span class="goal-title" id="goalTitle">Ziel</span>
@@ -614,32 +271,20 @@
     </div>
     <div class="goal-meta" id="goalMeta">—</div>
   </div>
-
   <div class="analysis-section">
     <h2>Analyse & Tipps</h2>
     <div class="analysis-text" id="analysisText">—</div>
     <div class="analysis-disclaimer">Keine Finanzberatung. Eigenrecherche oder Fachperson für Investmentempfehlungen.</div>
   </div>
-
   <div class="footer">Portfolio-Tracker · Daten verschlüsselt lokal · Krypto-Preise via CoinGecko</div>
 </div>
 
-<!-- ============ EDIT-MODAL ============ -->
 <div class="modal-backdrop" id="editModal">
   <div class="modal">
     <h3 id="editTitle">Position bearbeiten</h3>
-    <div class="modal-field">
-      <label>Aktueller Kurs (EUR)</label>
-      <input type="number" step="0.01" class="auth-input" id="editPrice">
-    </div>
-    <div class="modal-field">
-      <label>Stückzahl</label>
-      <input type="number" step="0.000001" class="auth-input" id="editShares">
-    </div>
-    <div class="modal-field">
-      <label>Einstandspreis pro Stück (EUR)</label>
-      <input type="number" step="0.01" class="auth-input" id="editCost">
-    </div>
+    <div class="modal-field"><label>Aktueller Kurs (EUR)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
+    <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
+    <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
     <div class="modal-actions">
       <button class="auth-btn secondary" id="editCancel">Abbrechen</button>
       <button class="auth-btn" id="editSave">Speichern</button>
@@ -647,74 +292,14 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
 <script>
 'use strict';
+const BAKED_BLOB = {"v":1,"s":"e7mnOmX0Gk3k3D7xHCt7EQ==","i":"LQyEn6/6Qx1AzJFK","c":"4OAnM/6dTuVw5P2ryAN0TkJUQeq7o8f583e2cEDTIHLdOtjDb38FcQMLkmJpU5sMezUEYV+g6t86moG080XQnUphVGBle8hAHMV5ldPJh/iyYJ1U/gNayEATF22TvOhhnS8TT2IOIZIM1b3jxmF61aAEsA3L7rEFOl4ydbsQIcHMTR5Zg4BJ43SolGhAi3k1us1OGXpREP/EkR0SUG9jBcjJKxqlqQKBPZvrMl0abZz996C/aQ09pufSNa2n6t33tHUdos8LeH6udI7INO2z51DSiAU2q6s1nWNz/oOBvW+o1mSsOmCwSEzitlbn4uLPPCuNYlGIoEYOijukjFKM6hoYzgr1td0bFZN5Cha23emcyrzXUSMWyO63UWX+8SKhGJGXvuNpMeBJOgL/8MyYFQInhQd/IU7qT5A4n5Xj5csG/CvCRLXA1frm+n8Li+VGq0Dfj8uAP3VQZq+pberQ0aLpNBtpiyFAEM8irdqLHwguwEicTPrSYnbxPAc48gI1NgyOjwvK+VlwAXsiPoI6uNHvMgUD1vBATKAzaox3nWU9VD8HdW6iUialUbdiBuQ44iGMbf32+FPsHNhD2FcOBm8Hd7eSLUr/xtRo67aSmjqVZIIKooOJreZl5I+zFlSuunm3p3xE164OGOEOJqM8xaU0e8wfKL4uraU/svOAdQD5Uy07m31vW1mUBVzGDwCk/ZsvTjZLp1JLMIve7CNc3HSrxbAEr3hSi0CtyzpckhWoDp7wPAhFSQh7ofSYHexwHBYGuoIt+OsF5lY2VIWm1Oyo15Ezb82ATxr5Yq+3b8qqhTEbJ/w23o2kpWsaHl5RvA0hnwn+r1S5QduZiQXe7dV/BbryUjn627VDSHp9HX+nofAOb0iiDUczKbEL1z7i1QQxX8t/dVxc7NxAYhkBfsRuxo9FYseY70/zA7UhrLCnQ3GXd8lcFDLc90Rq+I02MKx385x1NnV1AjU9aJmezA2TI3X4Klavr3gUKl+u3YMp4sKHiC8="};
 
-// ============ MASTER GATE (SHA-256 Hash, vor Setup/Login) ============
-const MASTER_HASH = '1e739119ee4155211f266e2b187e279243b65690a1877669ceb6634b6b03f375';
-const GATE_KEY = 'portfolio_gate_passed_v1';
-
-async function sha256Hex(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function isGatePassed() {
-  try { return localStorage.getItem(GATE_KEY) === '1'; } catch (e) { return false; }
-}
-
-function markGatePassed() {
-  try { localStorage.setItem(GATE_KEY, '1'); } catch (e) {}
-}
-
-function clearGate() {
-  try { localStorage.removeItem(GATE_KEY); } catch (e) {}
-}
-
-async function handleGate() {
-  const code = document.getElementById('gatePw').value;
-  const errEl = document.getElementById('gateError');
-  errEl.classList.remove('visible');
-  if (!code) { showErr(errEl, 'Bitte Code eingeben.'); return; }
-  const hash = await sha256Hex(code);
-  if (hash === MASTER_HASH) {
-    markGatePassed();
-    document.getElementById('gatePw').value = '';
-    // Weiter zu Setup oder Login
-    if (STORE.hasData()) showScreen('loginScreen');
-    else showScreen('setupScreen');
-  } else {
-    showErr(errEl, 'Falscher Code.');
-  }
-}
-
-// ============ ENCRYPTION (Web Crypto API, AES-GCM) ============
 const ENC = {
   async deriveKey(password, salt) {
-    const passwordKey = await crypto.subtle.importKey(
-      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
-    );
-    return crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
-      passwordKey,
-      { name: 'AES-GCM', length: 256 },
-      false, ['encrypt', 'decrypt']
-    );
-  },
-  async encrypt(data, password) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await this.deriveKey(password, salt);
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(data))
-    );
-    return {
-      v: 1,
-      s: this._toB64(salt),
-      i: this._toB64(iv),
-      c: this._toB64(new Uint8Array(ciphertext))
-    };
+    const passwordKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, passwordKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
   },
   async decrypt(enc, password) {
     const salt = this._fromB64(enc.s);
@@ -724,11 +309,6 @@ const ENC = {
     const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
     return JSON.parse(new TextDecoder().decode(plaintext));
   },
-  _toB64(bytes) {
-    let s = '';
-    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-    return btoa(s);
-  },
   _fromB64(str) {
     const s = atob(str);
     const bytes = new Uint8Array(s.length);
@@ -737,196 +317,60 @@ const ENC = {
   }
 };
 
-// ============ STORAGE ============
 const STORE = {
-  ENC_KEY: 'portfolio_encrypted_v1',
   THEME_KEY: 'portfolio_theme',
-  hasData() {
-    try { return !!localStorage.getItem(this.ENC_KEY); } catch (e) { return false; }
-  },
-  saveEncrypted(blob) {
-    try { localStorage.setItem(this.ENC_KEY, JSON.stringify(blob)); } catch (e) {}
-  },
-  loadEncrypted() {
-    try {
-      const raw = localStorage.getItem(this.ENC_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
-  },
-  clear() {
-    try { localStorage.removeItem(this.ENC_KEY); } catch (e) {}
-  },
-  getTheme() {
-    try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; }
-  },
-  setTheme(t) {
-    try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {}
-  }
+  getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } },
+  setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} }
 };
 
-// ============ STATE ============
-let appData = null; // entschlüsselte Daten (im Speicher)
-let appPassword = null; // wird im Speicher gehalten für Re-Encryption nach Edits
-let currentPrices = {}; // Live-Preise pro Position-ID
-
-// ============ FORMATTING ============
+let appData = null, appPassword = null, currentPrices = {};
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberFormat('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
 
-// ============ THEME ============
-function applyTheme(theme) {
-  if (theme === 'light') document.body.classList.add('light');
-  else document.body.classList.remove('light');
-}
-function toggleTheme() {
-  const isLight = document.body.classList.contains('light');
-  const next = isLight ? 'dark' : 'light';
-  STORE.setTheme(next);
-  applyTheme(next);
-}
-function initTheme() {
-  const saved = STORE.getTheme();
-  applyTheme(saved === 'light' ? 'light' : 'dark');
-}
+function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); }
+function toggleTheme() { const isLight = document.body.classList.contains('light'); const next = isLight ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
+function initTheme() { const saved = STORE.getTheme(); applyTheme(saved === 'light' ? 'light' : 'dark'); }
+function showScreen(id) { ['gateScreen', 'appScreen'].forEach(s => { const el = document.getElementById(s); if (s === id) el.classList.add('active'); else el.classList.remove('active'); }); }
+function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
 
-// ============ NAVIGATION ============
-function showScreen(id) {
-  ['gateScreen', 'setupScreen', 'loginScreen', 'appScreen'].forEach(s => {
-    const el = document.getElementById(s);
-    if (s === id) el.classList.add('active');
-    else el.classList.remove('active');
-  });
-}
-
-// ============ SETUP ============
-async function handleSetup() {
-  const pw1 = document.getElementById('setupPw1').value;
-  const pw2 = document.getElementById('setupPw2').value;
-  const jsonText = document.getElementById('setupJson').value.trim();
-  const errEl = document.getElementById('setupError');
+async function handleGate() {
+  const code = document.getElementById('gatePw').value;
+  const errEl = document.getElementById('gateError');
   errEl.classList.remove('visible');
-
-  if (pw1.length < 6) { showErr(errEl, 'Passwort muss mindestens 6 Zeichen lang sein.'); return; }
-  if (pw1 !== pw2) { showErr(errEl, 'Passwörter stimmen nicht überein.'); return; }
-  if (!jsonText) { showErr(errEl, 'Bitte Portfolio-Daten als JSON einfügen.'); return; }
-
-  let positions;
+  if (!code) { showErr(errEl, 'Bitte Code eingeben.'); return; }
   try {
-    positions = JSON.parse(jsonText);
-    if (!Array.isArray(positions)) throw new Error('JSON muss ein Array sein.');
-    positions.forEach((p, i) => {
-      if (!p.id || !p.name || !p.shares || p.costPrice == null) {
-        throw new Error(`Position ${i + 1}: id, name, shares, costPrice erforderlich.`);
-      }
-    });
-  } catch (e) {
-    showErr(errEl, 'JSON-Fehler: ' + e.message);
-    return;
-  }
-
-  try {
-    const data = { positions, goal: { year: 2026, amount: 15000 }, version: 1 };
-    const encrypted = await ENC.encrypt(data, pw1);
-    STORE.saveEncrypted(encrypted);
-    appData = data;
-    appPassword = pw1;
+    const data = await ENC.decrypt(BAKED_BLOB, code);
+    appData = data; appPassword = code;
+    document.getElementById('gatePw').value = '';
     showScreen('appScreen');
     await initApp();
-  } catch (e) {
-    showErr(errEl, 'Verschlüsselungsfehler: ' + e.message);
-  }
+  } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
 
-// ============ LOGIN ============
-async function handleLogin() {
-  const pw = document.getElementById('loginPw').value;
-  const errEl = document.getElementById('loginError');
-  errEl.classList.remove('visible');
+function handleLogout() { appData = null; appPassword = null; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
-  const blob = STORE.loadEncrypted();
-  if (!blob) { showScreen('setupScreen'); return; }
-
-  try {
-    const data = await ENC.decrypt(blob, pw);
-    appData = data;
-    appPassword = pw;
-    document.getElementById('loginPw').value = '';
-    showScreen('appScreen');
-    await initApp();
-  } catch (e) {
-    showErr(errEl, 'Falsches Passwort.');
-  }
-}
-
-function showErr(el, msg) {
-  el.textContent = msg;
-  el.classList.add('visible');
-}
-
-function handleLogout() {
-  appData = null;
-  appPassword = null;
-  document.getElementById('loginPw').value = '';
-  showScreen('loginScreen');
-}
-
-async function handleReset() {
-  if (!confirm('ACHTUNG: Alle Portfolio-Daten und der Gate-Zugang werden GELÖSCHT. Sicher?')) return;
-  STORE.clear();
-  clearGate();
-  appData = null;
-  appPassword = null;
-  showScreen('gateScreen');
-}
-
-// ============ DATA FETCHING (CoinGecko + manuelle Preise) ============
 async function fetchCryptoPrices() {
-  const cryptoIds = appData.positions
-    .filter(p => p.cgId)
-    .map(p => p.cgId)
-    .join(',');
+  const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
   if (!cryptoIds) return;
   try {
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`;
-    const res = await fetch(url);
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`);
     if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
     const data = await res.json();
     appData.positions.forEach(pos => {
-      if (pos.cgId && data[pos.cgId]) {
-        currentPrices[pos.id] = {
-          price: data[pos.cgId].eur,
-          changePct: data[pos.cgId].eur_24h_change,
-          live: true
-        };
-      }
+      if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true };
     });
-  } catch (e) {
-    console.warn('Crypto fetch failed:', e);
-  }
+  } catch (e) { console.warn('Crypto fetch failed:', e); }
 }
 
 function loadManualPrices() {
   appData.positions.forEach(pos => {
-    if (!pos.cgId) {
-      currentPrices[pos.id] = {
-        price: pos.manualPrice ?? pos.costPrice,
-        changePct: pos.manualChangePct ?? 0,
-        live: false
-      };
-    }
+    if (!pos.cgId) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, changePct: pos.manualChangePct ?? 0, live: false };
   });
 }
 
-// ============ RENDER ============
-function renderPositions() {
-  const container = document.getElementById('positions');
-  container.innerHTML = '';
-  appData.positions.forEach(pos => {
-    container.appendChild(buildCard(pos));
-  });
-}
+function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 function buildCard(pos) {
   const wrap = document.createElement('div');
@@ -938,7 +382,6 @@ function buildCard(pos) {
   const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
   const changeClass = live.changePct >= 0 ? 'positive' : 'negative';
   const badge = live.live ? `<span class="badge badge-live">live</span>` : `<span class="badge badge-stale">manuell</span>`;
-
   wrap.innerHTML = `
     <div class="card-head">
       <div style="min-width:0;">
@@ -951,14 +394,10 @@ function buildCard(pos) {
       </div>
     </div>
     <div class="card-body">
-      <div class="row-label">Stück</div>
-      <div class="row-value">${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)}</div>
-      <div class="row-label">Einstand/Stk.</div>
-      <div class="row-value">${fmtNum(pos.costPrice)} €</div>
-      <div class="row-label">Einstandswert</div>
-      <div class="row-value">${fmt.format(pos.costPrice * pos.shares)}</div>
-      <div class="row-label">Gesamtwert</div>
-      <div class="row-value">${fmt.format(valueEur)}</div>
+      <div class="row-label">Stück</div><div class="row-value">${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)}</div>
+      <div class="row-label">Einstand/Stk.</div><div class="row-value">${fmtNum(pos.costPrice)} €</div>
+      <div class="row-label">Einstandswert</div><div class="row-value">${fmt.format(pos.costPrice * pos.shares)}</div>
+      <div class="row-label">Gesamtwert</div><div class="row-value">${fmt.format(valueEur)}</div>
     </div>
     <div class="pnl-row">
       <span class="pnl-label">Gewinn / Verlust</span>
@@ -967,24 +406,15 @@ function buildCard(pos) {
         <div class="pnl-pct ${pnlClass}">${fmtPct(pnlPct)}</div>
       </div>
     </div>
-    <div class="card-action">
-      <button class="link-btn" data-edit-id="${pos.id}">Werte bearbeiten</button>
-    </div>
-  `;
+    <div class="card-action"><button class="link-btn" data-edit-id="${pos.id}">Werte bearbeiten</button></div>`;
   return wrap;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+function renderPositions() { const container = document.getElementById('positions'); container.innerHTML = ''; appData.positions.forEach(pos => container.appendChild(buildCard(pos))); }
 
 function renderTotals() {
   let totalCur = 0, totalCost = 0;
-  appData.positions.forEach(pos => {
-    const live = currentPrices[pos.id] || { price: pos.costPrice };
-    totalCur += live.price * pos.shares;
-    totalCost += pos.costPrice * pos.shares;
-  });
+  appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; totalCost += pos.costPrice * pos.shares; });
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
   document.getElementById('totalValue').textContent = fmt.format(totalCur);
@@ -1012,227 +442,68 @@ function renderGoal(totals) {
   document.getElementById('goalPct').textContent = `${fmtNum(progress, 1)}%`;
   document.getElementById('goalFill').style.width = `${progress}%`;
   let meta;
-  if (gap <= 0) {
-    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend`;
-  } else {
-    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
-  }
+  if (gap <= 0) meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend`;
+  else meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
   document.getElementById('goalMeta').innerHTML = meta;
-  if (appData.goal) {
-    appData.goal.year = year;
-    appData.goal.amount = amount;
-  }
+  if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; }
   return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress };
 }
 
-// ============ ANALYSIS (rule-based, kein KI) ============
 function renderAnalysis(totals, goal) {
-  const allocations = appData.positions.map(pos => {
-    const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = live.price * pos.shares;
-    return { name: pos.name, type: pos.type || '?', value, pct: (value / totals.totalCur) * 100, pnlPct: ((live.price - pos.costPrice) / pos.costPrice) * 100 };
-  }).sort((a, b) => b.pct - a.pct);
-
+  const allocations = appData.positions.map(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; const value = live.price * pos.shares; return { name: pos.name, type: pos.type || '?', value, pct: (value / totals.totalCur) * 100, pnlPct: ((live.price - pos.costPrice) / pos.costPrice) * 100 }; }).sort((a, b) => b.pct - a.pct);
   const cryptoShare = allocations.filter(a => a.type === 'Crypto').reduce((s, a) => s + a.pct, 0);
   const stockShare = allocations.filter(a => a.type === 'Aktie').reduce((s, a) => s + a.pct, 0);
   const etfShare = allocations.filter(a => a.type === 'ETF').reduce((s, a) => s + a.pct, 0);
   const largestPos = allocations[0];
-
   const obs = [];
   if (cryptoShare > 30) obs.push(`Krypto-Anteil ${fmtNum(cryptoShare, 0)}% — hoher Volatilitätsanteil.`);
   if (stockShare > 35) obs.push(`Einzelaktien-Anteil ${fmtNum(stockShare, 0)}% — Einzelwert-Konzentration prüfen.`);
   if (etfShare < 30) obs.push(`ETF-Anteil nur ${fmtNum(etfShare, 0)}% — breit gestreute Kernpositionen sind klassischer Stabilisator.`);
   if (largestPos.pct > 40) obs.push(`Größte Einzelposition (${largestPos.name}): ${fmtNum(largestPos.pct, 0)}% — überproportionales Klumpenrisiko.`);
   if (obs.length === 0) obs.push('Allokation wirkt ausgewogen.');
-
-  const allocLines = allocations.map(a =>
-    `<div>• ${escapeHtml(a.name)} (${a.type}): <strong>${fmtNum(a.pct, 1)}%</strong> · ${fmt.format(a.value)} · ${fmtPct(a.pnlPct)}</div>`
-  ).join('');
-
+  const allocLines = allocations.map(a => `<div>• ${escapeHtml(a.name)} (${a.type}): <strong>${fmtNum(a.pct, 1)}%</strong> · ${fmt.format(a.value)} · ${fmtPct(a.pnlPct)}</div>`).join('');
   let goalRealityText;
-  if (goal.gap <= 0) {
-    goalRealityText = `Ziel bereits übertroffen (<strong>${fmt.format(-goal.gap)}</strong> Puffer). Optionen: Ziel anheben oder Strategie auf Erhalt umstellen.`;
-  } else if (goal.monthsToGoal <= 12 && goal.requiredReturnPct > 30) {
-    goalRealityText = `Ziel mit reiner Marktentwicklung schwer erreichbar (${fmtNum(goal.requiredReturnPct, 0)}% in ${goal.monthsToGoal} Monaten). Realistisch ist Sparrate von <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong>.`;
-  } else {
-    goalRealityText = `Ziel mit moderater Rendite (~${fmtNum(goal.requiredReturnPct, 0)}% über ${goal.monthsToGoal} Monate) oder Sparrate von <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong> erreichbar.`;
-  }
-
-  // Options
+  if (goal.gap <= 0) goalRealityText = `Ziel bereits übertroffen (<strong>${fmt.format(-goal.gap)}</strong> Puffer). Optionen: Ziel anheben oder Strategie auf Erhalt umstellen.`;
+  else if (goal.monthsToGoal <= 12 && goal.requiredReturnPct > 30) goalRealityText = `Ziel mit reiner Marktentwicklung schwer erreichbar (${fmtNum(goal.requiredReturnPct, 0)}% in ${goal.monthsToGoal} Monaten). Realistisch ist Sparrate von <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong>.`;
+  else goalRealityText = `Ziel mit moderater Rendite (~${fmtNum(goal.requiredReturnPct, 0)}% über ${goal.monthsToGoal} Monate) oder Sparrate von <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong> erreichbar.`;
   const options = [];
-  if (etfShare < 30) {
-    const targetEtfAdd = Math.max(500, totals.totalCur * 0.1);
-    options.push(`ETF-Sparplan ~<strong>${fmt.format(targetEtfAdd / 6)}/Monat</strong> auf einen Welt-ETF (z.B. MSCI World) — würde ETF-Anteil über 6 Monate auf ~${fmtNum(etfShare + 10, 0)}% heben.`);
-  }
-  if (cryptoShare > 35) {
-    const reduceAmount = totals.totalCur * (cryptoShare - 30) / 100;
-    options.push(`Krypto-Position um ~<strong>${fmt.format(reduceAmount)}</strong> reduzieren (auf ~30% Allokation) — Volatilität sinkt deutlich.`);
-  }
-  if (largestPos.pct > 40 && largestPos.type === 'Aktie') {
-    const trimAmount = largestPos.value * 0.25;
-    options.push(`Größte Einzelposition <strong>${escapeHtml(largestPos.name)}</strong> teilweise abbauen (~<strong>${fmt.format(trimAmount)}</strong>) und in breiter gestreute Instrumente umschichten.`);
-  }
-  if (goal.gap > 0 && goal.monthlyNeeded < 1500) {
-    options.push(`Monatlicher Sparplan von <strong>${fmt.format(goal.monthlyNeeded)}</strong> reicht ohne Marktrendite — z.B. ETF-Sparplan bei Flatex/Trade Republic einrichten.`);
-  }
-  if (options.length === 0) {
-    options.push('Bei aktueller Allokation und Zielsetzung: laufender Kurs beibehalten und regelmäßig prüfen.');
-  }
-
-  const html = `
+  if (etfShare < 30) { const targetEtfAdd = Math.max(500, totals.totalCur * 0.1); options.push(`ETF-Sparplan ~<strong>${fmt.format(targetEtfAdd / 6)}/Monat</strong> auf einen Welt-ETF (z.B. MSCI World) — würde ETF-Anteil über 6 Monate auf ~${fmtNum(etfShare + 10, 0)}% heben.`); }
+  if (cryptoShare > 35) { const reduceAmount = totals.totalCur * (cryptoShare - 30) / 100; options.push(`Krypto-Position um ~<strong>${fmt.format(reduceAmount)}</strong> reduzieren (auf ~30% Allokation) — Volatilität sinkt deutlich.`); }
+  if (largestPos.pct > 40 && largestPos.type === 'Aktie') { const trimAmount = largestPos.value * 0.25; options.push(`Größte Einzelposition <strong>${escapeHtml(largestPos.name)}</strong> teilweise abbauen (~<strong>${fmt.format(trimAmount)}</strong>) und in breiter gestreute Instrumente umschichten.`); }
+  if (goal.gap > 0 && goal.monthlyNeeded < 1500) options.push(`Monatlicher Sparplan von <strong>${fmt.format(goal.monthlyNeeded)}</strong> reicht ohne Marktrendite — z.B. ETF-Sparplan bei Flatex/Trade Republic einrichten.`);
+  if (options.length === 0) options.push('Bei aktueller Allokation und Zielsetzung: laufender Kurs beibehalten und regelmäßig prüfen.');
+  document.getElementById('analysisText').innerHTML = `
     <div class="block"><strong>Lage heute:</strong> Gesamtwert ${fmt.format(totals.totalCur)}, Performance gegenüber Einstand: <span class="${totals.totalPnl >= 0 ? 'positive' : 'negative'}">${totals.totalPnl >= 0 ? '+' : ''}${fmt.format(totals.totalPnl)} (${fmtNum(totals.totalPnlPct, 1)}%)</span>.</div>
     <div class="block"><strong>Allokation:</strong><div style="margin-top:6px;font-size:12px;">${allocLines}</div></div>
     <div class="block"><strong>Auffälligkeiten:</strong><div style="margin-top:6px;">${obs.map(o => `<div>• ${o}</div>`).join('')}</div></div>
     <div class="block"><strong>Ziel-Realität:</strong> ${goalRealityText}</div>
-    <div class="block"><strong>Konkrete Optionen (keine Empfehlung):</strong><div style="margin-top:6px;">${options.map((o, i) => `<div>${i + 1}. ${o}</div>`).join('')}</div></div>
-  `;
-  document.getElementById('analysisText').innerHTML = html;
+    <div class="block"><strong>Konkrete Optionen (keine Empfehlung):</strong><div style="margin-top:6px;">${options.map((o, i) => `<div>${i + 1}. ${o}</div>`).join('')}</div></div>`;
 }
 
-// ============ EDIT MODAL ============
 let editingId = null;
+function openEditModal(posId) { const pos = appData.positions.find(p => p.id === posId); if (!pos) return; editingId = posId; document.getElementById('editTitle').textContent = pos.name; const live = currentPrices[posId] || { price: pos.costPrice }; document.getElementById('editPrice').value = live.price.toFixed(2); document.getElementById('editShares').value = pos.shares; document.getElementById('editCost').value = pos.costPrice; document.getElementById('editModal').classList.add('active'); }
+async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await refreshUI(); }
+function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
 
-function openEditModal(posId) {
-  const pos = appData.positions.find(p => p.id === posId);
-  if (!pos) return;
-  editingId = posId;
-  document.getElementById('editTitle').textContent = pos.name;
-  const live = currentPrices[posId] || { price: pos.costPrice };
-  document.getElementById('editPrice').value = live.price.toFixed(2);
-  document.getElementById('editShares').value = pos.shares;
-  document.getElementById('editCost').value = pos.costPrice;
-  document.getElementById('editModal').classList.add('active');
-}
+async function refreshUI() { loadManualPrices(); renderPositions(); const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysis(totals, goal); }
+async function initApp() { if (appData.goal) { document.getElementById('goalYear').value = String(appData.goal.year); document.getElementById('goalAmount').value = String(appData.goal.amount); } loadManualPrices(); await refreshUI(); await fetchCryptoPrices(); await refreshUI(); }
 
-async function saveEditModal() {
-  if (!editingId) return;
-  const pos = appData.positions.find(p => p.id === editingId);
-  if (!pos) return;
-  const newPrice = parseFloat(document.getElementById('editPrice').value);
-  const newShares = parseFloat(document.getElementById('editShares').value);
-  const newCost = parseFloat(document.getElementById('editCost').value);
-  if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) {
-    alert('Bitte gültige Zahlen eingeben.');
-    return;
-  }
-  pos.shares = newShares;
-  pos.costPrice = newCost;
-  if (!pos.cgId) {
-    pos.manualPrice = newPrice;
-  }
-  currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId };
-  // Verschlüsselt neu speichern
-  if (appPassword) {
-    const encrypted = await ENC.encrypt(appData, appPassword);
-    STORE.saveEncrypted(encrypted);
-  }
-  closeEditModal();
-  await refreshUI();
-}
-
-function closeEditModal() {
-  editingId = null;
-  document.getElementById('editModal').classList.remove('active');
-}
-
-// ============ REFRESH / INIT ============
-async function refreshUI() {
-  loadManualPrices(); // setze Defaults für non-crypto
-  renderPositions();
-  const totals = renderTotals();
-  const goal = renderGoal(totals);
-  renderAnalysis(totals, goal);
-}
-
-async function initApp() {
-  // Goal-Slider aus Daten setzen
-  if (appData.goal) {
-    document.getElementById('goalYear').value = String(appData.goal.year);
-    document.getElementById('goalAmount').value = String(appData.goal.amount);
-  }
-  loadManualPrices();
-  await refreshUI();
-  // Fetch Live-Crypto im Hintergrund
-  await fetchCryptoPrices();
-  await refreshUI();
-}
-
-async function saveGoalIfChanged() {
-  if (!appData || !appPassword) return;
-  const year = parseInt(document.getElementById('goalYear').value, 10);
-  const amount = parseInt(document.getElementById('goalAmount').value, 10);
-  if (appData.goal && (appData.goal.year !== year || appData.goal.amount !== amount)) {
-    appData.goal = { year, amount };
-    const encrypted = await ENC.encrypt(appData, appPassword);
-    STORE.saveEncrypted(encrypted);
-  }
-}
-
-// ============ EVENT WIRING ============
 function wireEvents() {
   document.getElementById('gateBtn').addEventListener('click', handleGate);
-  document.getElementById('gatePw').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleGate();
-  });
-  document.getElementById('setupBtn').addEventListener('click', handleSetup);
-  document.getElementById('loginBtn').addEventListener('click', handleLogin);
-  document.getElementById('resetBtn').addEventListener('click', handleReset);
+  document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-  document.getElementById('refreshBtn').addEventListener('click', async () => {
-    if (!appData) return;
-    await fetchCryptoPrices();
-    await refreshUI();
-  });
-
-  // Login: Enter-Taste
-  document.getElementById('loginPw').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleLogin();
-  });
-
-  // Goal-Slider: Live-Update + Save
-  let goalSaveTimer = null;
-  ['goalYear', 'goalAmount'].forEach(id => {
-    document.getElementById(id).addEventListener('input', async () => {
-      if (!appData) return;
-      const totals = renderTotals();
-      const goal = renderGoal(totals);
-      renderAnalysis(totals, goal);
-      clearTimeout(goalSaveTimer);
-      goalSaveTimer = setTimeout(saveGoalIfChanged, 800);
-    });
-  });
-
-  // Edit-Button delegation
-  document.getElementById('positions').addEventListener('click', e => {
-    const btn = e.target.closest('[data-edit-id]');
-    if (btn) openEditModal(btn.dataset.editId);
-  });
+  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await refreshUI(); });
+  ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysis(totals, goal); }); });
+  document.getElementById('positions').addEventListener('click', e => { const btn = e.target.closest('[data-edit-id]'); if (btn) openEditModal(btn.dataset.editId); });
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   document.getElementById('editSave').addEventListener('click', saveEditModal);
-  document.getElementById('editModal').addEventListener('click', e => {
-    if (e.target.id === 'editModal') closeEditModal();
-  });
+  document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
 }
 
-// ============ BOOTSTRAP ============
-function bootstrap() {
-  initTheme();
-  wireEvents();
-  if (!isGatePassed()) {
-    showScreen('gateScreen');
-  } else if (STORE.hasData()) {
-    showScreen('loginScreen');
-  } else {
-    showScreen('setupScreen');
-  }
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootstrap);
-} else {
-  bootstrap();
-}
+function bootstrap() { initTheme(); wireEvents(); showScreen('gateScreen'); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
+else bootstrap();
 </script>
 </body>
 </html>
