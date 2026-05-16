@@ -249,6 +249,134 @@
   .modal-field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
   .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
   .modal-actions button { flex: 1; }
+  /* ===== ASSET-ALLOKATION ===== */
+  .alloc-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .alloc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .alloc-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0; }
+  .alloc-title svg { width: 16px; height: 16px; stroke: var(--positive); fill: none; }
+  .alloc-score-wrap { text-align: right; }
+  .alloc-score-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
+  .alloc-score-value { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .alloc-score-value .denom { font-size: 11px; color: var(--text-muted); }
+  .alloc-score-value.score-high { color: var(--positive); }
+  .alloc-score-value.score-mid { color: #fbbf24; }
+  .alloc-score-value.score-low { color: var(--negative); }
+  .alloc-bar { display: flex; height: 20px; border-radius: 6px; overflow: hidden; margin-bottom: 10px; background: var(--bg-track); }
+  .alloc-seg { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff; transition: width 0.4s ease; min-width: 0; overflow: hidden; white-space: nowrap; }
+  .alloc-seg-etf { background: #3b82f6; }
+  .alloc-seg-aktie { background: #10b981; }
+  .alloc-seg-gold { background: #f59e0b; }
+  .alloc-seg-crypto { background: #a855f7; }
+  .alloc-seg-cash { background: #6b7280; }
+  .alloc-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 11px; line-height: 1.6; }
+  .alloc-legend-item { display: flex; justify-content: space-between; align-items: center; }
+  .alloc-legend-item strong { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .alloc-legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+  .alloc-crypto-drill { background: var(--bg-secondary); border-radius: 8px; padding: 8px 10px; font-size: 11px; color: var(--text-secondary); margin-top: 10px; }
+  .alloc-crypto-title { font-weight: 500; color: #a855f7; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .alloc-crypto-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .alloc-crypto-tag { background: rgba(168,85,247,0.12); color: #c4b5fd; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-variant-numeric: tabular-nums; }
+  body.light .alloc-crypto-tag { background: rgba(168,85,247,0.18); color: #7e22ce; }
+  /* ===== RISK-BADGES ===== */
+  .risk-badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 500; letter-spacing: 0.2px; }
+  .risk-low { background: rgba(34,197,94,0.18); color: #4ade80; }
+  .risk-medium { background: rgba(245,158,11,0.18); color: #fbbf24; }
+  .risk-high { background: rgba(239,68,68,0.18); color: #fca5a5; }
+  .risk-very-high { background: rgba(220,38,38,0.22); color: #fca5a5; }
+  body.light .risk-low { background: #dcfce7; color: #166534; }
+  body.light .risk-medium { background: #fef3c7; color: #92400e; }
+  body.light .risk-high { background: #fee2e2; color: #991b1b; }
+  body.light .risk-very-high { background: #fecaca; color: #7f1d1d; }
+  /* ===== KOLLABIERBARE KARTEN ===== */
+  .card { cursor: pointer; }
+  .card.expanded { cursor: default; }
+  .card.special { cursor: default; }
+  .card-collapsed-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .card-collapsed-left { min-width: 0; flex: 1; }
+  .card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+  .card-name-row .card-name { font-size: 14px; font-weight: 500; margin: 0; }
+  .card-meta-line { font-size: 10px; color: var(--text-tertiary); }
+  .card-meta-line .pct-portfolio { color: var(--text-secondary); }
+  .card-meta-line .pct-portfolio.warn { color: #fca5a5; }
+  .card-pnl-mini { text-align: right; flex-shrink: 0; }
+  .card-pnl-mini .val { font-size: 14px; font-weight: 500; }
+  .card-pnl-mini .pct { font-size: 11px; }
+  .card-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
+  .card-chevron svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .card.expanded .card-chevron { transform: rotate(180deg); }
+  .card-expanded-content { display: none; margin-top: 10px; }
+  .card.expanded .card-expanded-content { display: block; }
+  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-secondary); border-radius: 8px; padding: 10px; font-size: 12px; margin-bottom: 10px; }
+  .price-grid-cell .lbl { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .price-grid-cell .val { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .price-grid-cell .val.positive { color: var(--positive); }
+  .price-grid-cell .val.negative { color: var(--negative); }
+  .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
+  body.light .warn-box { background: rgba(245,158,11,0.12); color: #92400e; }
+  /* ===== CHART TABS + LADEANIMATION ===== */
+  .chart-controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .chart-tabs { display: inline-flex; background: var(--bg-track); border-radius: 6px; padding: 2px; }
+  .chart-tab { background: transparent; border: 0; color: var(--text-tertiary); font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
+  .chart-tab.active { background: var(--positive); color: var(--bg-page); font-weight: 500; }
+  .chart-loading { position: relative; height: 130px; background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; }
+  .chart-loading-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .chart-loading-label { font-size: 12px; color: var(--text-secondary); }
+  .chart-loading-eta { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .chart-loading-bar { width: 100%; height: 5px; background: var(--bg-track); border-radius: 3px; overflow: hidden; }
+  .chart-loading-fill { height: 100%; background: linear-gradient(90deg, var(--positive-strong), var(--positive)); border-radius: 3px; width: 0%; }
+  .chart-loading-source { font-size: 10px; color: var(--text-muted); margin-top: 10px; text-align: center; }
+  .chart-no-data { height: 130px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); padding: 10px; text-align: center; }
+  /* ===== KI-EMPFEHLUNG ===== */
+  .rec-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .rec-card.rec-hold { border-color: rgba(34,197,94,0.4); }
+  .rec-card.rec-buy { border-color: rgba(34,197,94,0.4); }
+  .rec-card.rec-trim { border-color: rgba(245,158,11,0.4); }
+  .rec-card.rec-watch { border-color: var(--border); }
+  .rec-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rec-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+  .rec-card.rec-hold .rec-icon { background: rgba(34,197,94,0.18); color: var(--positive); }
+  .rec-card.rec-buy .rec-icon { background: rgba(34,197,94,0.18); color: var(--positive); }
+  .rec-card.rec-trim .rec-icon { background: rgba(245,158,11,0.18); color: #fbbf24; }
+  .rec-card.rec-watch .rec-icon { background: var(--bg-track); color: var(--text-secondary); }
+  .rec-body { flex: 1; min-width: 0; }
+  .rec-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+  .rec-action { font-size: 13px; font-weight: 500; }
+  .rec-card.rec-hold .rec-action, .rec-card.rec-buy .rec-action { color: var(--positive); }
+  .rec-card.rec-trim .rec-action { color: #fbbf24; }
+  .rec-card.rec-watch .rec-action { color: var(--text-secondary); }
+  .rec-reason { font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  /* ===== CASH/GOLD SPEZIAL-KARTEN ===== */
+  .special-card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .special-slider-wrap { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 11px; background: var(--bg-secondary); border-radius: 8px; padding: 8px 10px; }
+  .special-slider-wrap input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--bg-track); border-radius: 2px; outline: none; margin: 0; }
+  .special-slider-wrap input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); }
+  .special-slider-wrap input[type=range]::-moz-range-thumb { width: 18px; height: 18px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); }
+  .special-slider-wrap.gold input[type=range]::-webkit-slider-thumb { background: #f59e0b; }
+  .special-slider-wrap.gold input[type=range]::-moz-range-thumb { background: #f59e0b; }
+  .special-slider-min, .special-slider-max { color: var(--text-tertiary); }
+  .special-slider-val { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  /* ===== SPARPLAN-SIMULATION ===== */
+  .savings-sim-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .savings-sim-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0 0 8px 0; }
+  .savings-sim-head svg { width: 16px; height: 16px; stroke: var(--positive); fill: none; }
+  .savings-sim-sub { font-size: 11px; color: var(--text-tertiary); margin-bottom: 10px; }
+  .savings-sim-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; font-size: 12px; align-items: center; }
+  .savings-sim-rate { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .savings-sim-rate.current { font-weight: 600; color: var(--text-primary); }
+  .savings-sim-bar { height: 8px; background: var(--bg-track); border-radius: 4px; overflow: hidden; }
+  .savings-sim-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .savings-sim-fill.late { background: var(--negative); }
+  .savings-sim-fill.tight { background: #fbbf24; }
+  .savings-sim-fill.fit { background: var(--positive); }
+  .savings-sim-fill.early { background: var(--positive); }
+  .savings-sim-tag { font-size: 11px; font-variant-numeric: tabular-nums; }
+  .savings-sim-tag.late { color: var(--negative); }
+  .savings-sim-tag.tight { color: #fbbf24; }
+  .savings-sim-tag.fit { color: var(--positive); font-weight: 500; }
+  .savings-sim-tag.early { color: #4ade80; }
+  .savings-sim-note { background: rgba(34,197,94,0.08); border-radius: 8px; padding: 8px 10px; font-size: 11px; color: var(--text-secondary); margin-top: 10px; line-height: 1.5; }
+  body.light .savings-sim-note { background: rgba(22,163,74,0.08); }
+  .positions-head-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; margin: 0 4px 8px 4px; display: flex; justify-content: space-between; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
 </head>
@@ -317,7 +445,6 @@
       </button>
     </div>
   </div>
-  <div class="positions" id="positions"></div>
   <div class="add-position-section">
     <div class="add-pos-head">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -335,6 +462,26 @@
     </div>
     <div class="add-pos-hint">Screenshot deines Depot-Eintrags hochladen — Haiku liest Stück, Einstand und Kurs automatisch aus</div>
   </div>
+  <div class="alloc-section">
+    <div class="alloc-head">
+      <h2 class="alloc-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        <span>Asset-Allokation</span>
+      </h2>
+      <div class="alloc-score-wrap">
+        <div class="alloc-score-label">Diversifikation</div>
+        <div class="alloc-score-value" id="allocScore">—<span class="denom">/100</span></div>
+      </div>
+    </div>
+    <div class="alloc-bar" id="allocBar"></div>
+    <div class="alloc-legend" id="allocLegend"></div>
+    <div class="alloc-crypto-drill" id="allocCryptoDrill" style="display:none;">
+      <div class="alloc-crypto-title" id="allocCryptoTitle">Krypto-Aufteilung</div>
+      <div class="alloc-crypto-tags" id="allocCryptoTags"></div>
+    </div>
+  </div>
+  <div class="positions-head-label"><span>Positionen</span><span>Tap zum Aufklappen</span></div>
+  <div class="positions" id="positions"></div>
   <div class="history-section">
     <div class="history-head">
       <h2 class="history-title">Depot-Entwicklung</h2>
@@ -360,6 +507,15 @@
       <div class="slider-row"><label for="goalSavings">Sparrate</label><input type="range" id="goalSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalSavingsVal">0 €</span></div>
     </div>
     <div class="goal-meta" id="goalMeta">—</div>
+  </div>
+  <div class="savings-sim-section">
+    <h2 class="savings-sim-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="12" y1="10" x2="14" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="12" y1="18" x2="14" y2="18"/></svg>
+      <span>Sparplan-Simulation</span>
+    </h2>
+    <div class="savings-sim-sub" id="savingsSimSub">—</div>
+    <div class="savings-sim-grid" id="savingsSimGrid"></div>
+    <div class="savings-sim-note" id="savingsSimNote">—</div>
   </div>
   <div class="analysis-section">
     <div class="analysis-head">
@@ -456,6 +612,15 @@
     <div class="modal-field"><label>Aktueller Kurs (EUR)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
     <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
     <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
+    <div class="modal-field"><label>Risiko-Level</label>
+      <select id="editRisk" class="auth-input">
+        <option value="">Automatisch (basierend auf Typ)</option>
+        <option value="low">Niedrig</option>
+        <option value="medium">Mittel</option>
+        <option value="high">Hoch</option>
+        <option value="very-high">Sehr hoch</option>
+      </select>
+    </div>
     <div class="modal-actions"><button class="auth-btn secondary" id="editCancel">Abbrechen</button><button class="auth-btn" id="editSave">Speichern</button></div>
   </div>
 </div>
@@ -661,6 +826,240 @@ function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function getThemeColors() { const cs = getComputedStyle(document.body); return { tooltipBg: cs.getPropertyValue('--tooltip-bg').trim(), tooltipText: cs.getPropertyValue('--tooltip-text').trim(), gridColor: cs.getPropertyValue('--chart-grid').trim(), axisText: cs.getPropertyValue('--chart-axis').trim() }; }
 
+// ===== RISIKO + KATEGORIEN =====
+const SMALLCAP_CRYPTO_IDS = ['sui', 'apex', 'aptos', 'arbitrum', 'optimism', 'celestia', 'sei-network', 'injective-protocol', 'starknet'];
+function deriveRisk(pos) {
+  if (pos.risk) return pos.risk;
+  if (pos.special === 'cash') return 'low';
+  if (pos.special === 'gold') return 'medium';
+  const type = (pos.type || '').toLowerCase();
+  if (type === 'etf') {
+    const name = (pos.name || '').toLowerCase();
+    if (name.includes('msci world') || name.includes('s&p 500') || name.includes('ftse all')) return 'low';
+    return 'medium';
+  }
+  if (type === 'aktie' || type === 'stock') return 'medium';
+  if (type === 'crypto') {
+    const id = (pos.cgId || '').toLowerCase();
+    if (id === 'bitcoin' || id === 'ethereum') return 'medium';
+    if (SMALLCAP_CRYPTO_IDS.includes(id)) return 'very-high';
+    return 'high';
+  }
+  return 'medium';
+}
+function riskLabel(r) { return { 'low': 'NIEDRIG', 'medium': 'MITTEL', 'high': 'HOCH', 'very-high': 'SEHR HOCH' }[r] || 'MITTEL'; }
+function categoryOf(pos) {
+  if (pos.special === 'cash') return 'cash';
+  if (pos.special === 'gold') return 'gold';
+  const t = (pos.type || '').toLowerCase();
+  if (t === 'crypto') return 'crypto';
+  if (t === 'etf') return 'etf';
+  if (t === 'aktie' || t === 'stock') return 'aktie';
+  return 'aktie';
+}
+
+// ===== ASSET-ALLOKATION =====
+function buildAllSpecialPositions() {
+  // Konstruiert virtuelle Cash + Gold Positionen aus appData.goal
+  const list = [];
+  if (!appData) return list;
+  const goldGrams = appData.goal?.goldGrams || 0;
+  const goldPrice = appData.goal?.goldPrice || 71.40;
+  if (goldGrams > 0) list.push({ id: '__gold', special: 'gold', name: 'Gold', type: 'Edelmetall', symbol: `${goldPrice.toFixed(2)} €/g`, shares: goldGrams, costPrice: goldPrice, manualPrice: goldPrice });
+  const cash = appData.goal?.cash || 0;
+  if (cash > 0) list.push({ id: '__cash', special: 'cash', name: 'Cash', type: 'Bargeld', symbol: 'Verrechnungskonto', shares: 1, costPrice: cash, manualPrice: cash });
+  return list;
+}
+function getAllPositions() {
+  return [...(appData?.positions || []), ...buildAllSpecialPositions()];
+}
+function getCategoryAllocation(totalCur) {
+  const cats = { etf: 0, aktie: 0, crypto: 0, gold: 0, cash: 0 };
+  getAllPositions().forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : (pos.special === 'gold') ? (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40) : live.price * pos.shares;
+    cats[categoryOf(pos)] += value;
+  });
+  const result = {};
+  for (const k of Object.keys(cats)) result[k] = totalCur > 0 ? (cats[k] / totalCur) * 100 : 0;
+  return { pcts: result, abs: cats };
+}
+function getCryptoBreakdown(totalCur) {
+  const arr = [];
+  (appData?.positions || []).filter(p => categoryOf(p) === 'crypto').forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    const value = live.price * pos.shares;
+    arr.push({ name: pos.name, pct: totalCur > 0 ? (value / totalCur) * 100 : 0 });
+  });
+  return arr.sort((a, b) => b.pct - a.pct);
+}
+function computeDiversificationScore(alloc, totalCur) {
+  if (!totalCur || totalCur <= 0) return 0;
+  let score = 0;
+  // Anzahl Positionen (max 25)
+  const count = getAllPositions().length;
+  score += Math.min(25, count * 5);
+  // Maximale Einzelposition (max 25)
+  let maxPct = 0;
+  getAllPositions().forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : (pos.special === 'gold') ? (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40) : live.price * pos.shares;
+    const pct = (value / totalCur) * 100;
+    if (pct > maxPct) maxPct = pct;
+  });
+  if (maxPct < 25) score += 25;
+  else if (maxPct < 40) score += 15;
+  else if (maxPct < 55) score += 5;
+  // ETF-Anteil (max 20)
+  if (alloc.pcts.etf >= 40) score += 20;
+  else if (alloc.pcts.etf >= 20) score += 12;
+  else if (alloc.pcts.etf >= 10) score += 6;
+  // Cash + Gold Stabilisator (max 15)
+  const stable = alloc.pcts.cash + alloc.pcts.gold;
+  if (stable >= 10) score += 15;
+  else if (stable >= 5) score += 8;
+  else if (stable > 0) score += 3;
+  // Krypto-Anteil (max 15) — moderates Risiko erwünscht
+  if (alloc.pcts.crypto >= 5 && alloc.pcts.crypto <= 30) score += 15;
+  else if (alloc.pcts.crypto < 5) score += 8;
+  else if (alloc.pcts.crypto <= 50) score += 5;
+  return Math.min(100, Math.round(score));
+}
+function renderAllocation(totals) {
+  if (!totals || totals.totalCur <= 0) return;
+  const alloc = getCategoryAllocation(totals.totalCur);
+  const bar = document.getElementById('allocBar');
+  const legend = document.getElementById('allocLegend');
+  if (!bar || !legend) return;
+  const segs = [
+    { key: 'etf', label: 'ETF', cls: 'alloc-seg-etf', color: '#3b82f6' },
+    { key: 'aktie', label: 'Aktie', cls: 'alloc-seg-aktie', color: '#10b981' },
+    { key: 'gold', label: 'Au', cls: 'alloc-seg-gold', color: '#f59e0b' },
+    { key: 'crypto', label: 'Krypto', cls: 'alloc-seg-crypto', color: '#a855f7' },
+    { key: 'cash', label: 'Cash', cls: 'alloc-seg-cash', color: '#6b7280' }
+  ];
+  bar.innerHTML = segs.filter(s => alloc.pcts[s.key] > 0).map(s => `<div class="alloc-seg ${s.cls}" style="width:${alloc.pcts[s.key]}%">${alloc.pcts[s.key] >= 12 ? s.label + ' ' + Math.round(alloc.pcts[s.key]) + ' %' : ''}</div>`).join('');
+  const legendNames = { etf: 'ETF', aktie: 'Aktie', gold: 'Gold', crypto: 'Krypto', cash: 'Cash' };
+  legend.innerHTML = segs.filter(s => alloc.pcts[s.key] > 0).map(s => `<div class="alloc-legend-item"><span><span class="alloc-legend-dot" style="background:${s.color}"></span>${legendNames[s.key]}</span><strong>${fmtNum(alloc.pcts[s.key], 1)} %</strong></div>`).join('');
+  // Diversifikations-Score
+  const score = computeDiversificationScore(alloc, totals.totalCur);
+  const scoreEl = document.getElementById('allocScore');
+  if (scoreEl) {
+    scoreEl.innerHTML = `${score}<span class="denom">/100</span>`;
+    scoreEl.className = 'alloc-score-value ' + (score >= 70 ? 'score-high' : score >= 45 ? 'score-mid' : 'score-low');
+  }
+  // Krypto-Drilldown
+  const drill = document.getElementById('allocCryptoDrill');
+  const tags = document.getElementById('allocCryptoTags');
+  const title = document.getElementById('allocCryptoTitle');
+  if (drill && tags && title) {
+    const breakdown = getCryptoBreakdown(totals.totalCur);
+    if (breakdown.length > 0) {
+      title.textContent = `Krypto-Aufteilung (${fmtNum(alloc.pcts.crypto, 0)} %)`;
+      tags.innerHTML = breakdown.map(b => `<span class="alloc-crypto-tag">${escapeHtml(b.name)} ${fmtNum(b.pct, 0)} %</span>`).join('');
+      drill.style.display = '';
+    } else { drill.style.display = 'none'; }
+  }
+  return alloc;
+}
+
+// ===== KI-EMPFEHLUNG pro Position (heuristisch) =====
+function getRecommendation(pos, totals, alloc) {
+  if (pos.special === 'cash' || pos.special === 'gold') return null;
+  const live = currentPrices[pos.id] || { price: pos.costPrice };
+  const value = live.price * pos.shares;
+  const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
+  const pnlPct = ((live.price - pos.costPrice) / pos.costPrice) * 100;
+  const risk = deriveRisk(pos);
+  // Regeln (Reihenfolge ist wichtig)
+  if (pct > 35 && (risk === 'high' || risk === 'very-high')) return { action: 'Teilverkauf', reason: `Klumpenrisiko bei volatilem Asset — ca. 25 % der Position (~${fmt.format(value * 0.25)}) reduzieren.`, kind: 'trim' };
+  if (pct > 35) return { action: 'Teilverkauf', reason: `${fmtNum(pct, 0)} % deines Depots in einer Position — Klumpenrisiko reduzieren.`, kind: 'trim' };
+  if (pnlPct < -20 && risk === 'low') return { action: 'Nachkaufen', reason: `Position ist ${fmtNum(pnlPct, 1)} % unter Einstand, Risk niedrig — Cost-Averaging-Chance.`, kind: 'buy' };
+  if (pnlPct < -15 && (risk === 'high' || risk === 'very-high')) return { action: 'Beobachten', reason: `${fmtNum(pnlPct, 1)} % im Minus bei hohem Risiko — Trend abwarten, nicht emotional verkaufen.`, kind: 'watch' };
+  if (pnlPct > 50 && (risk === 'high' || risk === 'very-high')) return { action: 'Teilverkauf', reason: `+${fmtNum(pnlPct, 0)} % Gewinn bei volatilem Asset — Teilgewinn realisieren sinnvoll.`, kind: 'trim' };
+  if (pnlPct > 30 && pct < 10) return { action: 'Halten', reason: `Position läuft gut (+${fmtNum(pnlPct, 0)} %) und Allokation moderat — Position belassen.`, kind: 'hold' };
+  return { action: 'Halten', reason: `Allokation (${fmtNum(pct, 0)} %) und Performance (${fmtNum(pnlPct, 1)} %) im Rahmen — keine Aktion nötig.`, kind: 'hold' };
+}
+function recIcon(kind) {
+  const icons = {
+    hold: '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>',
+    buy: '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    trim: '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    watch: '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+  };
+  return icons[kind] || icons.hold;
+}
+
+// ===== CHART TABS + LADEANIMATION =====
+const chartCache = {};   // { posId: { day: pts, week: pts, month: pts } }
+const chartTabState = {}; // { posId: 'day'|'week'|'month' }
+function showChartLoading(posId, periodLabel) {
+  const wrap = document.getElementById(`chartWrap-${posId}`);
+  if (!wrap) return;
+  const isLive = !!(appData.positions.find(p => p.id === posId)?.cgId);
+  const src = isLive ? `CoinGecko · ${periodLabel}-Verlauf` : 'Snapshot-Daten';
+  wrap.innerHTML = `<div class="chart-loading">
+    <div class="chart-loading-row">
+      <span class="chart-loading-label">${periodLabel}chart wird geladen…</span>
+      <span class="chart-loading-eta" id="chartEta-${posId}">~3 Sek</span>
+    </div>
+    <div class="chart-loading-bar"><div class="chart-loading-fill" id="chartFill-${posId}"></div></div>
+    <div class="chart-loading-source">${src}</div>
+  </div>`;
+  setTimeout(() => { const f = document.getElementById(`chartFill-${posId}`); if (f) { f.style.transition = 'width 2.5s ease'; f.style.width = '90%'; } }, 30);
+}
+function showChartNoData(posId, msg) {
+  const wrap = document.getElementById(`chartWrap-${posId}`);
+  if (wrap) wrap.innerHTML = `<div class="chart-no-data">${msg}</div>`;
+}
+async function fetchChartData(pos, period) {
+  if (!chartCache[pos.id]) chartCache[pos.id] = {};
+  if (chartCache[pos.id][period]) return chartCache[pos.id][period];
+  if (pos.cgId) {
+    const days = period === 'day' ? 1 : period === 'week' ? 7 : 30;
+    try {
+      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${pos.cgId}/market_chart?vs_currency=eur&days=${days}`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const pts = data.prices || [];
+      const step = Math.max(1, Math.floor(pts.length / (period === 'day' ? 24 : period === 'week' ? 14 : 30)));
+      const sampled = [];
+      for (let i = 0; i < pts.length; i += step) sampled.push(pts[i]);
+      if (pts.length && sampled[sampled.length - 1] !== pts[pts.length - 1]) sampled.push(pts[pts.length - 1]);
+      const out = sampled.map(([ts, price]) => { const d = new Date(ts); const label = period === 'day' ? String(d.getHours()).padStart(2, '0') + ':00' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0'); return { date: label, price, label }; });
+      chartCache[pos.id][period] = out;
+      return out;
+    } catch (e) { return null; }
+  } else {
+    // Manuelle Positionen
+    if (period === 'day') return 'no-day';
+    if (period === 'week' && pos.weeklyHistory) { chartCache[pos.id].week = pos.weeklyHistory.map(p => ({ ...p, label: p.date })); return chartCache[pos.id].week; }
+    if (period === 'month' && pos.monthlyHistory) { chartCache[pos.id].month = pos.monthlyHistory.map(p => ({ date: p.date, price: p.price, label: p.date })); return chartCache[pos.id].month; }
+    return null;
+  }
+}
+async function loadChartForPosition(pos, period) {
+  chartTabState[pos.id] = period;
+  const periodLabel = period === 'day' ? 'Tag' : period === 'week' ? 'Wochen' : 'Monats';
+  // Tab-Buttons aktivieren
+  document.querySelectorAll(`#chartTabs-${pos.id} .chart-tab`).forEach(b => b.classList.toggle('active', b.dataset.period === period));
+  showChartLoading(pos.id, periodLabel);
+  const data = await fetchChartData(pos, period);
+  const wrap = document.getElementById(`chartWrap-${pos.id}`);
+  if (!wrap) return;
+  if (data === 'no-day') { showChartNoData(pos.id, 'Tagesverlauf nur bei Live-Crypto verfügbar — bitte Woche oder Monat wählen.'); return; }
+  if (!data || data.length < 2) { showChartNoData(pos.id, 'Keine Chart-Daten verfügbar.'); return; }
+  wrap.innerHTML = `<canvas id="chart-${pos.id}"></canvas>`;
+  renderChart(`chart-${pos.id}`, data, 'price', {});
+  const stampEl = document.getElementById(`chartStamp-${pos.id}`);
+  if (stampEl) {
+    const first = data[0].price, last = data[data.length - 1].price;
+    const deltaPct = ((last - first) / first) * 100;
+    const live = pos.cgId ? `Live · ${new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}` : 'manuelle Snapshots';
+    stampEl.textContent = `${periodLabel === 'Tag' ? 'Letzte 24h' : periodLabel === 'Wochen' ? 'Letzte 7 Tage' : 'Letzte 30 Tage'} · ${deltaPct >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} % · ${live}`;
+  }
+}
+
 async function handleGate() {
   const code = document.getElementById('gatePw').value;
   const errEl = document.getElementById('gateError');
@@ -686,13 +1085,19 @@ function handleLogout() { appData = null; appPassword = null; currentPrices = {}
 
 async function fetchCryptoPrices() {
   const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
-  if (!cryptoIds) return;
+  // PAX Gold (PAXG) mit-fetchen für Gold-Spotpreis (1 PAXG = 1 troy ounce)
+  const allIds = cryptoIds ? cryptoIds + ',pax-gold' : 'pax-gold';
   try {
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`);
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${allIds}&vs_currencies=eur&include_24hr_change=true`);
     if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
     const data = await res.json();
     appData.positions.forEach(pos => { if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true }; });
-  } catch (e) { console.warn('Crypto fetch failed:', e); }
+    if (data['pax-gold'] && data['pax-gold'].eur) {
+      const pricePerGram = data['pax-gold'].eur / 31.1035;
+      if (!appData.goal) appData.goal = {};
+      appData.goal.goldPrice = pricePerGram;
+    }
+  } catch (e) { console.warn('Crypto/Gold fetch failed:', e); }
 }
 
 async function fetchCryptoWeekly(cgId) {
@@ -743,55 +1148,154 @@ function reRenderAllCharts() {
   Object.entries(chartRegistry).forEach(([id, entry]) => { if (entry?.points) renderChart(id, entry.points, entry.valueKey, entry.opts); });
 }
 
-function buildCard(pos) {
+function buildCard(pos, totals, alloc) {
   const wrap = document.createElement('div');
   wrap.className = 'card';
   wrap.id = `card-${pos.id}`;
+  wrap.dataset.posId = pos.id;
   const live = currentPrices[pos.id] || { price: pos.costPrice, changePct: 0, live: false };
   const valueEur = live.price * pos.shares;
-  const pnlAbs = valueEur - (pos.costPrice * pos.shares);
-  const pnlPct = (pnlAbs / (pos.costPrice * pos.shares)) * 100;
+  const costValue = pos.costPrice * pos.shares;
+  const pnlAbs = valueEur - costValue;
+  const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
   const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
-  const changeClass = live.changePct >= 0 ? 'positive' : 'negative';
-  const badge = live.live ? `<span class="badge badge-live">live</span>` : `<span class="badge badge-stale">manuell</span>`;
+  const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
+  const isClump = pctPortfolio > 30;
+  const risk = deriveRisk(pos);
+  const liveBadge = pos.cgId ? `<span class="risk-badge risk-low">LIVE</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
+  const portfolioInfo = isClump ? `<span class="pct-portfolio warn">${fmtNum(pctPortfolio, 0)} % Portfolio · Klumpenrisiko</span>` : `<span class="pct-portfolio">${fmtNum(pctPortfolio, 0)} % Portfolio</span>`;
+  const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
+  const rec = getRecommendation(pos, totals, alloc);
+  const recBlock = rec ? `<div class="rec-card rec-${rec.kind}"><div class="rec-icon">${recIcon(rec.kind)}</div><div class="rec-body"><div class="rec-label">KI-Empfehlung</div><div class="rec-action">${escapeHtml(rec.action)}</div><div class="rec-reason">${escapeHtml(rec.reason)}</div></div></div>` : '';
   wrap.innerHTML = `
-    <div class="card-head">
-      <div style="min-width:0;"><div class="card-name">${escapeHtml(pos.name)}</div><div class="card-meta">${pos.type || ''} · ${pos.symbol || ''}${badge}</div></div>
-      <div class="card-price"><div class="price-value">${fmtNum(live.price)} €</div><div class="price-change ${changeClass}">${fmtPct(live.changePct)}</div></div>
+    <div class="card-collapsed-row">
+      <div class="card-collapsed-left">
+        <div class="card-name-row">
+          <span class="card-name">${escapeHtml(pos.name)}</span>
+          <span class="risk-badge risk-${risk}">${riskLabel(risk)}</span>
+          ${liveBadge}
+        </div>
+        <div class="card-meta-line">${escapeHtml(pos.type || '')} · ${escapeHtml(pos.symbol || '')} · ${portfolioInfo}</div>
+      </div>
+      <div class="card-pnl-mini">
+        <div class="val ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div>
+        <div class="pct ${pnlClass}">${fmtPct(pnlPct)}</div>
+      </div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></div>
     </div>
-    <div class="card-body">
-      <div class="row-label">Stück</div><div class="row-value">${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)}</div>
-      <div class="row-label">Einstand/Stk.</div><div class="row-value">${fmtNum(pos.costPrice)} €</div>
-      <div class="row-label">Einstandswert</div><div class="row-value">${fmt.format(pos.costPrice * pos.shares)}</div>
-      <div class="row-label">Gesamtwert</div><div class="row-value">${fmt.format(valueEur)}</div>
-    </div>
-    <div class="pnl-row"><span class="pnl-label">Gewinn / Verlust</span><div style="text-align:right"><div class="pnl-value ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div><div class="pnl-pct ${pnlClass}">${fmtPct(pnlPct)}</div></div></div>
-    <div class="chart-section"><div class="chart-label">Wochenchart</div><div class="chart-wrap"><canvas id="spark-${pos.id}"></canvas></div><div class="chart-stamp" id="stamp-${pos.id}">—</div></div>
-    <div class="card-action-row">
-      <button class="pos-action-btn" data-edit-id="${pos.id}">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        <span>Bearbeiten</span>
-      </button>
-      <button class="pos-action-btn danger" data-remove-id="${pos.id}">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-        <span>Entfernen</span>
-      </button>
+    <div class="card-expanded-content">
+      <div class="price-grid">
+        <div class="price-grid-cell"><div class="lbl">Ø Einstieg</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Aktuell</div><div class="val">${fmtNum(live.price)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Abstand</div><div class="val ${pnlClass}">${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 1)} %</div></div>
+        <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
+      </div>
+      <div class="chart-controls-row">
+        <div class="chart-label">Kursverlauf</div>
+        <div class="chart-tabs" id="chartTabs-${pos.id}">
+          <button class="chart-tab" data-period="day">Tag</button>
+          <button class="chart-tab active" data-period="week">Woche</button>
+          <button class="chart-tab" data-period="month">Monat</button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chartWrap-${pos.id}" style="height:130px;"></div>
+      <div class="chart-stamp" id="chartStamp-${pos.id}">&nbsp;</div>
+      ${warning}
+      ${recBlock}
+      <div class="card-action-row">
+        <button class="pos-action-btn" data-edit-id="${pos.id}">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Bearbeiten</span>
+        </button>
+        <button class="pos-action-btn danger" data-remove-id="${pos.id}">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          <span>Entfernen</span>
+        </button>
+      </div>
     </div>`;
   return wrap;
 }
 
-function renderPositions() {
+function buildSpecialCard(kind, totals) {
+  const wrap = document.createElement('div');
+  wrap.className = 'card special';
+  if (kind === 'gold') {
+    const grams = appData.goal?.goldGrams || 0;
+    const price = appData.goal?.goldPrice || 71.40;
+    const value = grams * price;
+    const pct = totals && totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
+    wrap.id = 'card-gold';
+    wrap.innerHTML = `
+      <div class="special-card-row">
+        <div class="card-collapsed-left">
+          <div class="card-name-row"><span class="card-name">Gold</span><span class="risk-badge risk-medium">MITTEL</span><span class="risk-badge risk-medium">SPOT</span></div>
+          <div class="card-meta-line">Edelmetall · ${fmtNum(price, 2)} €/g · <span class="pct-portfolio">${fmtNum(pct, 0)} % Portfolio</span></div>
+        </div>
+        <div class="card-pnl-mini">
+          <div class="val">${fmt.format(value)}</div>
+          <div class="pct" style="color:#fbbf24;">${fmtNum(grams, 1)} g</div>
+        </div>
+      </div>
+      <div class="special-slider-wrap gold">
+        <span class="special-slider-min">0 g</span>
+        <input type="range" id="goldSlider" min="0" max="500" step="10" value="${grams}">
+        <span class="special-slider-val" id="goldSliderVal">${fmtNum(grams, 1)} g</span>
+      </div>`;
+  } else {
+    const cash = appData.goal?.cash || 0;
+    const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
+    wrap.id = 'card-cash';
+    wrap.innerHTML = `
+      <div class="special-card-row">
+        <div class="card-collapsed-left">
+          <div class="card-name-row"><span class="card-name">Cash</span><span class="risk-badge risk-low">NIEDRIG</span></div>
+          <div class="card-meta-line">Bargeld · Verrechnungskonto · <span class="pct-portfolio">${fmtNum(pct, 0)} % Portfolio</span></div>
+        </div>
+        <div class="card-pnl-mini">
+          <div class="val">${fmt.format(cash)}</div>
+          <div class="pct" style="color:#666;">Reserve</div>
+        </div>
+      </div>
+      <div class="special-slider-wrap">
+        <span class="special-slider-min">0 €</span>
+        <input type="range" id="cashSlider" min="0" max="20000" step="20" value="${cash}">
+        <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
+      </div>`;
+  }
+  return wrap;
+}
+
+let renderExpandedRestore = new Set();
+function renderPositions(totals) {
   const container = document.getElementById('positions');
+  // Expand-State der bisherigen Karten merken
+  const wasExpanded = new Set([...renderExpandedRestore]);
+  container.querySelectorAll('.card.expanded').forEach(c => { if (c.dataset.posId) wasExpanded.add(c.dataset.posId); });
+  renderExpandedRestore = new Set();
   container.innerHTML = '';
-  appData.positions.forEach(pos => container.appendChild(buildCard(pos)));
-  appData.positions.forEach(pos => {
-    const wpts = weeklyData[pos.id];
-    const stampEl = document.getElementById(`stamp-${pos.id}`);
-    if (wpts && wpts.length >= 2) {
-      const enriched = wpts.map(p => ({ date: p.date, price: p.price, label: p.date }));
-      renderChart(`spark-${pos.id}`, enriched, 'price', {});
-      if (stampEl) stampEl.textContent = pos.cgId ? `Chart aktualisiert: ${new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })} · Live` : `Chart-Stand: Snapshot`;
-    } else { if (stampEl) stampEl.textContent = 'Keine Chart-Daten'; }
+  // Wenn totals nicht übergeben, berechnen
+  if (!totals) {
+    let totalCur = 0;
+    getAllPositions().forEach(pos => {
+      if (pos.special === 'cash') totalCur += appData.goal?.cash || 0;
+      else if (pos.special === 'gold') totalCur += (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40);
+      else { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; }
+    });
+    totals = { totalCur };
+  }
+  const alloc = getCategoryAllocation(totals.totalCur);
+  appData.positions.forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
+  // Gold + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
+  container.appendChild(buildSpecialCard('gold', totals));
+  container.appendChild(buildSpecialCard('cash', totals));
+  // Expand-State wiederherstellen + Charts ggf. neu laden
+  wasExpanded.forEach(id => {
+    const c = container.querySelector(`.card[data-pos-id="${id}"]`);
+    if (c) {
+      c.classList.add('expanded');
+      const pos = appData.positions.find(p => p.id === id);
+      if (pos) loadChartForPosition(pos, chartTabState[id] || 'week');
+    }
   });
 }
 
@@ -803,12 +1307,16 @@ function renderTotals() {
     totalCur += value;
     totalCost += pos.costPrice * pos.shares;
     if (live.changePct != null && !isNaN(live.changePct)) {
-      // Tagesveränderung pro Position = Wert × (changePct / (100 + changePct)) - liefert €-Veränderung vs. gestern
       const valueYesterday = value / (1 + live.changePct / 100);
       todayChangeEur += value - valueYesterday;
       hasChangeData = true;
     }
   });
+  // Gold + Cash addieren
+  const goldValue = (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40);
+  const cashValue = appData.goal?.cash || 0;
+  totalCur += goldValue + cashValue;
+  totalCost += goldValue + cashValue; // Gold/Cash haben keinen separaten Einstandspreis
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
   document.getElementById('totalValue').textContent = fmt.format(totalCur);
@@ -879,7 +1387,10 @@ function renderTotals() {
 
 function buildPortfolioHistory(monthsBack) {
   const today = new Date();
-  const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t; })();
+  const goldValue = (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40);
+  const cashValue = appData.goal?.cash || 0;
+  const extra = goldValue + cashValue;
+  const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t + extra; })();
   const points = [];
   for (let i = monthsBack; i >= 1; i--) {
     const d = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
@@ -898,6 +1409,7 @@ function buildPortfolioHistory(monthsBack) {
         monthTotal += live.price * pos.shares;
       }
     });
+    monthTotal += extra; // Cash + Gold (Annahme: aktueller Bestand)
     points.push({ date: d, label: MONTHS_SHORT[d.getMonth()], labelLong: MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear(), value: monthTotal });
   }
   points.push({ date: today, label: MONTHS_SHORT[today.getMonth()] + '.', labelLong: MONTHS_LONG[today.getMonth()] + ' ' + today.getFullYear() + ' (heute)', value: currentTotals });
@@ -1006,20 +1518,62 @@ function renderAnalysisLocal(totals, goal) {
 }
 
 let editingId = null;
-function openEditModal(posId) { const pos = appData.positions.find(p => p.id === posId); if (!pos) return; editingId = posId; document.getElementById('editTitle').textContent = pos.name; const live = currentPrices[posId] || { price: pos.costPrice }; document.getElementById('editPrice').value = live.price.toFixed(2); document.getElementById('editShares').value = pos.shares; document.getElementById('editCost').value = pos.costPrice; document.getElementById('editModal').classList.add('active'); }
-async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await savePositionsToKV(); await refreshUI(); }
+function openEditModal(posId) { const pos = appData.positions.find(p => p.id === posId); if (!pos) return; editingId = posId; document.getElementById('editTitle').textContent = pos.name; const live = currentPrices[posId] || { price: pos.costPrice }; document.getElementById('editPrice').value = live.price.toFixed(2); document.getElementById('editShares').value = pos.shares; document.getElementById('editCost').value = pos.costPrice; const riskSel = document.getElementById('editRisk'); if (riskSel) riskSel.value = pos.risk || ''; document.getElementById('editModal').classList.add('active'); }
+async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); const newRisk = document.getElementById('editRisk')?.value || ''; if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; if (newRisk) pos.risk = newRisk; else delete pos.risk; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await savePositionsToKV(); await refreshUI(); }
 function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
+
+function renderSavingsSim(totals, goal) {
+  const sub = document.getElementById('savingsSimSub');
+  const grid = document.getElementById('savingsSimGrid');
+  const note = document.getElementById('savingsSimNote');
+  if (!sub || !grid || !note) return;
+  const gap = goal.amount - totals.totalCur;
+  const months = Math.max(1, goal.monthsToGoal);
+  if (gap <= 0) {
+    sub.textContent = `Ziel bereits erreicht — Puffer ${fmt.format(-gap)}`;
+    grid.innerHTML = '';
+    note.innerHTML = `Du bist über dem Ziel. Sparrate kannst du frei wählen oder Ziel anheben.`;
+    return;
+  }
+  sub.textContent = `Ziel: ${fmt.format(goal.amount)} bis Ende ${goal.year} · Lücke ${fmt.format(gap)} · ${months} Mo`;
+  const rates = [100, 200, 300, 500, 1000];
+  const current = goal.savingsRate || 0;
+  // Erforderliche Sparrate ohne Rendite
+  const required = gap / months;
+  const rows = rates.map(rate => {
+    const projected = totals.totalCur + rate * months;
+    const pct = Math.min(100, (projected / goal.amount) * 100);
+    let cls, tag;
+    if (projected < goal.amount * 0.85) { cls = 'late'; tag = 'später'; }
+    else if (projected < goal.amount) { cls = 'tight'; tag = 'knapp'; }
+    else if (projected < goal.amount * 1.1) { cls = 'fit'; tag = 'passt'; }
+    else { cls = 'early'; tag = 'früher'; }
+    const isCurrent = Math.abs(rate - current) < 30;
+    return `<span class="savings-sim-rate ${isCurrent ? 'current' : ''}">${fmtNoCent.format(rate)}</span>
+      <div class="savings-sim-bar"><div class="savings-sim-fill ${cls}" style="width:${pct}%"></div></div>
+      <span class="savings-sim-tag ${cls}">${tag}</span>`;
+  }).join('');
+  grid.innerHTML = rows;
+  // Note
+  const minPass = rates.find(r => totals.totalCur + r * months >= goal.amount);
+  if (minPass != null) {
+    note.innerHTML = `<strong style="color:var(--positive);">${fmtNoCent.format(minPass)} €/Mo</strong> reicht rein rechnerisch ohne weitere Rendite. Aktuell eingestellt: <strong>${fmtNoCent.format(current)} €/Mo</strong>${current >= minPass ? ' ✓' : ` — Lücke noch ${fmt.format(goal.amount - (totals.totalCur + current * months))}`}.`;
+  } else {
+    note.innerHTML = `Bei ${months} Monaten Zeit bräuchtest du <strong>${fmt.format(required)}/Mo</strong> ohne Rendite. Aktuell: <strong>${fmtNoCent.format(current)} €/Mo</strong>.`;
+  }
+}
 
 async function refreshUI(opts = {}) {
   loadManualPrices();
-  renderPositions();
   const totals = renderTotals();
+  renderPositions(totals);
+  renderAllocation(totals);
   renderHistory();
   const goal = renderGoal(totals);
+  renderSavingsSim(totals, goal);
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
   } else {
-    // Erst lokal anzeigen (sofort), dann durch AI ersetzen
     renderAnalysisLocal(totals, goal);
     await generateAIAnalysis(totals, goal);
   }
@@ -1062,14 +1616,79 @@ function wireEvents() {
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
-  ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
+  ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderSavingsSim(totals, goal); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => {
     const editBtn = e.target.closest('[data-edit-id]');
-    if (editBtn) { openEditModal(editBtn.dataset.editId); return; }
+    if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.editId); return; }
     const removeBtn = e.target.closest('[data-remove-id]');
-    if (removeBtn) { removePosition(removeBtn.dataset.removeId); return; }
+    if (removeBtn) { e.stopPropagation(); removePosition(removeBtn.dataset.removeId); return; }
+    const tabBtn = e.target.closest('.chart-tab');
+    if (tabBtn) {
+      e.stopPropagation();
+      const card = tabBtn.closest('.card');
+      const posId = card?.dataset.posId;
+      const pos = appData.positions.find(p => p.id === posId);
+      if (pos) loadChartForPosition(pos, tabBtn.dataset.period);
+      return;
+    }
+    // Special-Karten (Cash/Gold) sind nicht klappbar
+    const specialCard = e.target.closest('.card.special');
+    if (specialCard) return;
+    // Slider/Input nicht als Klapp-Trigger werten
+    if (e.target.closest('input, button, a')) return;
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const wasExpanded = card.classList.contains('expanded');
+    card.classList.toggle('expanded');
+    if (!wasExpanded) {
+      // Erst-Öffnung: Chart laden (Wochen-Tab default)
+      const posId = card.dataset.posId;
+      const pos = appData.positions.find(p => p.id === posId);
+      if (pos) loadChartForPosition(pos, chartTabState[posId] || 'week');
+    }
+  });
+  // Cash + Gold Slider via Delegation auf positions Container
+  // input = live während des Ziehens (in-place updates, KEIN renderPositions damit Slider erhalten bleibt)
+  // change = nach loslassen (volles Re-Render damit % Portfolio in allen Karten aktuell ist)
+  document.getElementById('positions').addEventListener('input', e => {
+    if (!appData) return;
+    if (e.target.id === 'goldSlider') {
+      const grams = parseInt(e.target.value, 10);
+      if (!appData.goal) appData.goal = {};
+      appData.goal.goldGrams = grams;
+      const valEl = document.getElementById('goldSliderVal');
+      if (valEl) valEl.textContent = fmtNum(grams, 0) + ' g';
+      const card = e.target.closest('.card');
+      if (card) { const pnlVal = card.querySelector('.card-pnl-mini .val'); const pnlPct = card.querySelector('.card-pnl-mini .pct'); const price = appData.goal.goldPrice || 71.40; if (pnlVal) pnlVal.textContent = fmt.format(grams * price); if (pnlPct) pnlPct.textContent = fmtNum(grams, 1) + ' g'; }
+      const totals = renderTotals();
+      renderAllocation(totals);
+      const goal = renderGoal(totals);
+      renderSavingsSim(totals, goal);
+      savePositionsToKV(1500);
+    } else if (e.target.id === 'cashSlider') {
+      const cash = parseInt(e.target.value, 10);
+      if (!appData.goal) appData.goal = {};
+      appData.goal.cash = cash;
+      const valEl = document.getElementById('cashSliderVal');
+      if (valEl) valEl.textContent = fmt.format(cash);
+      const card = e.target.closest('.card');
+      if (card) { const pnlVal = card.querySelector('.card-pnl-mini .val'); if (pnlVal) pnlVal.textContent = fmt.format(cash); }
+      const totals = renderTotals();
+      renderAllocation(totals);
+      const goal = renderGoal(totals);
+      renderSavingsSim(totals, goal);
+      savePositionsToKV(1500);
+    }
+  });
+  document.getElementById('positions').addEventListener('change', e => {
+    if (!appData) return;
+    if (e.target.id === 'goldSlider' || e.target.id === 'cashSlider') {
+      const totals = renderTotals();
+      renderPositions(totals); // % Portfolio in allen Karten aktualisieren
+      renderAllocation(totals);
+    }
   });
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   document.getElementById('editSave').addEventListener('click', saveEditModal);
