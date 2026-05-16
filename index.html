@@ -303,6 +303,9 @@
   .card-pnl-mini .pct { font-size: 11px; }
   .card-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
   .card-chevron svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .card-quick-edit { background: transparent; border: 0; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
+  .card-quick-edit:hover, .card-quick-edit:active { background: var(--bg-secondary); color: var(--text-primary); }
+  .card-quick-edit svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
   .card.expanded .card-chevron { transform: rotate(180deg); }
   .card-expanded-content { display: none; margin-top: 10px; }
   .card.expanded .card-expanded-content { display: block; }
@@ -1181,6 +1184,9 @@ function buildCard(pos, totals, alloc) {
         <div class="val ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div>
         <div class="pct ${pnlClass}">${fmtPct(pnlPct)}</div>
       </div>
+      <button class="card-quick-edit" data-quickedit-id="${pos.id}" title="Bearbeiten" aria-label="Bearbeiten">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
       <div class="card-chevron"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></div>
     </div>
     <div class="card-expanded-content">
@@ -1620,6 +1626,8 @@ function wireEvents() {
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => {
+    const quickEdit = e.target.closest('[data-quickedit-id]');
+    if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
     const editBtn = e.target.closest('[data-edit-id]');
     if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.editId); return; }
     const removeBtn = e.target.closest('[data-remove-id]');
