@@ -517,8 +517,9 @@
     <div class="history-head">
       <h2 class="history-title">Depot-Entwicklung</h2>
       <div class="history-tabs">
-        <button class="history-tab" data-months="6">6M</button>
-        <button class="history-tab active" data-months="12">12M</button>
+        <button class="history-tab" data-history="1W">1W</button>
+        <button class="history-tab" data-history="6M">6M</button>
+        <button class="history-tab active" data-history="12M">12M</button>
       </div>
     </div>
     <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
@@ -526,7 +527,7 @@
       <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
       <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
-      <div class="history-disclaimer">Berechnet aus aktueller Stückzahl × historischen Monatskursen (Annahme: gleicher Bestand zu allen Stichtagen).</div>
+      <div class="history-disclaimer">Tagespunkte aus Kaufdaten und verfügbaren historischen Kursen. Bei manuellen Titeln ohne Tageskurs wird der passende Monatskurs verwendet.</div>
     </div>
   </div>
   <div class="goal-section">
@@ -842,7 +843,7 @@ const ENC = {
   _toB64(buf) { let s = ''; const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
-let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryMonths = 12;
+let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
 let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -1249,8 +1250,8 @@ function renderChart(canvasId, points, valueKey, opts) {
   const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
   new Chart(canvas, {
     type: 'line',
-    data: { labels: points.map(p => p.label || p.date), datasets: [{ data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8, fill: true, tension: 0.3, pointRadius: opts?.bigPoints ? 3 : 2, pointHoverRadius: 5, pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1 }] },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: false, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => fmt.format(item.parsed.y) } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
+    data: { labels: points.map(p => p.label || p.date), datasets: [{ data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8, fill: true, tension: opts?.daily ? 0.15 : 0.3, pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5, pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1 }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: false, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => fmt.format(item.parsed.y), afterBody: (items) => points[items[0].dataIndex].events || [] } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
   });
 }
 
@@ -1536,51 +1537,84 @@ function renderTotals() {
   return { totalCur, totalCost, totalPnl, totalPnlPct, todayChangeEur, hasChangeData, ath, drawdownPct, savingsRate };
 }
 
-function buildPortfolioHistory(monthsBack) {
+function toIsoDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function addDays(d, days) {
+  const next = new Date(d);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+function historyStartDate(period, today) {
+  const start = new Date(today);
+  if (period === '1W') start.setDate(today.getDate() - 6);
+  else if (period === '6M') start.setMonth(today.getMonth() - 6);
+  else start.setMonth(today.getMonth() - 12);
+  return start;
+}
+function sharesAtDate(pos, date) {
+  if (!pos.purchaseLots || !pos.purchaseLots.length) return pos.shares;
+  const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
+  return pos.purchaseLots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.shares) || 0) : sum, 0);
+}
+function priceForHistoryDate(pos, date, isToday) {
+  if (isToday) return (currentPrices[pos.id] || { price: pos.costPrice }).price;
+  if (pos.monthlyHistory) {
+    const ym = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+    const sorted = pos.monthlyHistory.slice().sort((a, b) => a.date.localeCompare(b.date));
+    let matched = null;
+    for (const e of sorted) { if (e.date <= ym) matched = e; }
+    if (!matched && sorted.length > 0) matched = sorted[0];
+    return matched ? matched.price : pos.costPrice;
+  }
+  return (currentPrices[pos.id] || { price: pos.costPrice }).price;
+}
+function purchaseEventsForDate(date) {
+  const iso = toIsoDate(date);
+  const events = [];
+  appData.positions.forEach(pos => {
+    (pos.purchaseLots || []).forEach(lot => {
+      if (lot.date === iso) events.push(`Kauf: ${pos.name} · ${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)} Stk · ${fmt.format(lot.value || lot.shares * lot.costPrice)}`);
+    });
+  });
+  return events;
+}
+function buildPortfolioHistory(period) {
   const today = new Date();
+  const start = historyStartDate(period, today);
   const metalValueTotal = metalsTotalValue();
   const cashValue = appData.goal?.cash || 0;
   const extra = metalValueTotal + cashValue;
   const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t + extra; })();
   const points = [];
-  for (let i = monthsBack; i >= 1; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
-    const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    let monthTotal = 0;
+  for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
+    const isToday = toIsoDate(d) === toIsoDate(today);
+    let dayTotal = 0;
     appData.positions.forEach(pos => {
-      if (pos.monthlyHistory) {
-        const sorted = pos.monthlyHistory.slice().sort((a, b) => a.date.localeCompare(b.date));
-        let matched = null;
-        for (const e of sorted) { if (e.date <= ym) matched = e; }
-        if (!matched && sorted.length > 0) matched = sorted[0];
-        const p = matched ? matched.price : pos.costPrice;
-        monthTotal += p * pos.shares;
-      } else {
-        const live = currentPrices[pos.id] || { price: pos.costPrice };
-        monthTotal += live.price * pos.shares;
-      }
+      dayTotal += priceForHistoryDate(pos, d, isToday) * sharesAtDate(pos, d);
     });
-    monthTotal += extra; // Cash + Edelmetalle (Annahme: aktueller Bestand)
-    points.push({ date: d, label: MONTHS_SHORT[d.getMonth()], labelLong: MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear(), value: monthTotal });
+    dayTotal += extra; // Cash + Edelmetalle (Annahme: aktueller Bestand)
+    const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
+    const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value: isToday ? currentTotals : dayTotal, events: purchaseEventsForDate(d) });
   }
-  points.push({ date: today, label: MONTHS_SHORT[today.getMonth()] + '.', labelLong: MONTHS_LONG[today.getMonth()] + ' ' + today.getFullYear() + ' (heute)', value: currentTotals });
   return points;
 }
 
 function renderHistory() {
-  const points = buildPortfolioHistory(currentHistoryMonths);
+  const points = buildPortfolioHistory(currentHistoryPeriod);
   if (points.length < 2) return;
-  renderChart('historyChart', points, 'value', { compactY: true, bigPoints: true });
+  renderChart('historyChart', points, 'value', { compactY: true, daily: true });
   const first = points[0], last = points[points.length - 1];
   const delta = last.value - first.value;
   const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
-  document.getElementById('historyPeriodLabel').textContent = `${first.label}. – ${last.label}`;
+  document.getElementById('historyPeriodLabel').textContent = `${first.labelLong.replace(' (heute)', '')} – ${last.labelLong.replace(' (heute)', '')}`;
   const deltaEl = document.getElementById('historyDelta');
   deltaEl.textContent = `${delta >= 0 ? '+' : ''}${fmt.format(delta)} (${delta >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} %)`;
   deltaEl.className = 'history-delta ' + (delta >= 0 ? 'positive' : 'negative');
-  document.getElementById('historyStartLabel').textContent = `Depot Stand Ende ${first.labelLong}`;
+  document.getElementById('historyStartLabel').textContent = `Depot Stand ${first.labelLong.replace(' (heute)', '')}`;
   document.getElementById('historyStartValue').textContent = fmt.format(first.value);
-  document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${MONTHS_LONG[last.date.getMonth()]} ${last.date.getFullYear()})` : `Depot Stand Ende ${last.labelLong}`;
+  document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
 }
 
@@ -1770,7 +1804,7 @@ function wireEvents() {
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderSavingsSim(totals, goal); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
-  document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
+  document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryPeriod = tab.dataset.history || '12M'; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => {
     const quickEdit = e.target.closest('[data-quickedit-id]');
     if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
