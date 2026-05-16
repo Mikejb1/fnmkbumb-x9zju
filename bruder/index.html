@@ -123,6 +123,77 @@
   .history-balance-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); padding: 3px 0; font-variant-numeric: tabular-nums; }
   .history-balance-row strong { color: var(--text-primary); font-weight: 500; }
   .history-disclaimer { font-size: 10px; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+  .history-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .history-legend-toggle { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-tertiary); border-radius: 6px; padding: 4px 8px; font-size: 10px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity 0.15s, background 0.15s; opacity: 0.5; }
+  .history-legend-toggle.active { background: var(--bg-card); color: var(--text-primary); opacity: 1; }
+  .history-legend-toggle .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .cash-tx-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .cash-tx-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+  .cash-tx-btn:hover { background: var(--bg-track); }
+  .cash-tx-btn.cash-tx-list { color: var(--text-secondary); }
+  .cash-tx-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+  .cash-tx-list-wrap { max-height: 320px; overflow-y: auto; margin: 10px 0; }
+  .cash-tx-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+  .cash-tx-item .cash-tx-meta { display: flex; flex-direction: column; gap: 2px; }
+  .cash-tx-item .cash-tx-date { font-size: 10px; color: var(--text-tertiary); }
+  .cash-tx-item .cash-tx-val.deposit { color: var(--positive); font-weight: 500; }
+  .cash-tx-item .cash-tx-val.withdraw { color: var(--negative); font-weight: 500; }
+  .cash-tx-del { background: transparent; border: 0; color: var(--negative); cursor: pointer; padding: 4px 8px; font-size: 11px; }
+  .risk-rules-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .risk-rules-section.has-violations { border-color: var(--negative); }
+  .risk-rules-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .risk-rules-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .risk-rules-head .ok { color: var(--positive); }
+  .risk-rules-head .warn { color: var(--negative); }
+  .risk-rule-item { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--border-light); font-size: 11px; gap: 8px; }
+  .risk-rule-item:first-of-type { border-top: 0; }
+  .risk-rule-item .lbl { color: var(--text-secondary); }
+  .risk-rule-item .val { font-variant-numeric: tabular-nums; }
+  .risk-rule-item .val.violated { color: var(--negative); font-weight: 500; }
+  .risk-rule-item .val.ok { color: var(--positive); }
+  .risk-rules-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; }
+  .backup-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .backup-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .backup-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .backup-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .backup-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 7px 12px; font-size: 11px; font-family: inherit; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+  .backup-btn:hover { background: var(--bg-track); }
+  .backup-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+  .backup-hint { font-size: 10px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
+  .strat-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0; margin-bottom: 14px; overflow: hidden; }
+  .strat-section > summary { padding: 12px 14px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; }
+  .strat-section > summary::-webkit-details-marker { display: none; }
+  .strat-section > summary > .left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .strat-section > summary > .left svg { width: 15px; height: 15px; stroke: currentColor; fill: none; flex-shrink: 0; }
+  .strat-section > summary .count-badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-secondary); }
+  .strat-section[open] > summary { border-bottom: 1px solid var(--border-light); }
+  .strat-body { padding: 12px 14px; }
+  .strat-add-btn { background: var(--positive); color: var(--bg-page); border: 0; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .strat-add-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+  .strat-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; padding: 8px 0; }
+  .strat-item { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .strat-item .info { flex: 1; min-width: 0; }
+  .strat-item .name { font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+  .strat-item .meta { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+  .strat-item .reason { font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-top: 4px; }
+  .strat-item .actions { display: flex; gap: 4px; }
+  .strat-item .actions button { background: transparent; border: 0; color: var(--text-muted); cursor: pointer; padding: 3px; border-radius: 4px; }
+  .strat-item .actions button:hover { background: var(--bg-track); color: var(--text-primary); }
+  .strat-item .actions button.danger:hover { color: var(--negative); }
+  .strat-item .actions svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .reb-row { display: grid; grid-template-columns: 80px 1fr auto; gap: 8px; align-items: center; font-size: 12px; padding: 4px 0; }
+  .reb-row .lbl { color: var(--text-secondary); }
+  .reb-row input[type=number] { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 5px 8px; font-size: 12px; width: 70px; text-align: right; font-family: inherit; }
+  .reb-row .delta { font-variant-numeric: tabular-nums; }
+  .reb-row .delta.over { color: var(--negative); }
+  .reb-row .delta.under { color: #fbbf24; }
+  .reb-row .delta.ok { color: var(--positive); }
+  .reb-summary { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .reb-sum-total { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+  .journal-status { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; }
+  .journal-status.open { background: rgba(245,158,11,0.18); color: #fbbf24; }
+  .journal-status.due { background: rgba(239,68,68,0.18); color: #fca5a5; }
+  .journal-status.done { background: rgba(34,197,94,0.18); color: #4ade80; }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -167,9 +238,13 @@
   .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
   .chat-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0; }
   .chat-title svg { width: 18px; height: 18px; stroke: var(--positive); fill: none; }
+  .chat-head-actions { display: inline-flex; gap: 6px; }
   .chat-clear { background: transparent; border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; color: var(--text-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   .chat-clear:hover { background: var(--bg-secondary); color: var(--text-primary); }
   .chat-clear svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .chat-clear.chat-wipe { color: var(--negative); border-color: var(--negative); }
+  .chat-clear.chat-wipe:hover { background: var(--error-bg); }
+  .chat-memory-status { font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; padding: 4px 8px; background: var(--bg-secondary); border-radius: 6px; font-style: italic; }
   .chat-messages { background: var(--bg-page); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; min-height: 220px; max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
   .chat-msg { max-width: 82%; display: flex; flex-direction: column; }
   .chat-msg-ai { align-self: flex-start; }
@@ -314,6 +389,20 @@
   .price-grid-cell .val { font-weight: 500; font-variant-numeric: tabular-nums; }
   .price-grid-cell .val.positive { color: var(--positive); }
   .price-grid-cell .val.negative { color: var(--negative); }
+  .stammdaten-box { background: var(--bg-secondary); border-radius: 8px; padding: 10px; margin: 10px 0; }
+  .stammdaten-title { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; }
+  .stammdaten-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; font-size: 12px; }
+  .stammdaten-row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; min-width: 0; }
+  .stammdaten-row .lbl { color: var(--text-tertiary); white-space: nowrap; }
+  .stammdaten-row .val { color: var(--text-primary); font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+  .stammdaten-row .val.positive { color: var(--positive); }
+  .stammdaten-row .val.negative { color: var(--negative); }
+  .lot-table { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .lot-row { display: grid; grid-template-columns: 78px 1fr 70px 78px; gap: 8px; align-items: center; font-size: 11px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  body.light .lot-row { border-bottom-color: rgba(0,0,0,0.06); }
+  .lot-row.head { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; padding-top: 0; }
+  .lot-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } }
   .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
   body.light .warn-box { background: rgba(245,158,11,0.12); color: #92400e; }
   /* ===== CHART TABS + LADEANIMATION ===== */
@@ -524,6 +613,13 @@
       <div class="alloc-crypto-tags" id="allocCryptoTags"></div>
     </div>
   </div>
+  <div class="risk-rules-section" id="riskRulesSection">
+    <div class="risk-rules-head" id="riskRulesHead">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s-8-4.5-8-11.8V5l8-3 8 3v5.2C20 17.5 12 22 12 22z"/></svg>
+      <span>Risiko-Regeln</span>
+    </div>
+    <div id="riskRulesList"></div>
+  </div>
   <div class="positions-head-label"><span>Positionen</span><span>Tap zum Aufklappen</span></div>
   <div class="positions" id="positions"></div>
   <div class="history-section">
@@ -536,11 +632,20 @@
       </div>
     </div>
     <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
+    <div class="history-legend" id="historyLegend">
+      <button class="history-legend-toggle active" data-series="value" type="button"><span class="dot" style="background:#22c55e"></span>Depotwert</button>
+      <button class="history-legend-toggle active" data-series="invested" type="button"><span class="dot" style="background:#888"></span>Einstand</button>
+      <button class="history-legend-toggle" data-series="pnl" type="button"><span class="dot" style="background:#3b82f6"></span>G/V</button>
+      <button class="history-legend-toggle" data-series="goal" type="button"><span class="dot" style="background:#fbbf24"></span>Zielpfad</button>
+    </div>
     <div class="history-summary">
       <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
       <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
+      <div class="history-balance-row" title="Inklusive Einzahlungen — zeigt wie sich dein Vermögen entwickelt hat. Cash-Einzahlungen ziehen das Ergebnis nach oben."><span>Inkl. Einzahlungen</span><strong id="historyReturnGross">—</strong></div>
+      <div class="history-balance-row" title="Geldgewichtete Rendite (MWR) auf Basis aller Transaktionen — bereinigt um Einzahlungen. Zeigt die reine Performance deiner Anlageentscheidungen."><span>Performance (MWR)</span><strong id="historyReturnMwr">—</strong></div>
       <div class="history-disclaimer">Tagespunkte aus Kaufdaten und verfügbaren historischen Kursen. Bei manuellen Titeln ohne Tageskurs wird der passende Monatskurs verwendet.</div>
+      <div class="history-disclaimer" id="cashHistoryNote" style="display:none;">Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.</div>
     </div>
   </div>
   <div class="goal-section">
@@ -627,6 +732,59 @@
     <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
   </div>
 
+  <details class="strat-section" id="rebalSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 21"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 3"/><polyline points="21 3 21 9 15 9"/><polyline points="3 21 3 15 9 15"/></svg>
+        <span>Rebalancing-Simulator</span>
+      </span>
+      <span class="count-badge" id="rebStatus">—</span>
+    </summary>
+    <div class="strat-body" id="rebalBody"></div>
+  </details>
+
+  <details class="strat-section" id="watchlistSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Watchlist</span>
+      </span>
+      <span class="count-badge" id="watchlistCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <button class="strat-add-btn" id="watchAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
+      <div id="watchlistList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <details class="strat-section" id="journalSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/></svg>
+        <span>Entscheidungs-Journal</span>
+      </span>
+      <span class="count-badge" id="journalCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <button class="strat-add-btn" id="journalAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
+      <div id="journalList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <div class="backup-section">
+    <div class="backup-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Backup &amp; Export</span>
+    </div>
+    <div class="backup-buttons">
+      <button class="backup-btn" id="backupJsonBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>JSON-Backup</button>
+      <button class="backup-btn" id="backupCsvBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Transaktionen CSV</button>
+      <button class="backup-btn" id="backupImportBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>JSON importieren</button>
+      <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
+    </div>
+    <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import wird Vorschau angezeigt.</div>
+  </div>
+
   <div class="chat-section">
     <div class="chat-head">
       <h2 class="chat-title">
@@ -634,10 +792,16 @@
         <span>KI-Chat</span>
         <span class="badge badge-live">Haiku</span>
       </h2>
-      <button class="chat-clear" id="chatClearBtn" title="Verlauf löschen" aria-label="Verlauf löschen">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-      </button>
+      <div class="chat-head-actions">
+        <button class="chat-clear" id="chatClearBtn" title="Chat leeren (Gedächtnis bleibt)" aria-label="Chat leeren">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        <button class="chat-clear chat-wipe" id="chatWipeBtn" title="Gedächtnis wirklich löschen" aria-label="Gedächtnis löschen">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </button>
+      </div>
     </div>
+    <div class="chat-memory-status" id="chatMemoryStatus">Gedächtnis aktiv</div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-row">
       <input type="text" id="chatInput" class="chat-input" placeholder="Frage zu deinem Portfolio…" autocomplete="off">
@@ -687,6 +851,83 @@
     <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
     <div class="modal-field" id="apCgIdField" style="display:none;"><label>CoinGecko-ID (für Live-Krypto)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="metalLotModal">
+  <div class="modal">
+    <h3 id="metalLotTitle">Edelmetall-Kauf hinzufügen</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="mlDate"></div>
+    <div class="modal-field"><label>Gramm</label><input type="number" step="0.001" min="0" class="auth-input" id="mlGrams" placeholder="z.B. 31.1"></div>
+    <div class="modal-field"><label>Kaufwert gesamt (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="mlValue" placeholder="z.B. 2200.00"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="mlFees" placeholder="z.B. 25.00"></div>
+    <div class="modal-field"><label>Lagerart</label>
+      <select id="mlStorage" class="auth-input">
+        <option value="physisch">Physisch (zuhause)</option>
+        <option value="tresor">Tresor</option>
+        <option value="haendler">Beim Händler</option>
+        <option value="muenze">Münze</option>
+        <option value="barren">Barren</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Bewertungsart</label>
+      <select id="mlValuation" class="auth-input">
+        <option value="spot">Spotpreis</option>
+        <option value="dealer">Händler-Ankaufspreis</option>
+        <option value="conservative">Konservativer Abschlag (−2 %)</option>
+      </select>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="mlCancel">Abbrechen</button><button class="auth-btn" id="mlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="cashTxModal">
+  <div class="modal">
+    <h3 id="cashTxTitle">Cash-Einzahlung</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="ctxDate"></div>
+    <div class="modal-field"><label>Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="ctxAmount" placeholder="z.B. 500.00"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="ctxNote" placeholder="z.B. Gehalt, Sparrate, Übertrag"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="ctxCancel">Abbrechen</button><button class="auth-btn" id="ctxSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="cashTxListModal">
+  <div class="modal">
+    <h3>Cash-Bewegungen</h3>
+    <div class="cash-tx-list-wrap" id="cashTxListWrap"></div>
+    <div class="modal-actions"><button class="auth-btn" id="ctxListClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="watchModal">
+  <div class="modal">
+    <h3 id="watchTitle">Watchlist-Eintrag</h3>
+    <div class="modal-field"><label>Name / Kandidat</label><input type="text" class="auth-input" id="wlName" placeholder="z.B. NVIDIA Corp"></div>
+    <div class="modal-field"><label>Symbol / Ticker (optional)</label><input type="text" class="auth-input" id="wlSymbol" placeholder="z.B. NVDA"></div>
+    <div class="modal-field"><label>Gewünschter Einstieg (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlTarget" placeholder="z.B. 95.00"></div>
+    <div class="modal-field"><label>Grund</label><input type="text" class="auth-input" id="wlReason" placeholder="z.B. AI-Wachstum, KGV-attraktiv"></div>
+    <div class="modal-field"><label>Risiko</label>
+      <select id="wlRisk" class="auth-input">
+        <option value="low">Niedrig</option>
+        <option value="medium" selected>Mittel</option>
+        <option value="high">Hoch</option>
+        <option value="very-high">Sehr hoch</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Geplante Positionsgröße (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlSize" placeholder="z.B. 1000"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="wlCancel">Abbrechen</button><button class="auth-btn" id="wlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="journalModal">
+  <div class="modal">
+    <h3 id="journalTitle">Journal-Eintrag</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="jrDate"></div>
+    <div class="modal-field"><label>Entscheidung</label><input type="text" class="auth-input" id="jrDecision" placeholder="z.B. ServiceNow halten"></div>
+    <div class="modal-field"><label>Begründung</label><input type="text" class="auth-input" id="jrReason" placeholder="z.B. unter Einstand, langer Zeithorizont"></div>
+    <div class="modal-field"><label>Erwartung</label><input type="text" class="auth-input" id="jrExpect" placeholder="z.B. Erholung auf 100€ binnen 12 Mo"></div>
+    <div class="modal-field"><label>Review-Datum</label><input type="date" class="auth-input" id="jrReview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="jrCancel">Abbrechen</button><button class="auth-btn" id="jrSave">Speichern</button></div>
   </div>
 </div>
 
@@ -857,6 +1098,7 @@ const ENC = {
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
 let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
+let historyVisibleSeries = { value: true, invested: true, pnl: false, goal: false };
 let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -864,6 +1106,75 @@ const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberForm
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
 const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const POSITION_STAMMDATEN = [
+  {
+    match: ['servicenow'],
+    depot: { custodian: 'Clearstream Nat.', custodyType: 'Girosammelverwahrung' },
+    lots: [
+      { date: '2026-05-14', shares: 10, costPrice: 75.08, value: 750.80 },
+      { date: '2026-05-07', shares: 10, costPrice: 76.38, value: 763.80 },
+      { date: '2026-01-29', shares: 11, costPrice: 96.65, value: 1063.15 },
+      { date: '2026-01-13', shares: 5, costPrice: 119.62, value: 598.10 },
+      { date: '2025-11-17', shares: 10, costPrice: 149.01, value: 1490.05 },
+      { date: '2025-10-17', shares: 5, costPrice: 149.01, value: 745.03 },
+      { date: '2025-10-10', shares: 5, costPrice: 149.01, value: 745.03 }
+    ]
+  },
+  {
+    match: ['solana'],
+    depot: { custodian: 'Tangany GmbH', custodyType: 'Kryptoverwahrung' },
+    lots: [
+      { date: '2026-03-07', shares: 12.641356, costPrice: 72.77, value: 919.94 },
+      { date: '2026-02-20', shares: 6.991442, costPrice: 71.46, value: 499.62 },
+      { date: '2026-02-15', shares: 5.3859, costPrice: 74.29, value: 400.13 },
+      { date: '2025-12-01', shares: 3.730334, costPrice: 107.28, value: 400.21 },
+      { date: '2025-11-27', shares: 2.030605, costPrice: 123.11, value: 249.98 },
+      { date: '2025-10-29', shares: 0.811707, costPrice: 169.93, value: 137.93 },
+      { date: '2025-10-19', shares: 2.433564, costPrice: 164.37, value: 400.00 },
+      { date: '2025-10-12', shares: 0.536032, costPrice: 170.32, value: 91.30 }
+    ]
+  },
+  {
+    match: ['ripple', 'xrp'],
+    depot: { custodian: 'Tangany GmbH', custodyType: 'Kryptoverwahrung' },
+    lots: [
+      { date: '2026-05-15', shares: 33, costPrice: 1.24, value: 40.80 },
+      { date: '2026-03-11', shares: 20.903115, costPrice: 1.20, value: 25.00 },
+      { date: '2026-02-20', shares: 743.191744, costPrice: 1.21, value: 900.76 },
+      { date: '2026-02-20', shares: 165.196009, costPrice: 1.21, value: 200.02 },
+      { date: '2026-02-16', shares: 235.342478, costPrice: 1.28, value: 300.07 },
+      { date: '2026-02-15', shares: 179.05955, costPrice: 1.24, value: 222.07 },
+      { date: '2026-02-06', shares: 16.095763, costPrice: 1.24, value: 19.99 },
+      { date: '2026-02-06', shares: 97.325668, costPrice: 1.13, value: 109.89 },
+      { date: '2026-01-21', shares: 230.143078, costPrice: 1.69, value: 389.99 },
+      { date: '2026-01-06', shares: 2.477298, costPrice: 2.02, value: 5.00 },
+      { date: '2025-12-04', shares: 32.75254, costPrice: 1.83, value: 59.98 },
+      { date: '2025-12-01', shares: 115.463975, costPrice: 1.73, value: 199.93 },
+      { date: '2025-11-27', shares: 67.750466, costPrice: 1.92, value: 129.99 },
+      { date: '2025-11-04', shares: 101.709327, costPrice: 1.97, value: 200.18 },
+      { date: '2025-10-06', shares: 77.412083, costPrice: 2.58, value: 200.03 },
+      { date: '2025-09-05', shares: 41.389238, costPrice: 2.42, value: 100.02 },
+      { date: '2025-08-26', shares: 39.404193, costPrice: 2.54, value: 100.04 }
+    ]
+  },
+  {
+    match: ['global x video games', 'esports'],
+    depot: { fundSharePct: 59.30, portfolioSharePct: 5.81, custodian: 'Clearstream Lux.', custodyType: 'Wertpapierrechnung' },
+    lots: [
+      { date: '2026-01-06', shares: 9, costPrice: 12.36, value: 111.28, upfrontTax: 0 },
+      { date: '2025-11-26', shares: 50, costPrice: 12.63, value: 631.30, upfrontTax: 0 }
+    ]
+  },
+  {
+    match: ['amundi core msci world'],
+    depot: { fundSharePct: 40.70, portfolioSharePct: 3.99, custodian: 'Clearstream Lux.', custodyType: 'Wertpapierrechnung' },
+    lots: [
+      { date: '2025-09-05', shares: 1, costPrice: 131.62, value: 131.62, upfrontTax: 0 },
+      { date: '2025-06-04', shares: 1, costPrice: 141.43, value: 141.43, upfrontTax: 0 },
+      { date: '2025-02-17', shares: 0.870678, costPrice: 141.44, value: 123.15, upfrontTax: 0 }
+    ]
+  }
+];
 
 function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
 function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
@@ -872,6 +1183,249 @@ function showScreen(id) { ['gateScreen', 'appScreen'].forEach(s => { const el = 
 function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function getThemeColors() { const cs = getComputedStyle(document.body); return { tooltipBg: cs.getPropertyValue('--tooltip-bg').trim(), tooltipText: cs.getPropertyValue('--tooltip-text').trim(), gridColor: cs.getPropertyValue('--chart-grid').trim(), axisText: cs.getPropertyValue('--chart-axis').trim() }; }
+function normalizeText(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function findStammdaten(pos) {
+  const hay = normalizeText(`${pos.name || ''} ${pos.symbol || ''}`);
+  return POSITION_STAMMDATEN.find(entry => entry.match.some(m => hay.includes(normalizeText(m))));
+}
+function applyPositionStammdaten() {
+  if (!appData?.positions) return;
+  appData.positions.forEach(pos => {
+    // Bereits in den Positionsdaten gespeicherte Stammdaten haben Vorrang (Schema v2+)
+    if (pos.stammdaten && pos.purchaseLots && pos.purchaseLots.length > 0) return;
+    const entry = findStammdaten(pos);
+    if (!entry) return;
+    if (!pos.stammdaten) pos.stammdaten = { ...(entry.depot || {}) };
+    if (!pos.purchaseLots || !pos.purchaseLots.length) pos.purchaseLots = entry.lots.map(lot => ({ ...lot }));
+  });
+}
+
+// =====================================================================
+// ============== DATENMODELL · TRANSAKTIONEN + MIGRATION (Schema v2) ==
+// =====================================================================
+function makeTxId() { return 'tx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+function assetTypeOf(pos) {
+  if (!pos) return 'stock';
+  if (pos.special === 'cash') return 'cash';
+  if (pos.special === 'metals' || pos.type === 'Edelmetall') return 'metal';
+  const t = (pos.type || '').toLowerCase();
+  if (t === 'crypto') return 'crypto';
+  if (t === 'etf') return 'etf';
+  return 'stock';
+}
+// Einmalige Migration von Schema v1 (Stammdaten im Code) auf v2 (Transaktionsliste)
+function migrateSchemaIfNeeded() {
+  if (!appData) return;
+  const current = Number(appData.schemaVersion) || 1;
+  if (current >= 2) return;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+
+  // 1) Aus jedem purchaseLot in Positionen eine buy-Transaktion erzeugen
+  (appData.positions || []).forEach(pos => {
+    if (!Array.isArray(pos.purchaseLots) || pos.purchaseLots.length === 0) {
+      // Keine Lot-Historie: einzelner Buy-Eintrag (geschätzt heute) damit aktuelle shares/costPrice in Tx repräsentiert sind
+      if (pos.shares > 0 && pos.costPrice > 0) {
+        appData.transactions.push({
+          id: makeTxId(), date: new Date().toISOString().slice(0, 10),
+          assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
+          quantity: pos.shares, price: pos.costPrice, value: pos.shares * pos.costPrice,
+          fees: 0, note: 'Migration: Einzelposition ohne Lot-Historie'
+        });
+      }
+      return;
+    }
+    pos.purchaseLots.forEach(lot => {
+      const qty = Number(lot.shares) || 0;
+      const px = Number(lot.costPrice) || 0;
+      const val = Number(lot.value) || qty * px;
+      if (qty <= 0) return;
+      appData.transactions.push({
+        id: makeTxId(), date: lot.date || new Date().toISOString().slice(0, 10),
+        assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
+        quantity: qty, price: px, value: val,
+        fees: Number(lot.upfrontTax || 0), note: 'Migration aus Stammdaten'
+      });
+    });
+  });
+
+  // 2) Edelmetall-Lots in Transaktionen überführen
+  if (appData.goal?.metalLots) {
+    Object.entries(appData.goal.metalLots).forEach(([metalKey, lots]) => {
+      if (!Array.isArray(lots)) return;
+      lots.forEach(lot => {
+        const grams = Number(lot.grams) || 0;
+        const val = Number(lot.value) || 0;
+        if (grams <= 0) return;
+        appData.transactions.push({
+          id: makeTxId(), date: lot.date || new Date().toISOString().slice(0, 10),
+          assetId: 'metal_' + metalKey, assetType: 'metal', txType: 'buy',
+          quantity: grams, price: grams > 0 ? val / grams : 0, value: val,
+          fees: Number(lot.fees || 0), note: 'Migration aus metalLots' + (lot.storage ? ' · ' + lot.storage : '')
+        });
+      });
+    });
+  }
+
+  // 3) Cash-Initialerfassung als deposit
+  const cash = Number(appData.goal?.cash || 0);
+  if (cash > 0) {
+    const allDates = appData.transactions.map(t => t.date).filter(Boolean).sort();
+    const depositDate = allDates.length > 0 ? allDates[0] : new Date().toISOString().slice(0, 10);
+    appData.transactions.push({
+      id: makeTxId(), date: depositDate,
+      assetId: 'cash', assetType: 'cash', txType: 'deposit',
+      quantity: cash, price: 1, value: cash, fees: 0,
+      note: 'Initiale Cash-Erfassung (Migration)'
+    });
+  }
+
+  // Sort transactions ascending by date
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  appData.schemaVersion = 2;
+}
+
+// =====================================================================
+// ============== BERECHNUNG · Helpers aus Transaktionsmodell ===========
+// =====================================================================
+function getTransactionsFor(assetId) {
+  return (appData?.transactions || []).filter(t => t.assetId === assetId);
+}
+// Berechnet aktuelle Stückzahl, Einstandswert, Ø Einkaufspreis aus Transaktionen (Average-Cost-Method)
+function getComputedPosition(positionId) {
+  const txs = getTransactionsFor(positionId).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  let shares = 0, costBasis = 0, realized = 0;
+  txs.forEach(t => {
+    if (t.txType === 'buy') {
+      shares += t.quantity;
+      costBasis += t.value + (t.fees || 0);
+    } else if (t.txType === 'sell') {
+      // Anteilig realisierter Gewinn nach Avg-Cost
+      const avgBeforeSell = shares > 0 ? costBasis / shares : 0;
+      const soldQty = Math.min(t.quantity, shares);
+      realized += (t.price - avgBeforeSell) * soldQty - (t.fees || 0);
+      costBasis -= avgBeforeSell * soldQty;
+      shares -= soldQty;
+    }
+  });
+  return {
+    shares,
+    costBasis,
+    avgPrice: shares > 0 ? costBasis / shares : 0,
+    realizedPnl: realized,
+    txCount: txs.length
+  };
+}
+// Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
+function getCashBalance(asOfDate) {
+  if (!Array.isArray(appData?.transactions)) return Number(appData?.goal?.cash || 0);
+  const cutoff = asOfDate ? (asOfDate instanceof Date ? asOfDate.toISOString().slice(0, 10) : String(asOfDate)) : null;
+  let bal = 0;
+  let hasCashTx = false;
+  appData.transactions.forEach(t => {
+    if (cutoff && (t.date || '') > cutoff) return;
+    if (t.assetType === 'cash') {
+      hasCashTx = true;
+      if (t.txType === 'deposit') bal += t.value;
+      else if (t.txType === 'withdraw') bal -= t.value;
+      else if (t.txType === 'fee') bal -= t.value;
+      else if (t.txType === 'dividend') bal += t.value;
+    } else {
+      // Käufe ziehen Cash ab, Verkäufe schreiben Cash gut (Gegenbuchung)
+      if (t.txType === 'buy') bal -= (t.value + (t.fees || 0));
+      else if (t.txType === 'sell') bal += (t.value - (t.fees || 0));
+    }
+  });
+  // Wenn keine Cash-Transaktionen vorhanden, fällt der Slider-Wert zurück
+  if (!hasCashTx) return Number(appData?.goal?.cash || 0);
+  return bal;
+}
+// Investiertes Kapital (Käufe minus Verkäufe) zu einem Datum
+function getInvestedCapital(asOfDate) {
+  if (!Array.isArray(appData?.transactions)) return 0;
+  const cutoff = asOfDate ? (asOfDate instanceof Date ? asOfDate.toISOString().slice(0, 10) : String(asOfDate)) : null;
+  let invested = 0;
+  appData.transactions.forEach(t => {
+    if (cutoff && (t.date || '') > cutoff) return;
+    if (t.assetType === 'cash') return;
+    if (t.txType === 'buy') invested += t.value + (t.fees || 0);
+    else if (t.txType === 'sell') invested -= t.value;
+  });
+  return Math.max(0, invested);
+}
+function getTotalDeposits() {
+  return (appData?.transactions || []).filter(t => t.assetType === 'cash' && t.txType === 'deposit').reduce((s, t) => s + t.value, 0);
+}
+function getTotalWithdrawals() {
+  return (appData?.transactions || []).filter(t => t.assetType === 'cash' && t.txType === 'withdraw').reduce((s, t) => s + t.value, 0);
+}
+// Geldgewichtete Rendite (Money-Weighted Return / IRR) auf Basis aller Cashflows
+// Cashflows: Buys = negativ (Geld geht aus Cash raus), Sells = positiv. Aktueller Depotwert = final positive cashflow heute.
+function computeMWR(currentValue) {
+  if (!Array.isArray(appData?.transactions) || appData.transactions.length === 0) return null;
+  const flows = [];
+  appData.transactions.forEach(t => {
+    if (t.assetType === 'cash') return; // Cash-Einzahlungen sind keine Investitionen
+    const dateMs = new Date(t.date + 'T00:00:00').getTime();
+    if (t.txType === 'buy') flows.push({ ms: dateMs, amount: -(t.value + (t.fees || 0)) });
+    else if (t.txType === 'sell') flows.push({ ms: dateMs, amount: t.value - (t.fees || 0) });
+  });
+  if (flows.length === 0) return null;
+  flows.push({ ms: Date.now(), amount: currentValue });
+  // Newton-Raphson IRR (jährlich)
+  const firstMs = flows[0].ms;
+  const npv = (rate) => flows.reduce((s, f) => {
+    const years = (f.ms - firstMs) / (365.25 * 24 * 3600 * 1000);
+    return s + f.amount / Math.pow(1 + rate, years);
+  }, 0);
+  let low = -0.99, high = 10;
+  for (let i = 0; i < 80; i++) {
+    const mid = (low + high) / 2;
+    const v = npv(mid);
+    if (Math.abs(v) < 0.01) return mid;
+    if (v > 0) low = mid; else high = mid;
+  }
+  return (low + high) / 2;
+}
+function formatDateAT(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = String(iso).split('-');
+  return y && m && d ? `${d}.${m}.${y}` : String(iso);
+}
+function sharesAtDate(pos, date) {
+  if (!pos.purchaseLots || !pos.purchaseLots.length) return pos.shares;
+  const cutoff = date instanceof Date ? date.toISOString().slice(0, 10) : String(date);
+  return pos.purchaseLots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.shares) || 0) : sum, 0);
+}
+function buildStammdatenSection(pos, live, totals) {
+  const meta = pos.stammdaten;
+  const lots = pos.purchaseLots || [];
+  if (!meta && !lots.length) return '';
+  const valueEur = live.price * pos.shares;
+  const costValue = pos.costPrice * pos.shares;
+  const pnlAbs = valueEur - costValue;
+  const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
+  const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
+  const row = (label, value, cls = '') => value == null || value === '' ? '' : `<div class="stammdaten-row"><span class="lbl">${label}</span><span class="val ${cls}">${value}</span></div>`;
+  const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
+  const rows = [
+    row('Stück', fmtNum(pos.shares, pos.shares % 1 ? 6 : 0)),
+    row('Kurs', fmt.format(live.price)),
+    row('Gesamtwert', fmt.format(valueEur)),
+    row('Einstandskurs', fmt.format(pos.costPrice)),
+    row('Einstandswert', fmt.format(costValue)),
+    row('Entwicklung', `${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}`, pnlClass),
+    row('Entwicklung %', fmtPct(pnlPct), pnlClass),
+    row('Anteil Portfolio', `${fmtNum(meta?.portfolioSharePct ?? pctPortfolio, 2)} %`),
+    row('Anteil ETFs/Fonds', meta?.fundSharePct != null ? `${fmtNum(meta.fundSharePct, 2)} %` : null),
+    row('Lagerstelle', meta?.custodian),
+    row('Verwahrart', meta?.custodyType)
+  ].join('');
+  const lotRows = lots.length ? `<div class="lot-table">
+    <div class="lot-row head"><span>Datum</span><span>Stück</span><span>Einstand</span><span>Wert</span></div>
+    ${lots.map(lot => `<div class="lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)}</span><span>${fmt.format(lot.costPrice)}</span><span>${fmt.format(lot.value)}</span></div>`).join('')}
+  </div>` : '';
+  return `<div class="stammdaten-box"><div class="stammdaten-title">Depot-Stammdaten</div><div class="stammdaten-grid">${rows}</div>${lotRows}</div>`;
+}
 
 // ===== RISIKO + KATEGORIEN =====
 const SMALLCAP_CRYPTO_IDS = ['sui', 'apex', 'aptos', 'arbitrum', 'optimism', 'celestia', 'sei-network', 'injective-protocol', 'starknet'];
@@ -897,8 +1451,45 @@ function metalGramsAtDate(metal, date) {
   const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
   return lots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.grams) || 0) : sum, 0);
 }
+// Versucht historischen Preis pro Gramm zum Datum zu finden. Fallback: aktueller Spotpreis.
+function metalPriceAtDate(metal, date) {
+  const hist = appData?.metalHistory?.[metal.key];
+  if (!hist) return metalPrice(metal);
+  const iso = date instanceof Date ? toIsoDate(date) : String(date);
+  // Sortierte Keys-Liste; nehme den letzten verfügbaren <= iso
+  const keys = Object.keys(hist).sort();
+  let matched = null;
+  for (const k of keys) { if (k <= iso) matched = k; else break; }
+  if (matched && hist[matched] > 0) return hist[matched];
+  // Falls iso vor erstem Eintrag liegt: nimm den ältesten verfügbaren
+  if (keys.length > 0 && hist[keys[0]] > 0) return hist[keys[0]];
+  return metalPrice(metal);
+}
 function metalsValueAtDate(date, isToday) {
-  return METALS.reduce((sum, metal) => sum + metalGramsAtDate(metal, date) * metalPrice(metal), 0);
+  return METALS.reduce((sum, metal) => sum + metalGramsAtDate(metal, date) * (isToday ? metalPrice(metal) : metalPriceAtDate(metal, date)), 0);
+}
+// Lädt historische Gold-Preise via PAXG (1 PAXG = 1 troy ounce). Resultat: €/Gramm pro Datum.
+async function fetchMetalHistory(daysBack = 365) {
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/pax-gold/market_chart?vs_currency=eur&days=${daysBack}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const pts = data.prices || [];
+    if (!pts.length) return;
+    if (!appData.metalHistory) appData.metalHistory = {};
+    const goldHist = {};
+    // 1 Tag = 1 Eintrag (CoinGecko gibt bei 90+ Tagen tägliche Punkte)
+    const seen = new Set();
+    pts.forEach(([ts, ozPrice]) => {
+      const d = new Date(ts);
+      const iso = d.toISOString().slice(0, 10);
+      if (seen.has(iso)) return;
+      seen.add(iso);
+      goldHist[iso] = ozPrice / 31.1035; // €/g
+    });
+    appData.metalHistory.gold = goldHist;
+    appData.metalHistory.updatedAt = new Date().toISOString();
+  } catch (e) { console.warn('Metal-Historie (PAXG) fetch failed:', e); }
 }
 function startMetalsProgress() {
   const wrap = document.getElementById('metalsProgress'), fill = document.getElementById('metalsProgressFill'), eta = document.getElementById('metalsProgressEta'), text = document.getElementById('metalsProgressText'), btn = document.getElementById('metalsRefreshBtn');
@@ -1060,7 +1651,396 @@ function renderAllocation(totals) {
       drill.style.display = '';
     } else { drill.style.display = 'none'; }
   }
+  // Risiko-Regeln direkt mit aktualisieren
+  renderRiskRules(totals, alloc);
   return alloc;
+}
+
+// ===== RISIKO-REGELN =====
+function getRiskRules() {
+  return (appData?.goal?.riskRules) || {
+    maxSinglePosition: 25,  // % vom Depot
+    maxCryptoTotal: 30,      // %
+    minEtf: 25,              // %
+    minCash: 5               // %
+  };
+}
+function evaluateRiskRules(totals, alloc) {
+  const rules = getRiskRules();
+  const items = [];
+  if (!totals || totals.totalCur <= 0 || !alloc) return items;
+  // Größte Einzelposition
+  let largest = null, largestPct = 0;
+  getAllPositions().forEach(pos => {
+    let value = 0;
+    if (pos.special === 'cash') value = appData.goal?.cash || 0;
+    else if (pos.special === 'metals') value = metalsTotalValue();
+    else { const live = currentPrices[pos.id] || { price: pos.costPrice }; value = live.price * (pos.shares || 0); }
+    const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
+    if (pct > largestPct) { largestPct = pct; largest = pos; }
+  });
+  items.push({
+    label: `Max. Einzelposition (Ziel ≤ ${rules.maxSinglePosition} %)`,
+    value: largest ? `${escapeHtml(largest.name)}: ${fmtNum(largestPct, 1)} %` : '—',
+    violated: largestPct > rules.maxSinglePosition,
+    rawPct: largestPct
+  });
+  items.push({
+    label: `Krypto-Anteil (Ziel ≤ ${rules.maxCryptoTotal} %)`,
+    value: `${fmtNum(alloc.pcts.crypto, 1)} %`,
+    violated: alloc.pcts.crypto > rules.maxCryptoTotal,
+    rawPct: alloc.pcts.crypto
+  });
+  items.push({
+    label: `ETF-Anteil (Ziel ≥ ${rules.minEtf} %)`,
+    value: `${fmtNum(alloc.pcts.etf, 1)} %`,
+    violated: alloc.pcts.etf < rules.minEtf,
+    rawPct: alloc.pcts.etf
+  });
+  items.push({
+    label: `Cash-Anteil (Ziel ≥ ${rules.minCash} %)`,
+    value: `${fmtNum(alloc.pcts.cash, 1)} %`,
+    violated: alloc.pcts.cash < rules.minCash,
+    rawPct: alloc.pcts.cash
+  });
+  return items;
+}
+// ============== STRATEGISCHE FEATURES (Rebalancing, Watchlist, Journal) ==
+function ensureWatchlist() { if (!Array.isArray(appData.watchlist)) appData.watchlist = []; return appData.watchlist; }
+function ensureJournal() { if (!Array.isArray(appData.journal)) appData.journal = []; return appData.journal; }
+function getTargetAllocation() {
+  return appData?.goal?.targetAllocation || { etf: 40, aktie: 25, crypto: 20, gold: 10, cash: 5 };
+}
+
+// ----- Rebalancing -----
+function renderRebalancing(totals, alloc) {
+  const body = document.getElementById('rebalBody');
+  const statusBadge = document.getElementById('rebStatus');
+  if (!body || !totals || !alloc) return;
+  const target = getTargetAllocation();
+  const cats = ['etf', 'aktie', 'crypto', 'gold', 'cash'];
+  const labels = { etf: 'ETF', aktie: 'Aktien', crypto: 'Krypto', gold: 'Edelmetalle', cash: 'Cash' };
+  let totalDelta = 0;
+  const rows = cats.map(cat => {
+    const actualPct = alloc.pcts[cat] || 0;
+    const targetPct = target[cat] || 0;
+    const deltaPct = actualPct - targetPct;
+    const deltaEur = (deltaPct / 100) * totals.totalCur;
+    totalDelta += Math.abs(deltaEur);
+    const cls = Math.abs(deltaPct) < 2 ? 'ok' : (deltaPct > 0 ? 'over' : 'under');
+    return `<div class="reb-row">
+      <span class="lbl">${labels[cat]}</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="number" step="1" min="0" max="100" data-reb-target="${cat}" value="${targetPct}"> %
+        <span style="color:var(--text-muted);font-size:10px;">aktuell ${fmtNum(actualPct, 1)} %</span>
+      </div>
+      <span class="delta ${cls}">${deltaPct >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} %<br><span style="font-size:10px;">${deltaEur >= 0 ? '+' : '−'}${fmt.format(Math.abs(deltaEur))}</span></span>
+    </div>`;
+  }).join('');
+  // Sparrate-Hinweis: in welche Klasse fließt sie?
+  const savingsRate = appData.goal?.savingsRate || 0;
+  const underweight = cats.filter(c => (alloc.pcts[c] || 0) < (target[c] || 0)).map(c => ({ cat: c, gap: (target[c] - (alloc.pcts[c] || 0)) / 100 * totals.totalCur }));
+  underweight.sort((a, b) => b.gap - a.gap);
+  let savingsHint = '';
+  if (savingsRate > 0 && underweight.length > 0) {
+    const months = [3, 6, 12].map(m => {
+      const u = underweight[0];
+      const fill = (savingsRate * m / u.gap) * 100;
+      return `${m} Mo → ${labels[u.cat]} ${fill >= 100 ? 'gedeckt' : '+' + fmtNum(fill, 0) + ' % der Lücke'}`;
+    });
+    savingsHint = `<div class="reb-sum-total">Sparrate ${fmt.format(savingsRate)}/Mo zuerst in <strong>${labels[underweight[0].cat]}</strong> (${fmt.format(underweight[0].gap)} Lücke). ${months.join(' · ')}</div>`;
+  }
+  body.innerHTML = `
+    ${rows}
+    <div class="reb-summary">
+      Gesamt-Umschichtungsbedarf: <strong>${fmt.format(totalDelta / 2)}</strong>
+      <div class="reb-sum-total">Geben die obigen Ziel-Werte ein. Werte werden in deinem Profil gespeichert.</div>
+      ${savingsHint}
+    </div>`;
+  // Status-Badge
+  const violations = cats.filter(c => Math.abs((alloc.pcts[c] || 0) - (target[c] || 0)) >= 5).length;
+  if (statusBadge) statusBadge.textContent = violations === 0 ? 'im Ziel' : violations + ' abweichend';
+  // Event-Listener für Ziel-Inputs
+  body.querySelectorAll('[data-reb-target]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const c = inp.dataset.rebTarget;
+      const v = Math.max(0, Math.min(100, parseFloat(inp.value) || 0));
+      if (!appData.goal) appData.goal = {};
+      if (!appData.goal.targetAllocation) appData.goal.targetAllocation = { ...target };
+      appData.goal.targetAllocation[c] = v;
+      await savePositionsToKV();
+      renderRebalancing(totals, alloc);
+    });
+  });
+}
+
+// ----- Watchlist -----
+let editingWatchId = null;
+function openWatchModal(id) {
+  editingWatchId = id || null;
+  const wl = ensureWatchlist();
+  const entry = id ? wl.find(w => w.id === id) : null;
+  document.getElementById('watchTitle').textContent = entry ? 'Watchlist bearbeiten' : 'Watchlist-Eintrag hinzufügen';
+  document.getElementById('wlName').value = entry?.name || '';
+  document.getElementById('wlSymbol').value = entry?.symbol || '';
+  document.getElementById('wlTarget').value = entry?.targetEntry != null ? entry.targetEntry : '';
+  document.getElementById('wlReason').value = entry?.reason || '';
+  document.getElementById('wlRisk').value = entry?.risk || 'medium';
+  document.getElementById('wlSize').value = entry?.plannedSize != null ? entry.plannedSize : '';
+  document.getElementById('watchModal').classList.add('active');
+  setTimeout(() => document.getElementById('wlName').focus(), 50);
+}
+function closeWatchModal() { document.getElementById('watchModal').classList.remove('active'); editingWatchId = null; }
+async function saveWatchModal() {
+  const name = document.getElementById('wlName').value.trim();
+  if (!name) { alert('Bitte einen Namen eingeben.'); return; }
+  const entry = {
+    name,
+    symbol: document.getElementById('wlSymbol').value.trim(),
+    targetEntry: parseFloat(document.getElementById('wlTarget').value) || null,
+    reason: document.getElementById('wlReason').value.trim(),
+    risk: document.getElementById('wlRisk').value || 'medium',
+    plannedSize: parseFloat(document.getElementById('wlSize').value) || null
+  };
+  const wl = ensureWatchlist();
+  if (editingWatchId) {
+    const idx = wl.findIndex(w => w.id === editingWatchId);
+    if (idx >= 0) wl[idx] = { ...wl[idx], ...entry };
+  } else {
+    entry.id = 'wl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    entry.createdAt = new Date().toISOString();
+    wl.push(entry);
+  }
+  closeWatchModal();
+  await savePositionsToKV();
+  renderWatchlist();
+}
+async function deleteWatchEntry(id) {
+  if (!confirm('Watchlist-Eintrag wirklich löschen?')) return;
+  appData.watchlist = (appData.watchlist || []).filter(w => w.id !== id);
+  await savePositionsToKV();
+  renderWatchlist();
+}
+function renderWatchlist() {
+  const list = document.getElementById('watchlistList');
+  const count = document.getElementById('watchlistCount');
+  if (!list) return;
+  const wl = ensureWatchlist();
+  if (count) count.textContent = String(wl.length);
+  if (wl.length === 0) {
+    list.innerHTML = '<div class="strat-empty">Noch keine Watchlist-Einträge. Tap "Eintrag hinzufügen".</div>';
+    return;
+  }
+  list.innerHTML = wl.map(w => `
+    <div class="strat-item">
+      <div class="info">
+        <div class="name">${escapeHtml(w.name)}${w.symbol ? ' <span style="color:var(--text-muted);font-weight:400;">· ' + escapeHtml(w.symbol) + '</span>' : ''}<span class="risk-badge risk-${w.risk || 'medium'}" style="margin-left:6px;">${riskLabel(w.risk || 'medium')}</span></div>
+        <div class="meta">${w.targetEntry ? 'Einstieg bei ' + fmtNum(w.targetEntry) + ' €' : ''}${w.plannedSize ? ' · Größe ' + fmt.format(w.plannedSize) : ''}</div>
+        ${w.reason ? `<div class="reason">${escapeHtml(w.reason)}</div>` : ''}
+      </div>
+      <div class="actions">
+        <button data-watch-edit="${w.id}" title="Bearbeiten" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="danger" data-watch-del="${w.id}" title="Löschen" aria-label="Löschen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`).join('');
+}
+
+// ----- Entscheidungsjournal -----
+let editingJournalId = null;
+function openJournalModal(id) {
+  editingJournalId = id || null;
+  const j = ensureJournal();
+  const entry = id ? j.find(e => e.id === id) : null;
+  document.getElementById('journalTitle').textContent = entry ? 'Journal bearbeiten' : 'Journal-Eintrag hinzufügen';
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('jrDate').value = entry?.date || today;
+  document.getElementById('jrDecision').value = entry?.decision || '';
+  document.getElementById('jrReason').value = entry?.reason || '';
+  document.getElementById('jrExpect').value = entry?.expectation || '';
+  document.getElementById('jrReview').value = entry?.reviewDate || '';
+  document.getElementById('journalModal').classList.add('active');
+  setTimeout(() => document.getElementById('jrDecision').focus(), 50);
+}
+function closeJournalModal() { document.getElementById('journalModal').classList.remove('active'); editingJournalId = null; }
+async function saveJournalModal() {
+  const decision = document.getElementById('jrDecision').value.trim();
+  if (!decision) { alert('Bitte eine Entscheidung eingeben.'); return; }
+  const entry = {
+    date: document.getElementById('jrDate').value || new Date().toISOString().slice(0, 10),
+    decision,
+    reason: document.getElementById('jrReason').value.trim(),
+    expectation: document.getElementById('jrExpect').value.trim(),
+    reviewDate: document.getElementById('jrReview').value || null,
+    status: 'open'
+  };
+  const j = ensureJournal();
+  if (editingJournalId) {
+    const idx = j.findIndex(e => e.id === editingJournalId);
+    if (idx >= 0) j[idx] = { ...j[idx], ...entry };
+  } else {
+    entry.id = 'jr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    j.push(entry);
+  }
+  j.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  closeJournalModal();
+  await savePositionsToKV();
+  renderJournal();
+}
+async function deleteJournalEntry(id) {
+  if (!confirm('Journal-Eintrag wirklich löschen?')) return;
+  appData.journal = (appData.journal || []).filter(e => e.id !== id);
+  await savePositionsToKV();
+  renderJournal();
+}
+async function toggleJournalDone(id) {
+  const j = ensureJournal();
+  const entry = j.find(e => e.id === id);
+  if (!entry) return;
+  entry.status = entry.status === 'done' ? 'open' : 'done';
+  await savePositionsToKV();
+  renderJournal();
+}
+function renderJournal() {
+  const list = document.getElementById('journalList');
+  const count = document.getElementById('journalCount');
+  if (!list) return;
+  const j = ensureJournal();
+  if (count) count.textContent = String(j.length);
+  if (j.length === 0) {
+    list.innerHTML = '<div class="strat-empty">Noch keine Journal-Einträge. Halte Entscheidungen mit Begründung und Review-Datum fest.</div>';
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  list.innerHTML = j.map(e => {
+    let statusCls = 'open', statusLabel = 'OFFEN';
+    if (e.status === 'done') { statusCls = 'done'; statusLabel = 'ERLEDIGT'; }
+    else if (e.reviewDate && e.reviewDate <= today) { statusCls = 'due'; statusLabel = 'REVIEW FÄLLIG'; }
+    return `<div class="strat-item">
+      <div class="info">
+        <div class="name">${escapeHtml(e.decision)} <span class="journal-status ${statusCls}">${statusLabel}</span></div>
+        <div class="meta">${formatDateAT(e.date)}${e.reviewDate ? ' · Review: ' + formatDateAT(e.reviewDate) : ''}</div>
+        ${e.reason ? `<div class="reason"><strong>Grund:</strong> ${escapeHtml(e.reason)}</div>` : ''}
+        ${e.expectation ? `<div class="reason"><strong>Erwartung:</strong> ${escapeHtml(e.expectation)}</div>` : ''}
+      </div>
+      <div class="actions">
+        <button data-journal-toggle="${e.id}" title="Erledigt umschalten" aria-label="Status umschalten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+        <button data-journal-edit="${e.id}" title="Bearbeiten" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="danger" data-journal-del="${e.id}" title="Löschen" aria-label="Löschen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== BACKUP · EXPORT · IMPORT =====
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+function backupJson() {
+  if (!appData) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    schemaVersion: appData.schemaVersion || 1,
+    user: typeof USER_KEY !== 'undefined' ? USER_KEY : 'unknown',
+    positions: appData.positions || [],
+    goal: appData.goal || {},
+    transactions: appData.transactions || [],
+    metalHistory: appData.metalHistory || null,
+    watchlist: appData.watchlist || [],
+    journal: appData.journal || [],
+    chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
+  };
+  downloadBlob(JSON.stringify(payload, null, 2), `portfolio-backup-${today}.json`, 'application/json');
+}
+function backupCsv() {
+  if (!appData) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = [['date', 'assetId', 'assetType', 'txType', 'quantity', 'price', 'value', 'fees', 'note']];
+  (appData.transactions || []).forEach(t => {
+    rows.push([
+      t.date || '',
+      t.assetId || '',
+      t.assetType || '',
+      t.txType || '',
+      String(t.quantity ?? ''),
+      String(t.price ?? ''),
+      String(t.value ?? ''),
+      String(t.fees ?? 0),
+      (t.note || '').replace(/"/g, '""')
+    ]);
+  });
+  const csv = rows.map(row => row.map(cell => /[",\n]/.test(cell) ? `"${cell}"` : cell).join(',')).join('\n');
+  downloadBlob(csv, `portfolio-transactions-${today}.csv`, 'text/csv');
+}
+async function importJson(file) {
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data || typeof data !== 'object') throw new Error('Ungültiges JSON');
+    // Vorschau zusammenstellen
+    const lines = [
+      `Schema-Version: ${data.schemaVersion || '?'}`,
+      `Positionen: ${Array.isArray(data.positions) ? data.positions.length : 0}`,
+      `Transaktionen: ${Array.isArray(data.transactions) ? data.transactions.length : 0}`,
+      `Ziel: ${data.goal?.amount || '?'} € bis ${data.goal?.year || '?'}`,
+      `Cash: ${data.goal?.cash != null ? data.goal.cash + ' €' : '—'}`,
+      `Gedächtnis: ${data.chatMemorySummary ? data.chatMemorySummary.length + ' Zeichen' : 'leer'}`
+    ];
+    const ok = confirm(`Backup importieren? Dies überschreibt deine aktuellen Daten.\n\n${lines.join('\n')}\n\nFortfahren?`);
+    if (!ok) return;
+    if (Array.isArray(data.positions)) appData.positions = data.positions;
+    if (data.goal) appData.goal = data.goal;
+    if (Array.isArray(data.transactions)) appData.transactions = data.transactions;
+    if (data.metalHistory) appData.metalHistory = data.metalHistory;
+    if (Array.isArray(data.watchlist)) appData.watchlist = data.watchlist;
+    if (Array.isArray(data.journal)) appData.journal = data.journal;
+    if (data.schemaVersion) appData.schemaVersion = data.schemaVersion;
+    if (typeof data.chatMemorySummary === 'string') {
+      chatMemorySummary = data.chatMemorySummary;
+      try { await saveChatMemorySummary(); } catch {}
+    }
+    await savePositionsToKV();
+    await refreshUI();
+    alert('Import erfolgreich.');
+  } catch (e) {
+    alert('Fehler beim Import: ' + (e.message || e));
+  }
+}
+
+function renderRiskRules(totals, alloc) {
+  const section = document.getElementById('riskRulesSection');
+  const head = document.getElementById('riskRulesHead');
+  const list = document.getElementById('riskRulesList');
+  if (!section || !head || !list) return;
+  const items = evaluateRiskRules(totals, alloc);
+  const violations = items.filter(i => i.violated);
+  const hasViolations = violations.length > 0;
+  section.classList.toggle('has-violations', hasViolations);
+  const headSpan = head.querySelector('span');
+  if (headSpan) {
+    if (hasViolations) {
+      headSpan.innerHTML = `<span class="warn">Risiko-Regeln · ${violations.length} verletzt</span>`;
+    } else {
+      headSpan.innerHTML = `<span class="ok">Risiko-Regeln · alle eingehalten</span>`;
+    }
+  }
+  if (items.length === 0) {
+    list.innerHTML = '<div class="risk-rules-empty">Keine Daten zur Auswertung verfügbar.</div>';
+    return;
+  }
+  list.innerHTML = items.map(item => `
+    <div class="risk-rule-item">
+      <span class="lbl">${item.label}</span>
+      <span class="val ${item.violated ? 'violated' : 'ok'}">${item.value}</span>
+    </div>`).join('');
 }
 
 // ===== KI-EMPFEHLUNG pro Position (heuristisch) =====
@@ -1168,6 +2148,8 @@ async function handleGate() {
   try {
     appData = await ENC.decrypt(BAKED_BLOB, code);
     appPassword = code;
+    if (!Array.isArray(appData.transactions)) appData.transactions = [];
+    if (!appData.schemaVersion) appData.schemaVersion = 1;
     document.getElementById('gatePw').value = '';
     showScreen('appScreen');
     // Falls KV-Daten vorhanden, mit gebakten Daten zusammenführen (KV gewinnt)
@@ -1176,8 +2158,18 @@ async function handleGate() {
       if (kvData && kvData.positions && Array.isArray(kvData.positions) && kvData.positions.length > 0) {
         appData.positions = kvData.positions;
         if (kvData.goal) appData.goal = kvData.goal;
+        if (Array.isArray(kvData.transactions)) appData.transactions = kvData.transactions;
+        if (kvData.schemaVersion) appData.schemaVersion = kvData.schemaVersion;
+        if (kvData.metalHistory) appData.metalHistory = kvData.metalHistory;
+        if (Array.isArray(kvData.watchlist)) appData.watchlist = kvData.watchlist;
+        if (Array.isArray(kvData.journal)) appData.journal = kvData.journal;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
+    applyPositionStammdaten();
+    // Schema-Migration (v1 -> v2: Transaktionsmodell)
+    const wasMigrated = !(Number(appData.schemaVersion) >= 2);
+    migrateSchemaIfNeeded();
+    if (wasMigrated) { try { await savePositionsToKV(); console.log('Schema migriert auf v' + appData.schemaVersion); } catch (e) { console.warn('Migration-Save fehlgeschlagen:', e); } }
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
@@ -1276,10 +2268,34 @@ function renderChart(canvasId, points, valueKey, opts) {
   const isUp = values[values.length - 1] >= values[0];
   const color = isUp ? '#22c55e' : '#f87171';
   const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
+  // Hauptserie + optionale Zusatzserien (für Depotchart: Einstand-Linie, P&L)
+  const datasets = [{
+    label: opts?.mainLabel || 'Depotwert',
+    data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8,
+    fill: true, tension: opts?.daily ? 0.15 : 0.3,
+    pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5,
+    pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1
+  }];
+  (opts?.extraSeries || []).forEach(s => {
+    if (s.hidden) return;
+    datasets.push({
+      label: s.label,
+      data: points.map(p => p[s.key]),
+      borderColor: s.color,
+      backgroundColor: 'transparent',
+      borderWidth: 1.4,
+      borderDash: s.dashed ? [6, 4] : undefined,
+      fill: false,
+      tension: 0.15,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointBackgroundColor: s.color
+    });
+  });
   new Chart(canvas, {
     type: 'line',
-    data: { labels: points.map(p => p.label || p.date), datasets: [{ data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8, fill: true, tension: opts?.daily ? 0.15 : 0.3, pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5, pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1 }] },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: false, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => fmt.format(item.parsed.y), afterBody: (items) => points[items[0].dataIndex].events || [] } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
+    data: { labels: points.map(p => p.label || p.date), datasets },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => points[items[0].dataIndex].events || [] } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
   });
 }
 
@@ -1306,6 +2322,7 @@ function buildCard(pos, totals, alloc) {
   const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
   const rec = getRecommendation(pos, totals, alloc);
   const recBlock = rec ? `<div class="rec-card rec-${rec.kind}"><div class="rec-icon">${recIcon(rec.kind)}</div><div class="rec-body"><div class="rec-label">KI-Empfehlung</div><div class="rec-action">${escapeHtml(rec.action)}</div><div class="rec-reason">${escapeHtml(rec.reason)}</div></div></div>` : '';
+  const stammdatenBlock = buildStammdatenSection(pos, live, totals);
   wrap.innerHTML = `
     <div class="card-collapsed-row">
       <div class="card-collapsed-left">
@@ -1332,6 +2349,7 @@ function buildCard(pos, totals, alloc) {
         <div class="price-grid-cell"><div class="lbl">Abstand</div><div class="val ${pnlClass}">${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 1)} %</div></div>
         <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
       </div>
+      ${stammdatenBlock}
       <div class="chart-controls-row">
         <div class="chart-label">Kursverlauf</div>
         <div class="chart-tabs" id="chartTabs-${pos.id}">
@@ -1358,11 +2376,6 @@ function buildCard(pos, totals, alloc) {
   return wrap;
 }
 
-function formatDateAT(iso) {
-  if (!iso) return '—';
-  const [y, m, d] = String(iso).split('-');
-  return y && m && d ? `${d}.${m}.${y}` : String(iso);
-}
 function buildMetalLotsBlock(metal) {
   const lots = metalLots(metal);
   const grams = metalGrams(metal);
@@ -1402,27 +2415,118 @@ async function rerenderMetalsOpen() {
   renderHistory();
   await savePositionsToKV();
 }
-async function addMetalLot(metalKey) {
+let pendingMetalKey = null;
+function addMetalLot(metalKey) {
+  // Öffnet das Modal — eigentliches Speichern in saveMetalLotModal
   const metal = METALS.find(m => m.key === metalKey);
   if (!metal) return;
+  pendingMetalKey = metalKey;
   const today = toIsoDate(new Date());
-  const date = prompt(`${metal.name}-Kaufdatum (YYYY-MM-DD)`, today);
-  if (!date) return;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte Datum als YYYY-MM-DD eingeben.'); return; }
-  const gramsRaw = prompt(`${metal.name}: Wie viele Gramm?`, '1');
-  if (!gramsRaw) return;
-  const grams = parseFloat(String(gramsRaw).replace(',', '.'));
-  if (!isFinite(grams) || grams <= 0) { alert('Bitte gültige Gramm eingeben.'); return; }
-  const valueRaw = prompt(`${metal.name}: Kaufwert gesamt in Euro?`, (grams * metalPrice(metal)).toFixed(2));
-  if (!valueRaw) return;
-  const value = parseFloat(String(valueRaw).replace(',', '.'));
+  document.getElementById('metalLotTitle').textContent = `${metal.name}-Kauf hinzufügen`;
+  document.getElementById('mlDate').value = today;
+  document.getElementById('mlGrams').value = '';
+  document.getElementById('mlValue').value = '';
+  document.getElementById('mlFees').value = '';
+  document.getElementById('mlStorage').value = 'physisch';
+  document.getElementById('mlValuation').value = 'spot';
+  document.getElementById('metalLotModal').classList.add('active');
+  setTimeout(() => document.getElementById('mlGrams').focus(), 50);
+}
+
+function closeMetalLotModal() {
+  document.getElementById('metalLotModal').classList.remove('active');
+  pendingMetalKey = null;
+}
+
+// ===== CASH-TRANSAKTIONEN =====
+let pendingCashTxType = 'deposit';
+function openCashTxModal(type) {
+  pendingCashTxType = type === 'withdraw' ? 'withdraw' : 'deposit';
+  document.getElementById('cashTxTitle').textContent = pendingCashTxType === 'deposit' ? 'Cash-Einzahlung' : 'Cash-Auszahlung';
+  document.getElementById('ctxDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ctxAmount').value = '';
+  document.getElementById('ctxNote').value = '';
+  document.getElementById('cashTxModal').classList.add('active');
+  setTimeout(() => document.getElementById('ctxAmount').focus(), 50);
+}
+function closeCashTxModal() { document.getElementById('cashTxModal').classList.remove('active'); }
+async function saveCashTxModal() {
+  const date = document.getElementById('ctxDate').value;
+  const amount = parseFloat(String(document.getElementById('ctxAmount').value).replace(',', '.'));
+  const note = document.getElementById('ctxNote').value.trim();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
+  if (!isFinite(amount) || amount <= 0) { alert('Bitte gültigen Betrag eingeben.'); return; }
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  appData.transactions.push({
+    id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: pendingCashTxType,
+    quantity: amount, price: 1, value: amount, fees: 0,
+    note: note || (pendingCashTxType === 'deposit' ? 'Einzahlung' : 'Auszahlung')
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeCashTxModal();
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+}
+function openCashTxList() {
+  const wrap = document.getElementById('cashTxListWrap');
+  const txs = (appData?.transactions || []).filter(t => t.assetType === 'cash').slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (txs.length === 0) { wrap.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px;">Noch keine Cash-Bewegungen erfasst.</div>'; }
+  else {
+    wrap.innerHTML = txs.map(t => `
+      <div class="cash-tx-item">
+        <div class="cash-tx-meta">
+          <div>${t.txType === 'deposit' ? 'Einzahlung' : t.txType === 'withdraw' ? 'Auszahlung' : t.txType}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
+          <div class="cash-tx-date">${formatDateAT(t.date)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="cash-tx-val ${t.txType}">${t.txType === 'withdraw' ? '−' : '+'}${fmt.format(t.value)}</span>
+          <button class="cash-tx-del" data-cash-del="${t.id}" title="Löschen">×</button>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('cashTxListModal').classList.add('active');
+}
+function closeCashTxList() { document.getElementById('cashTxListModal').classList.remove('active'); }
+async function deleteCashTx(txId) {
+  if (!confirm('Diese Cash-Bewegung wirklich löschen?')) return;
+  appData.transactions = (appData.transactions || []).filter(t => t.id !== txId);
+  await savePositionsToKV();
+  openCashTxList();
+  await refreshUI({ skipAI: true });
+}
+
+async function saveMetalLotModal() {
+  if (!pendingMetalKey) return;
+  const metal = METALS.find(m => m.key === pendingMetalKey);
+  if (!metal) return closeMetalLotModal();
+  const date = document.getElementById('mlDate').value;
+  const grams = parseFloat(String(document.getElementById('mlGrams').value).replace(',', '.'));
+  const value = parseFloat(String(document.getElementById('mlValue').value).replace(',', '.'));
+  const fees = parseFloat(String(document.getElementById('mlFees').value || '0').replace(',', '.'));
+  const storage = document.getElementById('mlStorage').value;
+  const valuation = document.getElementById('mlValuation').value;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum wählen.'); return; }
+  if (!isFinite(grams) || grams <= 0) { alert('Bitte gültige Gramm-Zahl eingeben.'); return; }
   if (!isFinite(value) || value <= 0) { alert('Bitte gültigen Kaufwert eingeben.'); return; }
   const goalState = ensureGoal();
   if (!goalState.metalLots) goalState.metalLots = {};
   if (!Array.isArray(goalState.metalLots[metal.key])) goalState.metalLots[metal.key] = [];
-  goalState.metalLots[metal.key].push({ date, grams, value });
+  const lot = { date, grams, value };
+  if (isFinite(fees) && fees > 0) lot.fees = fees;
+  if (storage) lot.storage = storage;
+  if (valuation) lot.valuation = valuation;
+  goalState.metalLots[metal.key].push(lot);
   goalState.metalLots[metal.key].sort((a, b) => a.date.localeCompare(b.date));
   goalState[metal.gramsKey] = metalGrams(metal);
+  // Transaktion ins zentrale Modell schreiben (Schema v2)
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  appData.transactions.push({
+    id: makeTxId(), date, assetId: 'metal_' + metal.key, assetType: 'metal', txType: 'buy',
+    quantity: grams, price: grams > 0 ? value / grams : 0, value, fees: fees > 0 ? fees : 0,
+    note: storage ? ('Lager: ' + storage) : ''
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeMetalLotModal();
   await rerenderMetalsOpen();
 }
 async function deleteMetalLot(metalKey, index) {
@@ -1430,8 +2534,18 @@ async function deleteMetalLot(metalKey, index) {
   const lots = metal ? metalLots(metal) : [];
   if (!metal || !lots[index]) return;
   if (!confirm(`${metal.name}-Kauf vom ${formatDateAT(lots[index].date)} löschen?`)) return;
+  const lot = lots[index];
   ensureGoal().metalLots[metal.key].splice(index, 1);
   ensureGoal()[metal.gramsKey] = metalGrams(metal);
+  // Auch korrespondierende Transaktion entfernen (Match per Datum + Gramm + Wert)
+  if (Array.isArray(appData.transactions)) {
+    const assetId = 'metal_' + metal.key;
+    const idx = appData.transactions.findIndex(t =>
+      t.assetId === assetId && t.txType === 'buy' && t.date === lot.date &&
+      Math.abs(t.quantity - (lot.grams || 0)) < 1e-6 && Math.abs(t.value - (lot.value || 0)) < 0.01
+    );
+    if (idx >= 0) appData.transactions.splice(idx, 1);
+  }
   await rerenderMetalsOpen();
 }
 
@@ -1496,13 +2610,28 @@ function buildSpecialCard(kind, totals) {
         </div>
       </details>`;
   } else {
-    const cash = appData.goal?.cash || 0;
+    const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
+    const computed = hasCashTx ? getCashBalance() : null;
+    const cash = hasCashTx ? Math.max(0, computed) : (appData.goal?.cash || 0);
     const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
     wrap.id = 'card-cash';
+    const sliderHtml = hasCashTx ? `
+      <div class="special-slider-wrap" style="opacity:0.6;">
+        <span class="special-slider-min">0 €</span>
+        <input type="range" min="0" max="20000" step="20" value="${cash}" disabled>
+        <span class="special-slider-val">${fmt.format(cash)}</span>
+      </div>
+      <div class="cash-tx-hint">Wert wird aus Cash-Bewegungen berechnet · Regler deaktiviert</div>
+    ` : `
+      <div class="special-slider-wrap">
+        <span class="special-slider-min">0 €</span>
+        <input type="range" id="cashSlider" min="0" max="20000" step="20" value="${cash}">
+        <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
+      </div>`;
     wrap.innerHTML = `
       <div class="special-card-row">
         <div class="card-collapsed-left">
-          <div class="card-name-row"><span class="card-name">Cash</span><span class="risk-badge risk-low">NIEDRIG</span></div>
+          <div class="card-name-row"><span class="card-name">Cash</span><span class="risk-badge risk-low">NIEDRIG</span>${hasCashTx ? '<span class="risk-badge risk-low">AUS TX</span>' : ''}</div>
           <div class="card-meta-line">Bargeld · Verrechnungskonto · <span class="pct-portfolio">${fmtNum(pct, 0)} % Portfolio</span></div>
         </div>
         <div class="card-pnl-mini">
@@ -1510,10 +2639,11 @@ function buildSpecialCard(kind, totals) {
           <div class="pct" style="color:#666;">Reserve</div>
         </div>
       </div>
-      <div class="special-slider-wrap">
-        <span class="special-slider-min">0 €</span>
-        <input type="range" id="cashSlider" min="0" max="20000" step="20" value="${cash}">
-        <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
+      ${sliderHtml}
+      <div class="cash-tx-toolbar">
+        <button class="cash-tx-btn" id="cashAddDepositBtn" type="button">+ Einzahlung</button>
+        <button class="cash-tx-btn" id="cashAddWithdrawBtn" type="button">− Auszahlung</button>
+        <button class="cash-tx-btn cash-tx-list" id="cashShowTxBtn" type="button">Bewegungen</button>
       </div>`;
   }
   return wrap;
@@ -1659,11 +2789,6 @@ function historyStartDate(period, today) {
   else start.setMonth(today.getMonth() - 12);
   return start;
 }
-function sharesAtDate(pos, date) {
-  if (!pos.purchaseLots || !pos.purchaseLots.length) return pos.shares;
-  const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
-  return pos.purchaseLots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.shares) || 0) : sum, 0);
-}
 function priceForHistoryDate(pos, date, isToday) {
   if (isToday) return (currentPrices[pos.id] || { price: pos.costPrice }).price;
   if (pos.monthlyHistory) {
@@ -1705,9 +2830,12 @@ function buildPortfolioHistory(period) {
       dayTotal += priceForHistoryDate(pos, d, isToday) * sharesAtDate(pos, d);
     });
     dayTotal += metalsValueAtDate(d, isToday) + cashValue;
+    const invested = getInvestedCapital(d);
+    const value = isToday ? currentTotals : dayTotal;
+    const pnl = value - invested;
     const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
     const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value: isToday ? currentTotals : dayTotal, events: purchaseEventsForDate(d) });
+    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, pnl, events: purchaseEventsForDate(d) });
   }
   return points;
 }
@@ -1715,7 +2843,28 @@ function buildPortfolioHistory(period) {
 function renderHistory() {
   const points = buildPortfolioHistory(currentHistoryPeriod);
   if (points.length < 2) return;
-  renderChart('historyChart', points, 'value', { compactY: true, daily: true });
+  // Zielpfad: linear interpolation vom Startpunkt bis zum Ziel-Enddatum
+  if (historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
+    const goalEnd = new Date(appData.goal.year, 11, 31);
+    const startVal = points[0].value;
+    const goalVal = appData.goal.amount;
+    const startMs = points[0].date.getTime();
+    const goalMs = goalEnd.getTime();
+    const span = goalMs - startMs;
+    points.forEach(p => {
+      if (span > 0) {
+        const pct = Math.max(0, Math.min(1, (p.date.getTime() - startMs) / span));
+        p.goal = startVal + (goalVal - startVal) * pct;
+      } else { p.goal = goalVal; }
+    });
+  }
+  const extraSeries = [];
+  if (historyVisibleSeries.invested) extraSeries.push({ key: 'invested', label: 'Einstand', color: '#888', dashed: false });
+  if (historyVisibleSeries.pnl) extraSeries.push({ key: 'pnl', label: 'G/V', color: '#3b82f6', dashed: false });
+  if (historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
+  // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
+  const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
+  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, mainLabel: mainKey === 'value' ? 'Depotwert' : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
   const first = points[0], last = points[points.length - 1];
   const delta = last.value - first.value;
   const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
@@ -1727,6 +2876,33 @@ function renderHistory() {
   document.getElementById('historyStartValue').textContent = fmt.format(first.value);
   document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
+  // Performance-Kennzahlen
+  const totalDeposits = getTotalDeposits();
+  const invested = last.invested;
+  const grossEl = document.getElementById('historyReturnGross');
+  if (grossEl) {
+    if (invested > 0) {
+      const grossPct = ((last.value - invested) / invested) * 100;
+      grossEl.textContent = `${grossPct >= 0 ? '+' : ''}${fmtNum(grossPct, 1)} % · ${fmt.format(last.value - invested)}`;
+      grossEl.className = grossPct >= 0 ? 'positive' : 'negative';
+    } else { grossEl.textContent = '—'; }
+  }
+  const mwrEl = document.getElementById('historyReturnMwr');
+  if (mwrEl) {
+    const mwr = computeMWR(last.value);
+    if (mwr != null && isFinite(mwr)) {
+      const pct = mwr * 100;
+      mwrEl.textContent = `${pct >= 0 ? '+' : ''}${fmtNum(pct, 1)} % p.a.`;
+      mwrEl.className = pct >= 0 ? 'positive' : 'negative';
+    } else { mwrEl.textContent = '—'; }
+  }
+  // Cash-Historie-Hinweis einblenden, wenn Cash > 0 und (noch) keine Cash-Transaktionen vorhanden
+  const cashNoteEl = document.getElementById('cashHistoryNote');
+  if (cashNoteEl) {
+    const hasCash = (appData.goal?.cash || 0) > 0;
+    const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
+    cashNoteEl.style.display = (hasCash && !hasCashTx) ? '' : 'none';
+  }
 }
 
 function renderGoal(totals) {
@@ -1783,16 +2959,36 @@ function renderGoal(totals) {
 }
 
 function renderAnalysisLocal(totals, goal) {
-  const allocations = appData.positions.map(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; const value = live.price * pos.shares; return { name: pos.name, type: pos.type || '?', value, pct: (value / totals.totalCur) * 100, pnlPct: ((live.price - pos.costPrice) / pos.costPrice) * 100 }; }).sort((a, b) => b.pct - a.pct);
+  // Nutze getAllPositions() — bezieht Edelmetalle und Cash mit ein
+  const allocations = getAllPositions().map(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    let value, pnlPct;
+    if (pos.special === 'cash') {
+      value = appData.goal?.cash || 0;
+      pnlPct = 0;
+    } else if (pos.special === 'metals' || pos.type === 'Edelmetall') {
+      // Edelmetalle: Wert aus metalsTotalValue/metalValue, kein direkter pnlPct
+      value = (typeof metalsTotalValue === 'function' && pos.special === 'metals') ? metalsTotalValue() : (live.price * (pos.shares || 0));
+      pnlPct = 0;
+    } else {
+      value = live.price * pos.shares;
+      pnlPct = pos.costPrice > 0 ? ((live.price - pos.costPrice) / pos.costPrice) * 100 : 0;
+    }
+    return { name: pos.name, type: pos.type || '?', special: pos.special, value, pct: totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0, pnlPct };
+  }).sort((a, b) => b.pct - a.pct);
   const cryptoShare = allocations.filter(a => a.type === 'Crypto').reduce((s, a) => s + a.pct, 0);
   const stockShare = allocations.filter(a => a.type === 'Aktie').reduce((s, a) => s + a.pct, 0);
   const etfShare = allocations.filter(a => a.type === 'ETF').reduce((s, a) => s + a.pct, 0);
+  const metalShare = allocations.filter(a => a.special === 'metals' || a.type === 'Edelmetall').reduce((s, a) => s + a.pct, 0);
+  const cashShare = allocations.filter(a => a.special === 'cash').reduce((s, a) => s + a.pct, 0);
   const largestPos = allocations[0];
   const obs = [];
   if (cryptoShare > 30) obs.push(`Krypto-Anteil ${fmtNum(cryptoShare, 0)}% — hoher Volatilitätsanteil.`);
   if (stockShare > 35) obs.push(`Einzelaktien-Anteil ${fmtNum(stockShare, 0)}% — Einzelwert-Konzentration prüfen.`);
   if (etfShare < 30) obs.push(`ETF-Anteil nur ${fmtNum(etfShare, 0)}% — breit gestreute Kernpositionen sind klassischer Stabilisator.`);
-  if (largestPos.pct > 40) obs.push(`Größte Einzelposition (${largestPos.name}): ${fmtNum(largestPos.pct, 0)}% — überproportionales Klumpenrisiko.`);
+  if (cashShare < 5) obs.push(`Cash-Anteil nur ${fmtNum(cashShare, 0)}% — Reserve für Marktrücksetzer fehlt.`);
+  if (metalShare > 25) obs.push(`Edelmetall-Anteil ${fmtNum(metalShare, 0)}% — hoher Sachwertanteil.`);
+  if (largestPos.pct > 40) obs.push(`Größte Position (${largestPos.name}): ${fmtNum(largestPos.pct, 0)}% — überproportionales Klumpenrisiko.`);
   if (obs.length === 0) obs.push('Allokation wirkt ausgewogen.');
   const allocLines = allocations.map(a => `<div>• ${escapeHtml(a.name)} (${a.type}): <strong>${fmtNum(a.pct, 1)}%</strong> · ${fmt.format(a.value)} · ${fmtPct(a.pnlPct)}</div>`).join('');
   let goalRealityText;
@@ -1863,10 +3059,13 @@ async function refreshUI(opts = {}) {
   loadManualPrices();
   const totals = renderTotals();
   renderPositions(totals);
-  renderAllocation(totals);
+  const alloc = renderAllocation(totals);
   renderHistory();
   const goal = renderGoal(totals);
   renderSavingsSim(totals, goal);
+  if (alloc) renderRebalancing(totals, alloc);
+  renderWatchlist();
+  renderJournal();
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
   } else {
@@ -1887,6 +3086,7 @@ function scheduleAIRefresh() {
 
 let usageRefreshTimer = null;
 async function initApp() {
+  applyPositionStammdaten();
   if (appData.goal) {
     document.getElementById('goalYear').value = String(appData.goal.year);
     document.getElementById('goalAmount').value = String(appData.goal.amount);
@@ -1897,11 +3097,12 @@ async function initApp() {
   await loadChatMemory();
   renderChatHistory();
   chatShowWelcome();
+  renderChatMemoryStatus();
   renderUsage();
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
   usageRefreshTimer = setInterval(renderUsage, 60000);
   await refreshUI({ skipAI: true });
-  await Promise.all([fetchCryptoPrices(), fetchMetalPrices()]);
+  await Promise.all([fetchCryptoPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -1916,7 +3117,20 @@ function wireEvents() {
   ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderSavingsSim(totals, goal); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryPeriod = tab.dataset.history || '12M'; if (appData) renderHistory(); }); });
+  // Legenden-Toggles für Depotchart-Serien
+  document.querySelectorAll('.history-legend-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.series;
+      if (!key) return;
+      historyVisibleSeries[key] = !historyVisibleSeries[key];
+      btn.classList.toggle('active', historyVisibleSeries[key]);
+      if (appData) renderHistory();
+    });
+  });
   document.getElementById('positions').addEventListener('click', e => {
+    if (e.target.id === 'cashAddDepositBtn') { e.stopPropagation(); openCashTxModal('deposit'); return; }
+    if (e.target.id === 'cashAddWithdrawBtn') { e.stopPropagation(); openCashTxModal('withdraw'); return; }
+    if (e.target.id === 'cashShowTxBtn') { e.stopPropagation(); openCashTxList(); return; }
     const metalAdd = e.target.closest('[data-metal-add]');
     if (metalAdd) { e.preventDefault(); e.stopPropagation(); addMetalLot(metalAdd.dataset.metalAdd); return; }
     const metalDel = e.target.closest('[data-metal-del]');
@@ -2016,6 +3230,31 @@ function wireEvents() {
   document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
+  document.getElementById('chatWipeBtn').addEventListener('click', chatWipeMemory);
+  // Backup / Export / Import
+  document.getElementById('backupJsonBtn').addEventListener('click', backupJson);
+  document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
+  document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFileInput').click());
+  document.getElementById('backupFileInput').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) { importJson(f); e.target.value = ''; } });
+  // Watchlist
+  document.getElementById('watchAddBtn').addEventListener('click', () => openWatchModal());
+  document.getElementById('wlCancel').addEventListener('click', closeWatchModal);
+  document.getElementById('wlSave').addEventListener('click', saveWatchModal);
+  document.getElementById('watchModal').addEventListener('click', e => { if (e.target.id === 'watchModal') closeWatchModal(); });
+  document.getElementById('watchlistList').addEventListener('click', e => {
+    const edit = e.target.closest('[data-watch-edit]'); if (edit) { openWatchModal(edit.dataset.watchEdit); return; }
+    const del = e.target.closest('[data-watch-del]'); if (del) { deleteWatchEntry(del.dataset.watchDel); return; }
+  });
+  // Journal
+  document.getElementById('journalAddBtn').addEventListener('click', () => openJournalModal());
+  document.getElementById('jrCancel').addEventListener('click', closeJournalModal);
+  document.getElementById('jrSave').addEventListener('click', saveJournalModal);
+  document.getElementById('journalModal').addEventListener('click', e => { if (e.target.id === 'journalModal') closeJournalModal(); });
+  document.getElementById('journalList').addEventListener('click', e => {
+    const edit = e.target.closest('[data-journal-edit]'); if (edit) { openJournalModal(edit.dataset.journalEdit); return; }
+    const del = e.target.closest('[data-journal-del]'); if (del) { deleteJournalEntry(del.dataset.journalDel); return; }
+    const tog = e.target.closest('[data-journal-toggle]'); if (tog) { toggleJournalDone(tog.dataset.journalToggle); return; }
+  });
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
   // Position-Management
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
@@ -2024,6 +3263,20 @@ function wireEvents() {
   document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
   document.getElementById('apSave').addEventListener('click', saveNewPosition);
   document.getElementById('addPosModal').addEventListener('click', e => { if (e.target.id === 'addPosModal') closeAddPositionModal(); });
+  // Edelmetall-Kauf Modal
+  document.getElementById('mlCancel').addEventListener('click', closeMetalLotModal);
+  document.getElementById('mlSave').addEventListener('click', saveMetalLotModal);
+  document.getElementById('metalLotModal').addEventListener('click', e => { if (e.target.id === 'metalLotModal') closeMetalLotModal(); });
+  // Cash-Transaktions-Modal
+  document.getElementById('ctxCancel').addEventListener('click', closeCashTxModal);
+  document.getElementById('ctxSave').addEventListener('click', saveCashTxModal);
+  document.getElementById('cashTxModal').addEventListener('click', e => { if (e.target.id === 'cashTxModal') closeCashTxModal(); });
+  document.getElementById('ctxListClose').addEventListener('click', closeCashTxList);
+  document.getElementById('cashTxListModal').addEventListener('click', e => {
+    if (e.target.id === 'cashTxListModal') return closeCashTxList();
+    const del = e.target.closest('[data-cash-del]');
+    if (del) deleteCashTx(del.dataset.cashDel);
+  });
   // Screenshot-Modal
   document.getElementById('ssFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) handleScreenshotFile(f); });
   document.getElementById('ssCancel').addEventListener('click', closeScreenshotModal);
@@ -2220,6 +3473,7 @@ async function chatSend() {
     chatHistory.push({ role: 'assistant', content: reply });
     chatAppendMessage('ai', reply);
     await saveChatMemory();
+    renderChatMemoryStatus();
     setTimeout(() => updateChatMemorySummary(), 0);
   } catch (e) {
     chatRemoveTyping();
@@ -2236,12 +3490,33 @@ async function chatSend() {
 }
 
 async function chatClear() {
-  if (chatHistory.length > 0 && !confirm('Chat-Verlauf löschen?')) return;
+  if (chatHistory.length > 0 && !confirm('Sichtbaren Chat leeren? Das Gedächtnis bleibt erhalten.')) return;
+  // Letzten Stand noch ins Gedächtnis übernehmen, dann sichtbaren Verlauf leeren
   await clearVisibleChatButKeepMemory();
-  chatMemorySummary = '';
   document.getElementById('chatMessages').innerHTML = '';
-  await loadChatMemory();
   chatShowWelcome();
+  renderChatMemoryStatus();
+}
+
+async function chatWipeMemory() {
+  if (!confirm('Möchtest du das Langzeit-Gedächtnis WIRKLICH unwiderruflich löschen?')) return;
+  if (!confirm('Wirklich sicher? Alle gespeicherten Fakten, Ziele und Präferenzen aus früheren Chats gehen verloren.')) return;
+  chatMemorySummary = '';
+  chatHistory = [];
+  await saveChatMemorySummary();
+  await saveChatMemory();
+  document.getElementById('chatMessages').innerHTML = '';
+  chatShowWelcome();
+  renderChatMemoryStatus();
+  alert('Gedächtnis gelöscht.');
+}
+
+function renderChatMemoryStatus() {
+  const el = document.getElementById('chatMemoryStatus');
+  if (!el) return;
+  const msgCount = chatHistory.length;
+  const hasSummary = (chatMemorySummary || '').trim().length > 0;
+  el.textContent = `Gedächtnis aktiv · ${msgCount} Nachricht${msgCount === 1 ? '' : 'en'} · ${hasSummary ? 'Zusammenfassung gespeichert' : 'keine Zusammenfassung'}`;
 }
 
 function chatShowWelcome() {
@@ -2277,7 +3552,16 @@ async function savePositionsToKV(debounceMs = 0) {
     return true;
   }
   try {
-    const dataToStore = { positions: appData.positions, goal: appData.goal, version: 2 };
+    const dataToStore = {
+      positions: appData.positions,
+      goal: appData.goal,
+      transactions: appData.transactions || [],
+      metalHistory: appData.metalHistory || null,
+      watchlist: appData.watchlist || [],
+      journal: appData.journal || [],
+      schemaVersion: appData.schemaVersion || 1,
+      version: 2 // Blob-Versionsmarker (kompatibel mit alten Decoder-Versionen)
+    };
     const blob = await ENC.encrypt(dataToStore, appPassword);
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
@@ -2392,6 +3676,14 @@ async function saveNewPosition() {
   if (type === 'Crypto' && cgId) newPos.cgId = cgId;
   else newPos.manualPrice = manualPrice;
   appData.positions.push(newPos);
+  // Transaktion für die neue Position erzeugen (Schema v2)
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  appData.transactions.push({
+    id: makeTxId(), date: new Date().toISOString().slice(0, 10),
+    assetId: id, assetType: assetTypeOf(newPos), txType: 'buy',
+    quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
+    note: 'Manuell hinzugefügt'
+  });
   closeAddPositionModal();
   await savePositionsToKV();
   await fetchCryptoPrices();
@@ -2403,6 +3695,10 @@ async function removePosition(posId) {
   if (!pos) return;
   if (!confirm(`Position "${pos.name}" wirklich entfernen?`)) return;
   appData.positions = appData.positions.filter(p => p.id !== posId);
+  // Korrespondierende Transaktionen ebenfalls entfernen
+  if (Array.isArray(appData.transactions)) {
+    appData.transactions = appData.transactions.filter(t => t.assetId !== posId);
+  }
   delete currentPrices[posId];
   delete weeklyData[posId];
   await savePositionsToKV();
