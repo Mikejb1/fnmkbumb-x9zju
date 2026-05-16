@@ -1766,16 +1766,14 @@ async function saveChatMemorySummary() {
   }
 }
 
-async function clearChatMemory() {
-  try {
-    await fetch(AI_WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'clear-memory', userKey: USER_KEY })
+async function clearVisibleChatButKeepMemory() {
+  if (chatHistory.length > 0) {
+    await updateChatMemorySummary({
+      reason: 'Der sichtbare Chatverlauf wurde geloescht. Bewahre die wichtigen Informationen daraus im Langzeitgedaechtnis.'
     });
-  } catch (e) {
-    console.warn('Memory clear failed:', e);
   }
+  chatHistory = [];
+  await saveChatMemory();
 }
 
 function renderChatHistory() {
@@ -1783,7 +1781,7 @@ function renderChatHistory() {
   chatHistory.forEach(msg => chatAppendMessage(msg.role, msg.content));
 }
 
-async function updateChatMemorySummary() {
+async function updateChatMemorySummary(opts = {}) {
   if (memorySummaryBusy || chatHistory.length < 2) return;
   memorySummaryBusy = true;
   try {
@@ -1795,6 +1793,9 @@ ${chatMemorySummary || '(leer)'}
 
 Neue Chat-Ausschnitte:
 ${recent}
+
+Zusatzkontext:
+${opts.reason || 'Normale Aktualisierung nach einer Chat-Antwort.'}
 
 Erstelle eine kompakte, robuste Zusammenfassung auf Deutsch. Behalte Fakten, Zahlen, Ziele, Praeferenzen, Entscheidungen, offene Fragen und wiederkehrende Denkweisen des Nutzers. Loesche unwichtige Hoeflichkeit und Dopplungen. Maximal 900 Woerter. Schreibe nur die aktualisierte Zusammenfassung.`;
 
@@ -1925,10 +1926,10 @@ async function chatSend() {
 
 async function chatClear() {
   if (chatHistory.length > 0 && !confirm('Chat-Verlauf löschen?')) return;
-  chatHistory = [];
+  await clearVisibleChatButKeepMemory();
   chatMemorySummary = '';
   document.getElementById('chatMessages').innerHTML = '';
-  await clearChatMemory();
+  await loadChatMemory();
   chatShowWelcome();
 }
 
