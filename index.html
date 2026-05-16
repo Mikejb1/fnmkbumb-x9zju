@@ -64,7 +64,22 @@
   .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
   body:not(.light) .icon-sun { display: block; } body:not(.light) .icon-moon { display: none; }
   body.light .icon-sun { display: none; } body.light .icon-moon { display: block; }
-  .total-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .total-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .total-bar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .total-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-light); }
+  .stat-tile { border-radius: 8px; padding: 8px 10px; }
+  .stat-tile.pos { background: rgba(34,197,94,0.08); }
+  .stat-tile.neg { background: rgba(248,113,113,0.08); }
+  .stat-tile.neutral { background: var(--bg-secondary); }
+  .stat-tile.tappable { background: rgba(34,197,94,0.05); border: 1px dashed var(--positive); cursor: pointer; font-family: inherit; text-align: left; color: inherit; width: 100%; padding: 8px 10px; transition: background 0.2s, transform 0.1s; }
+  body.light .stat-tile.tappable { background: rgba(22,163,74,0.06); }
+  .stat-tile.tappable:active { transform: scale(0.97); }
+  .stat-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+  .stat-label svg { width: 11px; height: 11px; stroke: currentColor; fill: none; flex-shrink: 0; }
+  .stat-value { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .stat-sub { font-size: 10px; margin-top: 1px; }
+  .stat-edit-hint { display: inline-flex; align-items: center; gap: 3px; color: var(--positive); }
+  .stat-edit-hint svg { width: 9px; height: 9px; stroke: currentColor; fill: none; }
   .total-label { font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
   .total-value-line { display: flex; flex-direction: column; align-items: flex-end; }
   .total-value { font-size: 22px; font-weight: 600; }
@@ -268,8 +283,39 @@
     </div>
   </div>
   <div class="total-bar">
-    <div><div class="total-label">Gesamtwert</div><div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div></div>
-    <div class="total-value-line"><div class="total-value" id="totalValue">—</div><div class="total-pnl" id="totalPnl">—</div></div>
+    <div class="total-bar-head">
+      <div><div class="total-label">Depot Stand</div><div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div></div>
+      <div class="total-value-line"><div class="total-value" id="totalValue">—</div><div class="total-pnl" id="totalPnl">—</div></div>
+    </div>
+    <div class="total-stats">
+      <div class="stat-tile neutral" id="statToday">
+        <div class="stat-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          <span>Heute</span>
+        </div>
+        <div class="stat-value" id="statTodayValue">—</div>
+        <div class="stat-sub" id="statTodaySub">&nbsp;</div>
+      </div>
+      <div class="stat-tile neutral" id="statDrawdown">
+        <div class="stat-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+          <span>Drawdown</span>
+        </div>
+        <div class="stat-value" id="statDrawdownValue">—</div>
+        <div class="stat-sub" id="statDrawdownSub">&nbsp;</div>
+      </div>
+      <button class="stat-tile tappable" id="statSavings" type="button">
+        <div class="stat-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5h-2V3H7v2H5a2 2 0 0 0-2 2v3a4 4 0 0 0 4 4h.5"/><path d="M16 8a5 5 0 0 1 5 5v5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-5a5 5 0 0 1 5-5h5z"/><line x1="13" y1="14" x2="13" y2="17"/></svg>
+          <span>Sparrate</span>
+        </div>
+        <div class="stat-value" id="statSavingsValue">—</div>
+        <div class="stat-sub stat-edit-hint">
+          <span>pro Monat</span>
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+      </button>
+    </div>
   </div>
   <div class="positions" id="positions"></div>
   <div class="add-position-section">
@@ -311,6 +357,7 @@
     <div class="goal-sliders">
       <div class="slider-row"><label for="goalYear">Zieljahr</label><input type="range" id="goalYear" min="2026" max="2040" step="1" value="2026"><span class="slider-value" id="goalYearVal">2026</span></div>
       <div class="slider-row"><label for="goalAmount">Zielbetrag</label><input type="range" id="goalAmount" min="5000" max="100000" step="500" value="15000"><span class="slider-value" id="goalAmountVal">15.000 €</span></div>
+      <div class="slider-row"><label for="goalSavings">Sparrate</label><input type="range" id="goalSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalSavingsVal">0 €</span></div>
     </div>
     <div class="goal-meta" id="goalMeta">—</div>
   </div>
@@ -538,6 +585,7 @@ GAP zum Ziel: ${fmt.format(goal.gap)}
 Zeit bis Jahresende: ~${goal.monthsToGoal} Monate
 Benötigte Gesamt-Rendite: ${goal.requiredReturnPct.toFixed(1)}% in ${goal.monthsToGoal} Monaten
 Bei reinem Sparen ohne Rendite: ${fmt.format(goal.monthlyNeeded)}/Monat
+Aktuelle Sparrate (vom Nutzer gesetzt): ${fmt.format(goal.savingsRate || 0)}/Monat → ergibt ohne Rendite ${fmt.format(totals.totalCur + (goal.savingsRate || 0) * goal.monthsToGoal)} bis Zieldatum
 
 AKZENT FÜR DIESE ANALYSE (variiert pro Aufruf): ${focus}
 Session-Nonce (für Variabilität, ignorieren): ${nonce}
@@ -748,8 +796,19 @@ function renderPositions() {
 }
 
 function renderTotals() {
-  let totalCur = 0, totalCost = 0;
-  appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; totalCost += pos.costPrice * pos.shares; });
+  let totalCur = 0, totalCost = 0, todayChangeEur = 0, hasChangeData = false;
+  appData.positions.forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    const value = live.price * pos.shares;
+    totalCur += value;
+    totalCost += pos.costPrice * pos.shares;
+    if (live.changePct != null && !isNaN(live.changePct)) {
+      // Tagesveränderung pro Position = Wert × (changePct / (100 + changePct)) - liefert €-Veränderung vs. gestern
+      const valueYesterday = value / (1 + live.changePct / 100);
+      todayChangeEur += value - valueYesterday;
+      hasChangeData = true;
+    }
+  });
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
   document.getElementById('totalValue').textContent = fmt.format(totalCur);
@@ -758,7 +817,64 @@ function renderTotals() {
   pnlEl.className = 'total-pnl ' + (totalPnl >= 0 ? 'positive' : 'negative');
   document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)}`;
   document.getElementById('lastUpdate').textContent = `Stand: ${new Date().toLocaleString('de-AT')}`;
-  return { totalCur, totalCost, totalPnl, totalPnlPct };
+
+  // === Stat-Kacheln: Heute ===
+  const todayTile = document.getElementById('statToday');
+  const todayVal = document.getElementById('statTodayValue');
+  const todaySub = document.getElementById('statTodaySub');
+  if (hasChangeData) {
+    const todayPct = totalCur > 0 ? (todayChangeEur / (totalCur - todayChangeEur)) * 100 : 0;
+    const cls = todayChangeEur >= 0 ? 'pos' : 'neg';
+    const color = todayChangeEur >= 0 ? 'var(--positive)' : 'var(--negative)';
+    todayTile.className = 'stat-tile ' + cls;
+    todayVal.style.color = color;
+    todayVal.textContent = `${todayChangeEur >= 0 ? '+' : ''}${fmt.format(todayChangeEur)}`;
+    todaySub.style.color = color;
+    todaySub.textContent = `${todayChangeEur >= 0 ? '+' : ''}${fmtNum(todayPct, 2)} %`;
+  } else {
+    todayTile.className = 'stat-tile neutral';
+    todayVal.style.color = 'var(--text-primary)';
+    todayVal.textContent = '—';
+    todaySub.style.color = 'var(--text-tertiary)';
+    todaySub.textContent = 'keine 24h-Daten';
+  }
+
+  // === Stat-Kacheln: Drawdown vom ATH ===
+  if (!appData.goal) appData.goal = {};
+  const prevAth = appData.goal.ath || 0;
+  let athUpdated = false;
+  if (totalCur > prevAth) {
+    appData.goal.ath = totalCur;
+    appData.goal.athDate = new Date().toISOString().slice(0, 10);
+    athUpdated = true;
+  }
+  const ath = appData.goal.ath || totalCur;
+  const athDate = appData.goal.athDate ? new Date(appData.goal.athDate) : new Date();
+  const drawdownPct = ath > 0 ? ((totalCur - ath) / ath) * 100 : 0;
+  const ddTile = document.getElementById('statDrawdown');
+  const ddVal = document.getElementById('statDrawdownValue');
+  const ddSub = document.getElementById('statDrawdownSub');
+  if (drawdownPct >= -0.05) {
+    ddTile.className = 'stat-tile pos';
+    ddVal.style.color = 'var(--positive)';
+    ddVal.textContent = 'ATH';
+    ddSub.style.color = 'var(--positive)';
+    ddSub.textContent = `${fmt.format(ath)} · jetzt`;
+  } else {
+    ddTile.className = 'stat-tile neg';
+    ddVal.style.color = 'var(--negative)';
+    ddVal.textContent = `${fmtNum(drawdownPct, 1)} %`;
+    ddSub.style.color = 'var(--text-tertiary)';
+    ddSub.textContent = `ATH ${fmt.format(ath)} · ${athDate.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })}`;
+  }
+  if (athUpdated) savePositionsToKV(2000);
+
+  // === Stat-Kachel: Sparrate (gespiegelt vom Slider) ===
+  const savingsRate = appData.goal && appData.goal.savingsRate != null ? appData.goal.savingsRate : 0;
+  const savingsEl = document.getElementById('statSavingsValue');
+  if (savingsEl) savingsEl.textContent = savingsRate > 0 ? fmtNoCent.format(savingsRate) : '0 €';
+
+  return { totalCur, totalCost, totalPnl, totalPnlPct, todayChangeEur, hasChangeData, ath, drawdownPct, savingsRate };
 }
 
 function buildPortfolioHistory(monthsBack) {
@@ -808,8 +924,10 @@ function renderHistory() {
 function renderGoal(totals) {
   const year = parseInt(document.getElementById('goalYear').value, 10);
   const amount = parseInt(document.getElementById('goalAmount').value, 10);
+  const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0;
   document.getElementById('goalYearVal').textContent = String(year);
   document.getElementById('goalAmountVal').textContent = fmtNoCent.format(amount);
+  document.getElementById('goalSavingsVal').textContent = fmtNoCent.format(savingsRate);
   document.getElementById('goalTitle').textContent = `Ziel: ${fmtNoCent.format(amount)} bis ${year}`;
   const today = new Date();
   const endDate = new Date(year, 11, 31);
@@ -820,10 +938,40 @@ function renderGoal(totals) {
   const progress = Math.min(100, Math.max(0, (totals.totalCur / amount) * 100));
   document.getElementById('goalPct').textContent = `${fmtNum(progress, 1)}%`;
   document.getElementById('goalFill').style.width = `${progress}%`;
-  const meta = gap <= 0 ? `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend` : `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
+
+  // Sparrate-Mirror auf Stat-Kachel oben
+  const savingsTileEl = document.getElementById('statSavingsValue');
+  if (savingsTileEl) savingsTileEl.textContent = savingsRate > 0 ? fmtNoCent.format(savingsRate) : '0 €';
+
+  let meta;
+  if (gap <= 0) {
+    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend`;
+  } else if (savingsRate > 0) {
+    const sparEnd = totals.totalCur + savingsRate * monthsToGoal;
+    const restGap = amount - sparEnd;
+    // Nötige Rendite p.a. damit Endwert = amount
+    // FV = PV*(1+r)^t + PMT*((1+r)^t - 1)/r   — wir lösen näherungsweise nach r
+    const tYears = monthsToGoal / 12;
+    let rEst = 0;
+    for (let r = 0; r <= 0.5; r += 0.001) {
+      const monthlyR = r / 12;
+      const months = monthsToGoal;
+      const fv = monthlyR === 0 ? totals.totalCur + savingsRate * months : totals.totalCur * Math.pow(1 + monthlyR, months) + savingsRate * ((Math.pow(1 + monthlyR, months) - 1) / monthlyR);
+      if (fv >= amount) { rEst = r; break; }
+    }
+    if (restGap <= 0) {
+      meta = `Bei <strong>${fmt.format(savingsRate)}/Mo</strong> Sparrate erreichst du <strong>${fmt.format(sparEnd)}</strong> in ${monthsToGoal} Monaten — Ziel ohne Rendite erreicht (Puffer <strong>${fmt.format(-restGap)}</strong>).`;
+    } else {
+      const renditeText = rEst > 0 && rEst < 0.5 ? `<strong>${fmtNum(rEst * 100, 1)}% p.a.</strong> Rendite` : `keine realistische Rendite`;
+      const sparAlt = gap / monthsToGoal;
+      meta = `Bei <strong>${fmt.format(savingsRate)}/Mo</strong> Sparrate: <strong>${fmt.format(sparEnd)}</strong> in ${monthsToGoal} Monaten (Lücke noch <strong>${fmt.format(restGap)}</strong>). Zusätzlich nötig: ${renditeText} — oder Sparrate auf <strong>${fmt.format(sparAlt)}/Mo</strong> erhöhen.`;
+    }
+  } else {
+    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
+  }
   document.getElementById('goalMeta').innerHTML = meta;
-  if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; }
-  return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress };
+  if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; }
+  return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress, savingsRate };
 }
 
 function renderAnalysisLocal(totals, goal) {
@@ -889,7 +1037,11 @@ function scheduleAIRefresh() {
 
 let usageRefreshTimer = null;
 async function initApp() {
-  if (appData.goal) { document.getElementById('goalYear').value = String(appData.goal.year); document.getElementById('goalAmount').value = String(appData.goal.amount); }
+  if (appData.goal) {
+    document.getElementById('goalYear').value = String(appData.goal.year);
+    document.getElementById('goalAmount').value = String(appData.goal.amount);
+    document.getElementById('goalSavings').value = String(appData.goal.savingsRate || 0);
+  }
   loadManualPrices();
   chatHistory = [];
   document.getElementById('chatMessages').innerHTML = '';
@@ -910,7 +1062,8 @@ function wireEvents() {
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
-  ['goalYear', 'goalAmount'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
+  ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
+  document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryMonths = parseInt(tab.dataset.months, 10) || 12; if (appData) renderHistory(); }); });
   document.getElementById('positions').addEventListener('click', e => {
     const editBtn = e.target.closest('[data-edit-id]');
@@ -988,6 +1141,7 @@ Einstand: ${totalCost.toFixed(2)} €
 P&L: ${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)} € (${totalPnlPct.toFixed(1)}%)
 
 ZIEL des Nutzers: ${goal.amount} € bis Ende ${goal.year}
+SPARRATE des Nutzers: ${goal.savingsRate || 0} €/Monat (regelmäßige Einzahlung)
 
 Beantworte die Fragen mit Bezug auf diese Daten. Wenn jemand z.B. fragt "Soll ich X verkaufen?", antworte mit konkreten Zahlen aus dem Portfolio oben und nenne 1-2 Alternativen. Erinnere am Ende NICHT bei jeder Antwort an Disclaimer — nur wenn die Frage konkrete Empfehlungen verlangt.`;
 }
