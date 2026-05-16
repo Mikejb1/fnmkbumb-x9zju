@@ -123,6 +123,22 @@
   .history-balance-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); padding: 3px 0; font-variant-numeric: tabular-nums; }
   .history-balance-row strong { color: var(--text-primary); font-weight: 500; }
   .history-disclaimer { font-size: 10px; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+  .history-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .history-legend-toggle { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-tertiary); border-radius: 6px; padding: 4px 8px; font-size: 10px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity 0.15s, background 0.15s; opacity: 0.5; }
+  .history-legend-toggle.active { background: var(--bg-card); color: var(--text-primary); opacity: 1; }
+  .history-legend-toggle .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .cash-tx-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .cash-tx-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+  .cash-tx-btn:hover { background: var(--bg-track); }
+  .cash-tx-btn.cash-tx-list { color: var(--text-secondary); }
+  .cash-tx-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+  .cash-tx-list-wrap { max-height: 320px; overflow-y: auto; margin: 10px 0; }
+  .cash-tx-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+  .cash-tx-item .cash-tx-meta { display: flex; flex-direction: column; gap: 2px; }
+  .cash-tx-item .cash-tx-date { font-size: 10px; color: var(--text-tertiary); }
+  .cash-tx-item .cash-tx-val.deposit { color: var(--positive); font-weight: 500; }
+  .cash-tx-item .cash-tx-val.withdraw { color: var(--negative); font-weight: 500; }
+  .cash-tx-del { background: transparent; border: 0; color: var(--negative); cursor: pointer; padding: 4px 8px; font-size: 11px; }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -554,10 +570,18 @@
       </div>
     </div>
     <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
+    <div class="history-legend" id="historyLegend">
+      <button class="history-legend-toggle active" data-series="value" type="button"><span class="dot" style="background:#22c55e"></span>Depotwert</button>
+      <button class="history-legend-toggle active" data-series="invested" type="button"><span class="dot" style="background:#888"></span>Einstand</button>
+      <button class="history-legend-toggle" data-series="pnl" type="button"><span class="dot" style="background:#3b82f6"></span>G/V</button>
+      <button class="history-legend-toggle" data-series="goal" type="button"><span class="dot" style="background:#fbbf24"></span>Zielpfad</button>
+    </div>
     <div class="history-summary">
       <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
       <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
+      <div class="history-balance-row" title="Inklusive Einzahlungen — zeigt wie sich dein Vermögen entwickelt hat. Cash-Einzahlungen ziehen das Ergebnis nach oben."><span>Inkl. Einzahlungen</span><strong id="historyReturnGross">—</strong></div>
+      <div class="history-balance-row" title="Geldgewichtete Rendite (MWR) auf Basis aller Transaktionen — bereinigt um Einzahlungen. Zeigt die reine Performance deiner Anlageentscheidungen."><span>Performance (MWR)</span><strong id="historyReturnMwr">—</strong></div>
       <div class="history-disclaimer">Tagespunkte aus Kaufdaten und verfügbaren historischen Kursen. Bei manuellen Titeln ohne Tageskurs wird der passende Monatskurs verwendet.</div>
       <div class="history-disclaimer" id="cashHistoryNote" style="display:none;">Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.</div>
     </div>
@@ -742,6 +766,24 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="cashTxModal">
+  <div class="modal">
+    <h3 id="cashTxTitle">Cash-Einzahlung</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="ctxDate"></div>
+    <div class="modal-field"><label>Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="ctxAmount" placeholder="z.B. 500.00"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="ctxNote" placeholder="z.B. Gehalt, Sparrate, Übertrag"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="ctxCancel">Abbrechen</button><button class="auth-btn" id="ctxSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="cashTxListModal">
+  <div class="modal">
+    <h3>Cash-Bewegungen</h3>
+    <div class="cash-tx-list-wrap" id="cashTxListWrap"></div>
+    <div class="modal-actions"><button class="auth-btn" id="ctxListClose">Schließen</button></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="screenshotModal">
   <div class="modal">
     <h3>Screenshot auswerten</h3>
@@ -909,6 +951,7 @@ const ENC = {
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
 let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
+let historyVisibleSeries = { value: true, invested: true, pnl: false, goal: false };
 let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -1001,11 +1044,200 @@ function findStammdaten(pos) {
 function applyPositionStammdaten() {
   if (!appData?.positions) return;
   appData.positions.forEach(pos => {
+    // Bereits in den Positionsdaten gespeicherte Stammdaten haben Vorrang (Schema v2+)
+    if (pos.stammdaten && pos.purchaseLots && pos.purchaseLots.length > 0) return;
     const entry = findStammdaten(pos);
     if (!entry) return;
-    pos.stammdaten = { ...(entry.depot || {}) };
-    pos.purchaseLots = entry.lots.map(lot => ({ ...lot }));
+    if (!pos.stammdaten) pos.stammdaten = { ...(entry.depot || {}) };
+    if (!pos.purchaseLots || !pos.purchaseLots.length) pos.purchaseLots = entry.lots.map(lot => ({ ...lot }));
   });
+}
+
+// =====================================================================
+// ============== DATENMODELL · TRANSAKTIONEN + MIGRATION (Schema v2) ==
+// =====================================================================
+function makeTxId() { return 'tx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+function assetTypeOf(pos) {
+  if (!pos) return 'stock';
+  if (pos.special === 'cash') return 'cash';
+  if (pos.special === 'metals' || pos.type === 'Edelmetall') return 'metal';
+  const t = (pos.type || '').toLowerCase();
+  if (t === 'crypto') return 'crypto';
+  if (t === 'etf') return 'etf';
+  return 'stock';
+}
+// Einmalige Migration von Schema v1 (Stammdaten im Code) auf v2 (Transaktionsliste)
+function migrateSchemaIfNeeded() {
+  if (!appData) return;
+  const current = Number(appData.schemaVersion) || 1;
+  if (current >= 2) return;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+
+  // 1) Aus jedem purchaseLot in Positionen eine buy-Transaktion erzeugen
+  (appData.positions || []).forEach(pos => {
+    if (!Array.isArray(pos.purchaseLots) || pos.purchaseLots.length === 0) {
+      // Keine Lot-Historie: einzelner Buy-Eintrag (geschätzt heute) damit aktuelle shares/costPrice in Tx repräsentiert sind
+      if (pos.shares > 0 && pos.costPrice > 0) {
+        appData.transactions.push({
+          id: makeTxId(), date: new Date().toISOString().slice(0, 10),
+          assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
+          quantity: pos.shares, price: pos.costPrice, value: pos.shares * pos.costPrice,
+          fees: 0, note: 'Migration: Einzelposition ohne Lot-Historie'
+        });
+      }
+      return;
+    }
+    pos.purchaseLots.forEach(lot => {
+      const qty = Number(lot.shares) || 0;
+      const px = Number(lot.costPrice) || 0;
+      const val = Number(lot.value) || qty * px;
+      if (qty <= 0) return;
+      appData.transactions.push({
+        id: makeTxId(), date: lot.date || new Date().toISOString().slice(0, 10),
+        assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
+        quantity: qty, price: px, value: val,
+        fees: Number(lot.upfrontTax || 0), note: 'Migration aus Stammdaten'
+      });
+    });
+  });
+
+  // 2) Edelmetall-Lots in Transaktionen überführen
+  if (appData.goal?.metalLots) {
+    Object.entries(appData.goal.metalLots).forEach(([metalKey, lots]) => {
+      if (!Array.isArray(lots)) return;
+      lots.forEach(lot => {
+        const grams = Number(lot.grams) || 0;
+        const val = Number(lot.value) || 0;
+        if (grams <= 0) return;
+        appData.transactions.push({
+          id: makeTxId(), date: lot.date || new Date().toISOString().slice(0, 10),
+          assetId: 'metal_' + metalKey, assetType: 'metal', txType: 'buy',
+          quantity: grams, price: grams > 0 ? val / grams : 0, value: val,
+          fees: Number(lot.fees || 0), note: 'Migration aus metalLots' + (lot.storage ? ' · ' + lot.storage : '')
+        });
+      });
+    });
+  }
+
+  // 3) Cash-Initialerfassung als deposit
+  const cash = Number(appData.goal?.cash || 0);
+  if (cash > 0) {
+    const allDates = appData.transactions.map(t => t.date).filter(Boolean).sort();
+    const depositDate = allDates.length > 0 ? allDates[0] : new Date().toISOString().slice(0, 10);
+    appData.transactions.push({
+      id: makeTxId(), date: depositDate,
+      assetId: 'cash', assetType: 'cash', txType: 'deposit',
+      quantity: cash, price: 1, value: cash, fees: 0,
+      note: 'Initiale Cash-Erfassung (Migration)'
+    });
+  }
+
+  // Sort transactions ascending by date
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  appData.schemaVersion = 2;
+}
+
+// =====================================================================
+// ============== BERECHNUNG · Helpers aus Transaktionsmodell ===========
+// =====================================================================
+function getTransactionsFor(assetId) {
+  return (appData?.transactions || []).filter(t => t.assetId === assetId);
+}
+// Berechnet aktuelle Stückzahl, Einstandswert, Ø Einkaufspreis aus Transaktionen (Average-Cost-Method)
+function getComputedPosition(positionId) {
+  const txs = getTransactionsFor(positionId).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  let shares = 0, costBasis = 0, realized = 0;
+  txs.forEach(t => {
+    if (t.txType === 'buy') {
+      shares += t.quantity;
+      costBasis += t.value + (t.fees || 0);
+    } else if (t.txType === 'sell') {
+      // Anteilig realisierter Gewinn nach Avg-Cost
+      const avgBeforeSell = shares > 0 ? costBasis / shares : 0;
+      const soldQty = Math.min(t.quantity, shares);
+      realized += (t.price - avgBeforeSell) * soldQty - (t.fees || 0);
+      costBasis -= avgBeforeSell * soldQty;
+      shares -= soldQty;
+    }
+  });
+  return {
+    shares,
+    costBasis,
+    avgPrice: shares > 0 ? costBasis / shares : 0,
+    realizedPnl: realized,
+    txCount: txs.length
+  };
+}
+// Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
+function getCashBalance(asOfDate) {
+  if (!Array.isArray(appData?.transactions)) return Number(appData?.goal?.cash || 0);
+  const cutoff = asOfDate ? (asOfDate instanceof Date ? asOfDate.toISOString().slice(0, 10) : String(asOfDate)) : null;
+  let bal = 0;
+  let hasCashTx = false;
+  appData.transactions.forEach(t => {
+    if (cutoff && (t.date || '') > cutoff) return;
+    if (t.assetType === 'cash') {
+      hasCashTx = true;
+      if (t.txType === 'deposit') bal += t.value;
+      else if (t.txType === 'withdraw') bal -= t.value;
+      else if (t.txType === 'fee') bal -= t.value;
+      else if (t.txType === 'dividend') bal += t.value;
+    } else {
+      // Käufe ziehen Cash ab, Verkäufe schreiben Cash gut (Gegenbuchung)
+      if (t.txType === 'buy') bal -= (t.value + (t.fees || 0));
+      else if (t.txType === 'sell') bal += (t.value - (t.fees || 0));
+    }
+  });
+  // Wenn keine Cash-Transaktionen vorhanden, fällt der Slider-Wert zurück
+  if (!hasCashTx) return Number(appData?.goal?.cash || 0);
+  return bal;
+}
+// Investiertes Kapital (Käufe minus Verkäufe) zu einem Datum
+function getInvestedCapital(asOfDate) {
+  if (!Array.isArray(appData?.transactions)) return 0;
+  const cutoff = asOfDate ? (asOfDate instanceof Date ? asOfDate.toISOString().slice(0, 10) : String(asOfDate)) : null;
+  let invested = 0;
+  appData.transactions.forEach(t => {
+    if (cutoff && (t.date || '') > cutoff) return;
+    if (t.assetType === 'cash') return;
+    if (t.txType === 'buy') invested += t.value + (t.fees || 0);
+    else if (t.txType === 'sell') invested -= t.value;
+  });
+  return Math.max(0, invested);
+}
+function getTotalDeposits() {
+  return (appData?.transactions || []).filter(t => t.assetType === 'cash' && t.txType === 'deposit').reduce((s, t) => s + t.value, 0);
+}
+function getTotalWithdrawals() {
+  return (appData?.transactions || []).filter(t => t.assetType === 'cash' && t.txType === 'withdraw').reduce((s, t) => s + t.value, 0);
+}
+// Geldgewichtete Rendite (Money-Weighted Return / IRR) auf Basis aller Cashflows
+// Cashflows: Buys = negativ (Geld geht aus Cash raus), Sells = positiv. Aktueller Depotwert = final positive cashflow heute.
+function computeMWR(currentValue) {
+  if (!Array.isArray(appData?.transactions) || appData.transactions.length === 0) return null;
+  const flows = [];
+  appData.transactions.forEach(t => {
+    if (t.assetType === 'cash') return; // Cash-Einzahlungen sind keine Investitionen
+    const dateMs = new Date(t.date + 'T00:00:00').getTime();
+    if (t.txType === 'buy') flows.push({ ms: dateMs, amount: -(t.value + (t.fees || 0)) });
+    else if (t.txType === 'sell') flows.push({ ms: dateMs, amount: t.value - (t.fees || 0) });
+  });
+  if (flows.length === 0) return null;
+  flows.push({ ms: Date.now(), amount: currentValue });
+  // Newton-Raphson IRR (jährlich)
+  const firstMs = flows[0].ms;
+  const npv = (rate) => flows.reduce((s, f) => {
+    const years = (f.ms - firstMs) / (365.25 * 24 * 3600 * 1000);
+    return s + f.amount / Math.pow(1 + rate, years);
+  }, 0);
+  let low = -0.99, high = 10;
+  for (let i = 0; i < 80; i++) {
+    const mid = (low + high) / 2;
+    const v = npv(mid);
+    if (Math.abs(v) < 0.01) return mid;
+    if (v > 0) low = mid; else high = mid;
+  }
+  return (low + high) / 2;
 }
 function formatDateAT(iso) {
   if (!iso) return '—';
@@ -1343,6 +1575,8 @@ async function handleGate() {
   try {
     appData = await ENC.decrypt(BAKED_BLOB, code);
     appPassword = code;
+    if (!Array.isArray(appData.transactions)) appData.transactions = [];
+    if (!appData.schemaVersion) appData.schemaVersion = 1;
     document.getElementById('gatePw').value = '';
     showScreen('appScreen');
     // Falls KV-Daten vorhanden, mit gebakten Daten zusammenführen (KV gewinnt)
@@ -1351,9 +1585,15 @@ async function handleGate() {
       if (kvData && kvData.positions && Array.isArray(kvData.positions) && kvData.positions.length > 0) {
         appData.positions = kvData.positions;
         if (kvData.goal) appData.goal = kvData.goal;
+        if (Array.isArray(kvData.transactions)) appData.transactions = kvData.transactions;
+        if (kvData.schemaVersion) appData.schemaVersion = kvData.schemaVersion;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
     applyPositionStammdaten();
+    // Schema-Migration (v1 -> v2: Transaktionsmodell)
+    const wasMigrated = !(Number(appData.schemaVersion) >= 2);
+    migrateSchemaIfNeeded();
+    if (wasMigrated) { try { await savePositionsToKV(); console.log('Schema migriert auf v' + appData.schemaVersion); } catch (e) { console.warn('Migration-Save fehlgeschlagen:', e); } }
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
@@ -1452,10 +1692,34 @@ function renderChart(canvasId, points, valueKey, opts) {
   const isUp = values[values.length - 1] >= values[0];
   const color = isUp ? '#22c55e' : '#f87171';
   const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
+  // Hauptserie + optionale Zusatzserien (für Depotchart: Einstand-Linie, P&L)
+  const datasets = [{
+    label: opts?.mainLabel || 'Depotwert',
+    data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8,
+    fill: true, tension: opts?.daily ? 0.15 : 0.3,
+    pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5,
+    pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1
+  }];
+  (opts?.extraSeries || []).forEach(s => {
+    if (s.hidden) return;
+    datasets.push({
+      label: s.label,
+      data: points.map(p => p[s.key]),
+      borderColor: s.color,
+      backgroundColor: 'transparent',
+      borderWidth: 1.4,
+      borderDash: s.dashed ? [6, 4] : undefined,
+      fill: false,
+      tension: 0.15,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointBackgroundColor: s.color
+    });
+  });
   new Chart(canvas, {
     type: 'line',
-    data: { labels: points.map(p => p.label || p.date), datasets: [{ data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8, fill: true, tension: opts?.daily ? 0.15 : 0.3, pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5, pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1 }] },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: false, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => fmt.format(item.parsed.y), afterBody: (items) => points[items[0].dataIndex].events || [] } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
+    data: { labels: points.map(p => p.label || p.date), datasets },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => points[items[0].dataIndex].events || [] } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
   });
 }
 
@@ -1598,6 +1862,63 @@ function closeMetalLotModal() {
   pendingMetalKey = null;
 }
 
+// ===== CASH-TRANSAKTIONEN =====
+let pendingCashTxType = 'deposit';
+function openCashTxModal(type) {
+  pendingCashTxType = type === 'withdraw' ? 'withdraw' : 'deposit';
+  document.getElementById('cashTxTitle').textContent = pendingCashTxType === 'deposit' ? 'Cash-Einzahlung' : 'Cash-Auszahlung';
+  document.getElementById('ctxDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ctxAmount').value = '';
+  document.getElementById('ctxNote').value = '';
+  document.getElementById('cashTxModal').classList.add('active');
+  setTimeout(() => document.getElementById('ctxAmount').focus(), 50);
+}
+function closeCashTxModal() { document.getElementById('cashTxModal').classList.remove('active'); }
+async function saveCashTxModal() {
+  const date = document.getElementById('ctxDate').value;
+  const amount = parseFloat(String(document.getElementById('ctxAmount').value).replace(',', '.'));
+  const note = document.getElementById('ctxNote').value.trim();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
+  if (!isFinite(amount) || amount <= 0) { alert('Bitte gültigen Betrag eingeben.'); return; }
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  appData.transactions.push({
+    id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: pendingCashTxType,
+    quantity: amount, price: 1, value: amount, fees: 0,
+    note: note || (pendingCashTxType === 'deposit' ? 'Einzahlung' : 'Auszahlung')
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeCashTxModal();
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+}
+function openCashTxList() {
+  const wrap = document.getElementById('cashTxListWrap');
+  const txs = (appData?.transactions || []).filter(t => t.assetType === 'cash').slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (txs.length === 0) { wrap.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px;">Noch keine Cash-Bewegungen erfasst.</div>'; }
+  else {
+    wrap.innerHTML = txs.map(t => `
+      <div class="cash-tx-item">
+        <div class="cash-tx-meta">
+          <div>${t.txType === 'deposit' ? 'Einzahlung' : t.txType === 'withdraw' ? 'Auszahlung' : t.txType}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
+          <div class="cash-tx-date">${formatDateAT(t.date)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="cash-tx-val ${t.txType}">${t.txType === 'withdraw' ? '−' : '+'}${fmt.format(t.value)}</span>
+          <button class="cash-tx-del" data-cash-del="${t.id}" title="Löschen">×</button>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('cashTxListModal').classList.add('active');
+}
+function closeCashTxList() { document.getElementById('cashTxListModal').classList.remove('active'); }
+async function deleteCashTx(txId) {
+  if (!confirm('Diese Cash-Bewegung wirklich löschen?')) return;
+  appData.transactions = (appData.transactions || []).filter(t => t.id !== txId);
+  await savePositionsToKV();
+  openCashTxList();
+  await refreshUI({ skipAI: true });
+}
+
 async function saveMetalLotModal() {
   if (!pendingMetalKey) return;
   const metal = METALS.find(m => m.key === pendingMetalKey);
@@ -1621,6 +1942,14 @@ async function saveMetalLotModal() {
   goalState.metalLots[metal.key].push(lot);
   goalState.metalLots[metal.key].sort((a, b) => a.date.localeCompare(b.date));
   goalState[metal.gramsKey] = metalGrams(metal);
+  // Transaktion ins zentrale Modell schreiben (Schema v2)
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  appData.transactions.push({
+    id: makeTxId(), date, assetId: 'metal_' + metal.key, assetType: 'metal', txType: 'buy',
+    quantity: grams, price: grams > 0 ? value / grams : 0, value, fees: fees > 0 ? fees : 0,
+    note: storage ? ('Lager: ' + storage) : ''
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeMetalLotModal();
   await rerenderMetalsOpen();
 }
@@ -1629,8 +1958,18 @@ async function deleteMetalLot(metalKey, index) {
   const lots = metal ? metalLots(metal) : [];
   if (!metal || !lots[index]) return;
   if (!confirm(`${metal.name}-Kauf vom ${formatDateAT(lots[index].date)} löschen?`)) return;
+  const lot = lots[index];
   ensureGoal().metalLots[metal.key].splice(index, 1);
   ensureGoal()[metal.gramsKey] = metalGrams(metal);
+  // Auch korrespondierende Transaktion entfernen (Match per Datum + Gramm + Wert)
+  if (Array.isArray(appData.transactions)) {
+    const assetId = 'metal_' + metal.key;
+    const idx = appData.transactions.findIndex(t =>
+      t.assetId === assetId && t.txType === 'buy' && t.date === lot.date &&
+      Math.abs(t.quantity - (lot.grams || 0)) < 1e-6 && Math.abs(t.value - (lot.value || 0)) < 0.01
+    );
+    if (idx >= 0) appData.transactions.splice(idx, 1);
+  }
   await rerenderMetalsOpen();
 }
 
@@ -1695,13 +2034,28 @@ function buildSpecialCard(kind, totals) {
         </div>
       </details>`;
   } else {
-    const cash = appData.goal?.cash || 0;
+    const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
+    const computed = hasCashTx ? getCashBalance() : null;
+    const cash = hasCashTx ? Math.max(0, computed) : (appData.goal?.cash || 0);
     const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
     wrap.id = 'card-cash';
+    const sliderHtml = hasCashTx ? `
+      <div class="special-slider-wrap" style="opacity:0.6;">
+        <span class="special-slider-min">0 €</span>
+        <input type="range" min="0" max="20000" step="20" value="${cash}" disabled>
+        <span class="special-slider-val">${fmt.format(cash)}</span>
+      </div>
+      <div class="cash-tx-hint">Wert wird aus Cash-Bewegungen berechnet · Regler deaktiviert</div>
+    ` : `
+      <div class="special-slider-wrap">
+        <span class="special-slider-min">0 €</span>
+        <input type="range" id="cashSlider" min="0" max="20000" step="20" value="${cash}">
+        <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
+      </div>`;
     wrap.innerHTML = `
       <div class="special-card-row">
         <div class="card-collapsed-left">
-          <div class="card-name-row"><span class="card-name">Cash</span><span class="risk-badge risk-low">NIEDRIG</span></div>
+          <div class="card-name-row"><span class="card-name">Cash</span><span class="risk-badge risk-low">NIEDRIG</span>${hasCashTx ? '<span class="risk-badge risk-low">AUS TX</span>' : ''}</div>
           <div class="card-meta-line">Bargeld · Verrechnungskonto · <span class="pct-portfolio">${fmtNum(pct, 0)} % Portfolio</span></div>
         </div>
         <div class="card-pnl-mini">
@@ -1709,10 +2063,11 @@ function buildSpecialCard(kind, totals) {
           <div class="pct" style="color:#666;">Reserve</div>
         </div>
       </div>
-      <div class="special-slider-wrap">
-        <span class="special-slider-min">0 €</span>
-        <input type="range" id="cashSlider" min="0" max="20000" step="20" value="${cash}">
-        <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
+      ${sliderHtml}
+      <div class="cash-tx-toolbar">
+        <button class="cash-tx-btn" id="cashAddDepositBtn" type="button">+ Einzahlung</button>
+        <button class="cash-tx-btn" id="cashAddWithdrawBtn" type="button">− Auszahlung</button>
+        <button class="cash-tx-btn cash-tx-list" id="cashShowTxBtn" type="button">Bewegungen</button>
       </div>`;
   }
   return wrap;
@@ -1899,9 +2254,12 @@ function buildPortfolioHistory(period) {
       dayTotal += priceForHistoryDate(pos, d, isToday) * sharesAtDate(pos, d);
     });
     dayTotal += metalsValueAtDate(d, isToday) + cashValue;
+    const invested = getInvestedCapital(d);
+    const value = isToday ? currentTotals : dayTotal;
+    const pnl = value - invested;
     const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
     const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value: isToday ? currentTotals : dayTotal, events: purchaseEventsForDate(d) });
+    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, pnl, events: purchaseEventsForDate(d) });
   }
   return points;
 }
@@ -1909,7 +2267,28 @@ function buildPortfolioHistory(period) {
 function renderHistory() {
   const points = buildPortfolioHistory(currentHistoryPeriod);
   if (points.length < 2) return;
-  renderChart('historyChart', points, 'value', { compactY: true, daily: true });
+  // Zielpfad: linear interpolation vom Startpunkt bis zum Ziel-Enddatum
+  if (historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
+    const goalEnd = new Date(appData.goal.year, 11, 31);
+    const startVal = points[0].value;
+    const goalVal = appData.goal.amount;
+    const startMs = points[0].date.getTime();
+    const goalMs = goalEnd.getTime();
+    const span = goalMs - startMs;
+    points.forEach(p => {
+      if (span > 0) {
+        const pct = Math.max(0, Math.min(1, (p.date.getTime() - startMs) / span));
+        p.goal = startVal + (goalVal - startVal) * pct;
+      } else { p.goal = goalVal; }
+    });
+  }
+  const extraSeries = [];
+  if (historyVisibleSeries.invested) extraSeries.push({ key: 'invested', label: 'Einstand', color: '#888', dashed: false });
+  if (historyVisibleSeries.pnl) extraSeries.push({ key: 'pnl', label: 'G/V', color: '#3b82f6', dashed: false });
+  if (historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
+  // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
+  const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
+  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, mainLabel: mainKey === 'value' ? 'Depotwert' : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
   const first = points[0], last = points[points.length - 1];
   const delta = last.value - first.value;
   const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
@@ -1921,6 +2300,26 @@ function renderHistory() {
   document.getElementById('historyStartValue').textContent = fmt.format(first.value);
   document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
+  // Performance-Kennzahlen
+  const totalDeposits = getTotalDeposits();
+  const invested = last.invested;
+  const grossEl = document.getElementById('historyReturnGross');
+  if (grossEl) {
+    if (invested > 0) {
+      const grossPct = ((last.value - invested) / invested) * 100;
+      grossEl.textContent = `${grossPct >= 0 ? '+' : ''}${fmtNum(grossPct, 1)} % · ${fmt.format(last.value - invested)}`;
+      grossEl.className = grossPct >= 0 ? 'positive' : 'negative';
+    } else { grossEl.textContent = '—'; }
+  }
+  const mwrEl = document.getElementById('historyReturnMwr');
+  if (mwrEl) {
+    const mwr = computeMWR(last.value);
+    if (mwr != null && isFinite(mwr)) {
+      const pct = mwr * 100;
+      mwrEl.textContent = `${pct >= 0 ? '+' : ''}${fmtNum(pct, 1)} % p.a.`;
+      mwrEl.className = pct >= 0 ? 'positive' : 'negative';
+    } else { mwrEl.textContent = '—'; }
+  }
   // Cash-Historie-Hinweis einblenden, wenn Cash > 0 und (noch) keine Cash-Transaktionen vorhanden
   const cashNoteEl = document.getElementById('cashHistoryNote');
   if (cashNoteEl) {
@@ -2139,7 +2538,20 @@ function wireEvents() {
   ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderSavingsSim(totals, goal); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryPeriod = tab.dataset.history || '12M'; if (appData) renderHistory(); }); });
+  // Legenden-Toggles für Depotchart-Serien
+  document.querySelectorAll('.history-legend-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.series;
+      if (!key) return;
+      historyVisibleSeries[key] = !historyVisibleSeries[key];
+      btn.classList.toggle('active', historyVisibleSeries[key]);
+      if (appData) renderHistory();
+    });
+  });
   document.getElementById('positions').addEventListener('click', e => {
+    if (e.target.id === 'cashAddDepositBtn') { e.stopPropagation(); openCashTxModal('deposit'); return; }
+    if (e.target.id === 'cashAddWithdrawBtn') { e.stopPropagation(); openCashTxModal('withdraw'); return; }
+    if (e.target.id === 'cashShowTxBtn') { e.stopPropagation(); openCashTxList(); return; }
     const metalAdd = e.target.closest('[data-metal-add]');
     if (metalAdd) { e.preventDefault(); e.stopPropagation(); addMetalLot(metalAdd.dataset.metalAdd); return; }
     const metalDel = e.target.closest('[data-metal-del]');
@@ -2252,6 +2664,16 @@ function wireEvents() {
   document.getElementById('mlCancel').addEventListener('click', closeMetalLotModal);
   document.getElementById('mlSave').addEventListener('click', saveMetalLotModal);
   document.getElementById('metalLotModal').addEventListener('click', e => { if (e.target.id === 'metalLotModal') closeMetalLotModal(); });
+  // Cash-Transaktions-Modal
+  document.getElementById('ctxCancel').addEventListener('click', closeCashTxModal);
+  document.getElementById('ctxSave').addEventListener('click', saveCashTxModal);
+  document.getElementById('cashTxModal').addEventListener('click', e => { if (e.target.id === 'cashTxModal') closeCashTxModal(); });
+  document.getElementById('ctxListClose').addEventListener('click', closeCashTxList);
+  document.getElementById('cashTxListModal').addEventListener('click', e => {
+    if (e.target.id === 'cashTxListModal') return closeCashTxList();
+    const del = e.target.closest('[data-cash-del]');
+    if (del) deleteCashTx(del.dataset.cashDel);
+  });
   // Screenshot-Modal
   document.getElementById('ssFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) handleScreenshotFile(f); });
   document.getElementById('ssCancel').addEventListener('click', closeScreenshotModal);
@@ -2527,7 +2949,13 @@ async function savePositionsToKV(debounceMs = 0) {
     return true;
   }
   try {
-    const dataToStore = { positions: appData.positions, goal: appData.goal, version: 2 };
+    const dataToStore = {
+      positions: appData.positions,
+      goal: appData.goal,
+      transactions: appData.transactions || [],
+      schemaVersion: appData.schemaVersion || 1,
+      version: 2 // Blob-Versionsmarker (kompatibel mit alten Decoder-Versionen)
+    };
     const blob = await ENC.encrypt(dataToStore, appPassword);
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
@@ -2642,6 +3070,14 @@ async function saveNewPosition() {
   if (type === 'Crypto' && cgId) newPos.cgId = cgId;
   else newPos.manualPrice = manualPrice;
   appData.positions.push(newPos);
+  // Transaktion für die neue Position erzeugen (Schema v2)
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  appData.transactions.push({
+    id: makeTxId(), date: new Date().toISOString().slice(0, 10),
+    assetId: id, assetType: assetTypeOf(newPos), txType: 'buy',
+    quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
+    note: 'Manuell hinzugefügt'
+  });
   closeAddPositionModal();
   await savePositionsToKV();
   await fetchCryptoPrices();
@@ -2653,6 +3089,10 @@ async function removePosition(posId) {
   if (!pos) return;
   if (!confirm(`Position "${pos.name}" wirklich entfernen?`)) return;
   appData.positions = appData.positions.filter(p => p.id !== posId);
+  // Korrespondierende Transaktionen ebenfalls entfernen
+  if (Array.isArray(appData.transactions)) {
+    appData.transactions = appData.transactions.filter(t => t.assetId !== posId);
+  }
   delete currentPrices[posId];
   delete weeklyData[posId];
   await savePositionsToKV();
