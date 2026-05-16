@@ -314,6 +314,20 @@
   .price-grid-cell .val { font-weight: 500; font-variant-numeric: tabular-nums; }
   .price-grid-cell .val.positive { color: var(--positive); }
   .price-grid-cell .val.negative { color: var(--negative); }
+  .stammdaten-box { background: var(--bg-secondary); border-radius: 8px; padding: 10px; margin: 10px 0; }
+  .stammdaten-title { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; }
+  .stammdaten-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; font-size: 12px; }
+  .stammdaten-row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; min-width: 0; }
+  .stammdaten-row .lbl { color: var(--text-tertiary); white-space: nowrap; }
+  .stammdaten-row .val { color: var(--text-primary); font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+  .stammdaten-row .val.positive { color: var(--positive); }
+  .stammdaten-row .val.negative { color: var(--negative); }
+  .lot-table { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .lot-row { display: grid; grid-template-columns: 78px 1fr 70px 78px; gap: 8px; align-items: center; font-size: 11px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  body.light .lot-row { border-bottom-color: rgba(0,0,0,0.06); }
+  .lot-row.head { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; padding-top: 0; }
+  .lot-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } }
   .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
   body.light .warn-box { background: rgba(245,158,11,0.12); color: #92400e; }
   /* ===== CHART TABS + LADEANIMATION ===== */
@@ -850,6 +864,75 @@ const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberForm
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
 const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const POSITION_STAMMDATEN = [
+  {
+    match: ['servicenow'],
+    depot: { custodian: 'Clearstream Nat.', custodyType: 'Girosammelverwahrung' },
+    lots: [
+      { date: '2026-05-14', shares: 10, costPrice: 75.08, value: 750.80 },
+      { date: '2026-05-07', shares: 10, costPrice: 76.38, value: 763.80 },
+      { date: '2026-01-29', shares: 11, costPrice: 96.65, value: 1063.15 },
+      { date: '2026-01-13', shares: 5, costPrice: 119.62, value: 598.10 },
+      { date: '2025-11-17', shares: 10, costPrice: 149.01, value: 1490.05 },
+      { date: '2025-10-17', shares: 5, costPrice: 149.01, value: 745.03 },
+      { date: '2025-10-10', shares: 5, costPrice: 149.01, value: 745.03 }
+    ]
+  },
+  {
+    match: ['solana'],
+    depot: { custodian: 'Tangany GmbH', custodyType: 'Kryptoverwahrung' },
+    lots: [
+      { date: '2026-03-07', shares: 12.641356, costPrice: 72.77, value: 919.94 },
+      { date: '2026-02-20', shares: 6.991442, costPrice: 71.46, value: 499.62 },
+      { date: '2026-02-15', shares: 5.3859, costPrice: 74.29, value: 400.13 },
+      { date: '2025-12-01', shares: 3.730334, costPrice: 107.28, value: 400.21 },
+      { date: '2025-11-27', shares: 2.030605, costPrice: 123.11, value: 249.98 },
+      { date: '2025-10-29', shares: 0.811707, costPrice: 169.93, value: 137.93 },
+      { date: '2025-10-19', shares: 2.433564, costPrice: 164.37, value: 400.00 },
+      { date: '2025-10-12', shares: 0.536032, costPrice: 170.32, value: 91.30 }
+    ]
+  },
+  {
+    match: ['ripple', 'xrp'],
+    depot: { custodian: 'Tangany GmbH', custodyType: 'Kryptoverwahrung' },
+    lots: [
+      { date: '2026-05-15', shares: 33, costPrice: 1.24, value: 40.80 },
+      { date: '2026-03-11', shares: 20.903115, costPrice: 1.20, value: 25.00 },
+      { date: '2026-02-20', shares: 743.191744, costPrice: 1.21, value: 900.76 },
+      { date: '2026-02-20', shares: 165.196009, costPrice: 1.21, value: 200.02 },
+      { date: '2026-02-16', shares: 235.342478, costPrice: 1.28, value: 300.07 },
+      { date: '2026-02-15', shares: 179.05955, costPrice: 1.24, value: 222.07 },
+      { date: '2026-02-06', shares: 16.095763, costPrice: 1.24, value: 19.99 },
+      { date: '2026-02-06', shares: 97.325668, costPrice: 1.13, value: 109.89 },
+      { date: '2026-01-21', shares: 230.143078, costPrice: 1.69, value: 389.99 },
+      { date: '2026-01-06', shares: 2.477298, costPrice: 2.02, value: 5.00 },
+      { date: '2025-12-04', shares: 32.75254, costPrice: 1.83, value: 59.98 },
+      { date: '2025-12-01', shares: 115.463975, costPrice: 1.73, value: 199.93 },
+      { date: '2025-11-27', shares: 67.750466, costPrice: 1.92, value: 129.99 },
+      { date: '2025-11-04', shares: 101.709327, costPrice: 1.97, value: 200.18 },
+      { date: '2025-10-06', shares: 77.412083, costPrice: 2.58, value: 200.03 },
+      { date: '2025-09-05', shares: 41.389238, costPrice: 2.42, value: 100.02 },
+      { date: '2025-08-26', shares: 39.404193, costPrice: 2.54, value: 100.04 }
+    ]
+  },
+  {
+    match: ['global x video games', 'esports'],
+    depot: { fundSharePct: 59.30, portfolioSharePct: 5.81, custodian: 'Clearstream Lux.', custodyType: 'Wertpapierrechnung' },
+    lots: [
+      { date: '2026-01-06', shares: 9, costPrice: 12.36, value: 111.28, upfrontTax: 0 },
+      { date: '2025-11-26', shares: 50, costPrice: 12.63, value: 631.30, upfrontTax: 0 }
+    ]
+  },
+  {
+    match: ['amundi core msci world'],
+    depot: { fundSharePct: 40.70, portfolioSharePct: 3.99, custodian: 'Clearstream Lux.', custodyType: 'Wertpapierrechnung' },
+    lots: [
+      { date: '2025-09-05', shares: 1, costPrice: 131.62, value: 131.62, upfrontTax: 0 },
+      { date: '2025-06-04', shares: 1, costPrice: 141.43, value: 141.43, upfrontTax: 0 },
+      { date: '2025-02-17', shares: 0.870678, costPrice: 141.44, value: 123.15, upfrontTax: 0 }
+    ]
+  }
+];
 
 function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
 function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
@@ -858,6 +941,60 @@ function showScreen(id) { ['gateScreen', 'appScreen'].forEach(s => { const el = 
 function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function getThemeColors() { const cs = getComputedStyle(document.body); return { tooltipBg: cs.getPropertyValue('--tooltip-bg').trim(), tooltipText: cs.getPropertyValue('--tooltip-text').trim(), gridColor: cs.getPropertyValue('--chart-grid').trim(), axisText: cs.getPropertyValue('--chart-axis').trim() }; }
+function normalizeText(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function findStammdaten(pos) {
+  const hay = normalizeText(`${pos.name || ''} ${pos.symbol || ''}`);
+  return POSITION_STAMMDATEN.find(entry => entry.match.some(m => hay.includes(normalizeText(m))));
+}
+function applyPositionStammdaten() {
+  if (!appData?.positions) return;
+  appData.positions.forEach(pos => {
+    const entry = findStammdaten(pos);
+    if (!entry) return;
+    pos.stammdaten = { ...(entry.depot || {}) };
+    pos.purchaseLots = entry.lots.map(lot => ({ ...lot }));
+  });
+}
+function formatDateAT(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = String(iso).split('-');
+  return y && m && d ? `${d}.${m}.${y}` : String(iso);
+}
+function sharesAtDate(pos, date) {
+  if (!pos.purchaseLots || !pos.purchaseLots.length) return pos.shares;
+  const cutoff = date instanceof Date ? date.toISOString().slice(0, 10) : String(date);
+  return pos.purchaseLots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.shares) || 0) : sum, 0);
+}
+function buildStammdatenSection(pos, live, totals) {
+  const meta = pos.stammdaten;
+  const lots = pos.purchaseLots || [];
+  if (!meta && !lots.length) return '';
+  const valueEur = live.price * pos.shares;
+  const costValue = pos.costPrice * pos.shares;
+  const pnlAbs = valueEur - costValue;
+  const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
+  const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
+  const row = (label, value, cls = '') => value == null || value === '' ? '' : `<div class="stammdaten-row"><span class="lbl">${label}</span><span class="val ${cls}">${value}</span></div>`;
+  const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
+  const rows = [
+    row('Stück', fmtNum(pos.shares, pos.shares % 1 ? 6 : 0)),
+    row('Kurs', fmt.format(live.price)),
+    row('Gesamtwert', fmt.format(valueEur)),
+    row('Einstandskurs', fmt.format(pos.costPrice)),
+    row('Einstandswert', fmt.format(costValue)),
+    row('Entwicklung', `${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}`, pnlClass),
+    row('Entwicklung %', fmtPct(pnlPct), pnlClass),
+    row('Anteil Portfolio', `${fmtNum(meta?.portfolioSharePct ?? pctPortfolio, 2)} %`),
+    row('Anteil ETFs/Fonds', meta?.fundSharePct != null ? `${fmtNum(meta.fundSharePct, 2)} %` : null),
+    row('Lagerstelle', meta?.custodian),
+    row('Verwahrart', meta?.custodyType)
+  ].join('');
+  const lotRows = lots.length ? `<div class="lot-table">
+    <div class="lot-row head"><span>Datum</span><span>Stück</span><span>Einstand</span><span>Wert</span></div>
+    ${lots.map(lot => `<div class="lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)}</span><span>${fmt.format(lot.costPrice)}</span><span>${fmt.format(lot.value)}</span></div>`).join('')}
+  </div>` : '';
+  return `<div class="stammdaten-box"><div class="stammdaten-title">Depot-Stammdaten</div><div class="stammdaten-grid">${rows}</div>${lotRows}</div>`;
+}
 
 // ===== RISIKO + KATEGORIEN =====
 const SMALLCAP_CRYPTO_IDS = ['sui', 'apex', 'aptos', 'arbitrum', 'optimism', 'celestia', 'sei-network', 'injective-protocol', 'starknet'];
@@ -1150,6 +1287,7 @@ async function handleGate() {
         if (kvData.goal) appData.goal = kvData.goal;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
+    applyPositionStammdaten();
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
@@ -1277,6 +1415,7 @@ function buildCard(pos, totals, alloc) {
   const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
   const rec = getRecommendation(pos, totals, alloc);
   const recBlock = rec ? `<div class="rec-card rec-${rec.kind}"><div class="rec-icon">${recIcon(rec.kind)}</div><div class="rec-body"><div class="rec-label">KI-Empfehlung</div><div class="rec-action">${escapeHtml(rec.action)}</div><div class="rec-reason">${escapeHtml(rec.reason)}</div></div></div>` : '';
+  const stammdatenBlock = buildStammdatenSection(pos, live, totals);
   wrap.innerHTML = `
     <div class="card-collapsed-row">
       <div class="card-collapsed-left">
@@ -1303,6 +1442,7 @@ function buildCard(pos, totals, alloc) {
         <div class="price-grid-cell"><div class="lbl">Abstand</div><div class="val ${pnlClass}">${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 1)} %</div></div>
         <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
       </div>
+      ${stammdatenBlock}
       <div class="chart-controls-row">
         <div class="chart-label">Kursverlauf</div>
         <div class="chart-tabs" id="chartTabs-${pos.id}">
@@ -1554,10 +1694,10 @@ function buildPortfolioHistory(monthsBack) {
         for (const e of sorted) { if (e.date <= ym) matched = e; }
         if (!matched && sorted.length > 0) matched = sorted[0];
         const p = matched ? matched.price : pos.costPrice;
-        monthTotal += p * pos.shares;
+        monthTotal += p * sharesAtDate(pos, d);
       } else {
         const live = currentPrices[pos.id] || { price: pos.costPrice };
-        monthTotal += live.price * pos.shares;
+        monthTotal += live.price * sharesAtDate(pos, d);
       }
     });
     monthTotal += extra; // Cash + Edelmetalle (Annahme: aktueller Bestand)
@@ -1742,6 +1882,7 @@ function scheduleAIRefresh() {
 
 let usageRefreshTimer = null;
 async function initApp() {
+  applyPositionStammdaten();
   if (appData.goal) {
     document.getElementById('goalYear').value = String(appData.goal.year);
     document.getElementById('goalAmount').value = String(appData.goal.amount);
