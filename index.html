@@ -139,6 +139,27 @@
   .cash-tx-item .cash-tx-val.deposit { color: var(--positive); font-weight: 500; }
   .cash-tx-item .cash-tx-val.withdraw { color: var(--negative); font-weight: 500; }
   .cash-tx-del { background: transparent; border: 0; color: var(--negative); cursor: pointer; padding: 4px 8px; font-size: 11px; }
+  .risk-rules-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .risk-rules-section.has-violations { border-color: var(--negative); }
+  .risk-rules-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .risk-rules-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .risk-rules-head .ok { color: var(--positive); }
+  .risk-rules-head .warn { color: var(--negative); }
+  .risk-rule-item { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--border-light); font-size: 11px; gap: 8px; }
+  .risk-rule-item:first-of-type { border-top: 0; }
+  .risk-rule-item .lbl { color: var(--text-secondary); }
+  .risk-rule-item .val { font-variant-numeric: tabular-nums; }
+  .risk-rule-item .val.violated { color: var(--negative); font-weight: 500; }
+  .risk-rule-item .val.ok { color: var(--positive); }
+  .risk-rules-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; }
+  .backup-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .backup-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .backup-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .backup-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .backup-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 7px 12px; font-size: 11px; font-family: inherit; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+  .backup-btn:hover { background: var(--bg-track); }
+  .backup-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+  .backup-hint { font-size: 10px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -558,6 +579,13 @@
       <div class="alloc-crypto-tags" id="allocCryptoTags"></div>
     </div>
   </div>
+  <div class="risk-rules-section" id="riskRulesSection">
+    <div class="risk-rules-head" id="riskRulesHead">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s-8-4.5-8-11.8V5l8-3 8 3v5.2C20 17.5 12 22 12 22z"/></svg>
+      <span>Risiko-Regeln</span>
+    </div>
+    <div id="riskRulesList"></div>
+  </div>
   <div class="positions-head-label"><span>Positionen</span><span>Tap zum Aufklappen</span></div>
   <div class="positions" id="positions"></div>
   <div class="history-section">
@@ -668,6 +696,20 @@
       </div>
     </div>
     <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
+  </div>
+
+  <div class="backup-section">
+    <div class="backup-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Backup &amp; Export</span>
+    </div>
+    <div class="backup-buttons">
+      <button class="backup-btn" id="backupJsonBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>JSON-Backup</button>
+      <button class="backup-btn" id="backupCsvBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Transaktionen CSV</button>
+      <button class="backup-btn" id="backupImportBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>JSON importieren</button>
+      <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
+    </div>
+    <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import wird Vorschau angezeigt.</div>
   </div>
 
   <div class="chat-section">
@@ -1304,8 +1346,45 @@ function metalGramsAtDate(metal, date) {
   const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
   return lots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.grams) || 0) : sum, 0);
 }
+// Versucht historischen Preis pro Gramm zum Datum zu finden. Fallback: aktueller Spotpreis.
+function metalPriceAtDate(metal, date) {
+  const hist = appData?.metalHistory?.[metal.key];
+  if (!hist) return metalPrice(metal);
+  const iso = date instanceof Date ? toIsoDate(date) : String(date);
+  // Sortierte Keys-Liste; nehme den letzten verfügbaren <= iso
+  const keys = Object.keys(hist).sort();
+  let matched = null;
+  for (const k of keys) { if (k <= iso) matched = k; else break; }
+  if (matched && hist[matched] > 0) return hist[matched];
+  // Falls iso vor erstem Eintrag liegt: nimm den ältesten verfügbaren
+  if (keys.length > 0 && hist[keys[0]] > 0) return hist[keys[0]];
+  return metalPrice(metal);
+}
 function metalsValueAtDate(date, isToday) {
-  return METALS.reduce((sum, metal) => sum + metalGramsAtDate(metal, date) * metalPrice(metal), 0);
+  return METALS.reduce((sum, metal) => sum + metalGramsAtDate(metal, date) * (isToday ? metalPrice(metal) : metalPriceAtDate(metal, date)), 0);
+}
+// Lädt historische Gold-Preise via PAXG (1 PAXG = 1 troy ounce). Resultat: €/Gramm pro Datum.
+async function fetchMetalHistory(daysBack = 365) {
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/pax-gold/market_chart?vs_currency=eur&days=${daysBack}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const pts = data.prices || [];
+    if (!pts.length) return;
+    if (!appData.metalHistory) appData.metalHistory = {};
+    const goldHist = {};
+    // 1 Tag = 1 Eintrag (CoinGecko gibt bei 90+ Tagen tägliche Punkte)
+    const seen = new Set();
+    pts.forEach(([ts, ozPrice]) => {
+      const d = new Date(ts);
+      const iso = d.toISOString().slice(0, 10);
+      if (seen.has(iso)) return;
+      seen.add(iso);
+      goldHist[iso] = ozPrice / 31.1035; // €/g
+    });
+    appData.metalHistory.gold = goldHist;
+    appData.metalHistory.updatedAt = new Date().toISOString();
+  } catch (e) { console.warn('Metal-Historie (PAXG) fetch failed:', e); }
 }
 function startMetalsProgress() {
   const wrap = document.getElementById('metalsProgress'), fill = document.getElementById('metalsProgressFill'), eta = document.getElementById('metalsProgressEta'), text = document.getElementById('metalsProgressText'), btn = document.getElementById('metalsRefreshBtn');
@@ -1467,7 +1546,166 @@ function renderAllocation(totals) {
       drill.style.display = '';
     } else { drill.style.display = 'none'; }
   }
+  // Risiko-Regeln direkt mit aktualisieren
+  renderRiskRules(totals, alloc);
   return alloc;
+}
+
+// ===== RISIKO-REGELN =====
+function getRiskRules() {
+  return (appData?.goal?.riskRules) || {
+    maxSinglePosition: 25,  // % vom Depot
+    maxCryptoTotal: 30,      // %
+    minEtf: 25,              // %
+    minCash: 5               // %
+  };
+}
+function evaluateRiskRules(totals, alloc) {
+  const rules = getRiskRules();
+  const items = [];
+  if (!totals || totals.totalCur <= 0 || !alloc) return items;
+  // Größte Einzelposition
+  let largest = null, largestPct = 0;
+  getAllPositions().forEach(pos => {
+    let value = 0;
+    if (pos.special === 'cash') value = appData.goal?.cash || 0;
+    else if (pos.special === 'metals') value = metalsTotalValue();
+    else { const live = currentPrices[pos.id] || { price: pos.costPrice }; value = live.price * (pos.shares || 0); }
+    const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
+    if (pct > largestPct) { largestPct = pct; largest = pos; }
+  });
+  items.push({
+    label: `Max. Einzelposition (Ziel ≤ ${rules.maxSinglePosition} %)`,
+    value: largest ? `${escapeHtml(largest.name)}: ${fmtNum(largestPct, 1)} %` : '—',
+    violated: largestPct > rules.maxSinglePosition,
+    rawPct: largestPct
+  });
+  items.push({
+    label: `Krypto-Anteil (Ziel ≤ ${rules.maxCryptoTotal} %)`,
+    value: `${fmtNum(alloc.pcts.crypto, 1)} %`,
+    violated: alloc.pcts.crypto > rules.maxCryptoTotal,
+    rawPct: alloc.pcts.crypto
+  });
+  items.push({
+    label: `ETF-Anteil (Ziel ≥ ${rules.minEtf} %)`,
+    value: `${fmtNum(alloc.pcts.etf, 1)} %`,
+    violated: alloc.pcts.etf < rules.minEtf,
+    rawPct: alloc.pcts.etf
+  });
+  items.push({
+    label: `Cash-Anteil (Ziel ≥ ${rules.minCash} %)`,
+    value: `${fmtNum(alloc.pcts.cash, 1)} %`,
+    violated: alloc.pcts.cash < rules.minCash,
+    rawPct: alloc.pcts.cash
+  });
+  return items;
+}
+// ===== BACKUP · EXPORT · IMPORT =====
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+function backupJson() {
+  if (!appData) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    schemaVersion: appData.schemaVersion || 1,
+    user: typeof USER_KEY !== 'undefined' ? USER_KEY : 'unknown',
+    positions: appData.positions || [],
+    goal: appData.goal || {},
+    transactions: appData.transactions || [],
+    metalHistory: appData.metalHistory || null,
+    chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
+  };
+  downloadBlob(JSON.stringify(payload, null, 2), `portfolio-backup-${today}.json`, 'application/json');
+}
+function backupCsv() {
+  if (!appData) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = [['date', 'assetId', 'assetType', 'txType', 'quantity', 'price', 'value', 'fees', 'note']];
+  (appData.transactions || []).forEach(t => {
+    rows.push([
+      t.date || '',
+      t.assetId || '',
+      t.assetType || '',
+      t.txType || '',
+      String(t.quantity ?? ''),
+      String(t.price ?? ''),
+      String(t.value ?? ''),
+      String(t.fees ?? 0),
+      (t.note || '').replace(/"/g, '""')
+    ]);
+  });
+  const csv = rows.map(row => row.map(cell => /[",\n]/.test(cell) ? `"${cell}"` : cell).join(',')).join('\n');
+  downloadBlob(csv, `portfolio-transactions-${today}.csv`, 'text/csv');
+}
+async function importJson(file) {
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data || typeof data !== 'object') throw new Error('Ungültiges JSON');
+    // Vorschau zusammenstellen
+    const lines = [
+      `Schema-Version: ${data.schemaVersion || '?'}`,
+      `Positionen: ${Array.isArray(data.positions) ? data.positions.length : 0}`,
+      `Transaktionen: ${Array.isArray(data.transactions) ? data.transactions.length : 0}`,
+      `Ziel: ${data.goal?.amount || '?'} € bis ${data.goal?.year || '?'}`,
+      `Cash: ${data.goal?.cash != null ? data.goal.cash + ' €' : '—'}`,
+      `Gedächtnis: ${data.chatMemorySummary ? data.chatMemorySummary.length + ' Zeichen' : 'leer'}`
+    ];
+    const ok = confirm(`Backup importieren? Dies überschreibt deine aktuellen Daten.\n\n${lines.join('\n')}\n\nFortfahren?`);
+    if (!ok) return;
+    if (Array.isArray(data.positions)) appData.positions = data.positions;
+    if (data.goal) appData.goal = data.goal;
+    if (Array.isArray(data.transactions)) appData.transactions = data.transactions;
+    if (data.metalHistory) appData.metalHistory = data.metalHistory;
+    if (data.schemaVersion) appData.schemaVersion = data.schemaVersion;
+    if (typeof data.chatMemorySummary === 'string') {
+      chatMemorySummary = data.chatMemorySummary;
+      try { await saveChatMemorySummary(); } catch {}
+    }
+    await savePositionsToKV();
+    await refreshUI();
+    alert('Import erfolgreich.');
+  } catch (e) {
+    alert('Fehler beim Import: ' + (e.message || e));
+  }
+}
+
+function renderRiskRules(totals, alloc) {
+  const section = document.getElementById('riskRulesSection');
+  const head = document.getElementById('riskRulesHead');
+  const list = document.getElementById('riskRulesList');
+  if (!section || !head || !list) return;
+  const items = evaluateRiskRules(totals, alloc);
+  const violations = items.filter(i => i.violated);
+  const hasViolations = violations.length > 0;
+  section.classList.toggle('has-violations', hasViolations);
+  const headSpan = head.querySelector('span');
+  if (headSpan) {
+    if (hasViolations) {
+      headSpan.innerHTML = `<span class="warn">Risiko-Regeln · ${violations.length} verletzt</span>`;
+    } else {
+      headSpan.innerHTML = `<span class="ok">Risiko-Regeln · alle eingehalten</span>`;
+    }
+  }
+  if (items.length === 0) {
+    list.innerHTML = '<div class="risk-rules-empty">Keine Daten zur Auswertung verfügbar.</div>';
+    return;
+  }
+  list.innerHTML = items.map(item => `
+    <div class="risk-rule-item">
+      <span class="lbl">${item.label}</span>
+      <span class="val ${item.violated ? 'violated' : 'ok'}">${item.value}</span>
+    </div>`).join('');
 }
 
 // ===== KI-EMPFEHLUNG pro Position (heuristisch) =====
@@ -1587,6 +1825,7 @@ async function handleGate() {
         if (kvData.goal) appData.goal = kvData.goal;
         if (Array.isArray(kvData.transactions)) appData.transactions = kvData.transactions;
         if (kvData.schemaVersion) appData.schemaVersion = kvData.schemaVersion;
+        if (kvData.metalHistory) appData.metalHistory = kvData.metalHistory;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
     applyPositionStammdaten();
@@ -2523,7 +2762,7 @@ async function initApp() {
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
   usageRefreshTimer = setInterval(renderUsage, 60000);
   await refreshUI({ skipAI: true });
-  await Promise.all([fetchCryptoPrices(), fetchMetalPrices()]);
+  await Promise.all([fetchCryptoPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -2652,6 +2891,11 @@ function wireEvents() {
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
   document.getElementById('chatWipeBtn').addEventListener('click', chatWipeMemory);
+  // Backup / Export / Import
+  document.getElementById('backupJsonBtn').addEventListener('click', backupJson);
+  document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
+  document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFileInput').click());
+  document.getElementById('backupFileInput').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) { importJson(f); e.target.value = ''; } });
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
   // Position-Management
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
@@ -2953,6 +3197,7 @@ async function savePositionsToKV(debounceMs = 0) {
       positions: appData.positions,
       goal: appData.goal,
       transactions: appData.transactions || [],
+      metalHistory: appData.metalHistory || null,
       schemaVersion: appData.schemaVersion || 1,
       version: 2 // Blob-Versionsmarker (kompatibel mit alten Decoder-Versionen)
     };
