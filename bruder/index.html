@@ -369,6 +369,18 @@
   .metals-summary::-webkit-details-marker { display: none; }
   .metals-summary .special-card-row { margin-bottom: 0; }
   .metals-body { border-top: 1px solid var(--border-light); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .metals-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .metals-refresh-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); padding: 0; transition: background 0.15s, transform 0.1s; flex-shrink: 0; }
+  .metals-refresh-btn:hover:not(:disabled) { background: var(--bg-secondary); color: var(--text-primary); }
+  .metals-refresh-btn:active:not(:disabled) { transform: scale(0.93); }
+  .metals-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .metals-refresh-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .metals-refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+  .metals-progress { display: none; padding: 9px 10px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px; }
+  .metals-progress.active { display: block; }
+  .metals-progress-row { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+  .metals-progress-bar { height: 5px; background: var(--bg-track); border-radius: 3px; overflow: hidden; }
+  .metals-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, var(--positive)); border-radius: 3px; transition: width 10s linear; }
   .metal-control-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
   .metal-title { font-size: 12px; font-weight: 600; }
   .metal-meta { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
@@ -831,6 +843,7 @@ const ENC = {
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
 let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryMonths = 12;
+let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberFormat('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
@@ -859,6 +872,32 @@ function metalPrice(metal) { return appData?.goal?.[metal.priceKey] || metal.fal
 function metalGrams(metal) { return appData?.goal?.[metal.gramsKey] || 0; }
 function metalValue(metal) { return metalGrams(metal) * metalPrice(metal); }
 function metalsTotalValue() { return METALS.reduce((sum, metal) => sum + metalValue(metal), 0); }
+function startMetalsProgress() {
+  const wrap = document.getElementById('metalsProgress'), fill = document.getElementById('metalsProgressFill'), eta = document.getElementById('metalsProgressEta'), text = document.getElementById('metalsProgressText'), btn = document.getElementById('metalsRefreshBtn');
+  if (!wrap || !fill) return;
+  if (metalsProgressState?.etaInterval) clearInterval(metalsProgressState.etaInterval);
+  const duration = 10000, startTime = Date.now();
+  wrap.classList.add('active');
+  if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+  if (text) text.textContent = 'Edelmetallkurse werden aktualisiert…';
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  fill.offsetWidth;
+  requestAnimationFrame(() => { fill.style.transition = `width ${duration}ms linear`; fill.style.width = '95%'; });
+  const update = () => { if (eta) { const remain = Math.max(0, Math.ceil((duration - (Date.now() - startTime)) / 1000)); eta.textContent = remain > 0 ? `Noch ca. ${remain} Sek` : 'Fast fertig…'; } };
+  update();
+  metalsProgressState = { etaInterval: setInterval(update, 500), startTime };
+}
+function completeMetalsProgress(success) {
+  const wrap = document.getElementById('metalsProgress'), fill = document.getElementById('metalsProgressFill'), eta = document.getElementById('metalsProgressEta'), text = document.getElementById('metalsProgressText'), btn = document.getElementById('metalsRefreshBtn');
+  if (metalsProgressState?.etaInterval) clearInterval(metalsProgressState.etaInterval);
+  if (fill) { fill.style.transition = 'width 0.35s ease'; fill.style.width = '100%'; }
+  if (text) text.textContent = success ? 'Edelmetallkurse aktualisiert' : 'Aktualisierung fehlgeschlagen';
+  if (eta) eta.textContent = success ? 'Fertig' : 'Letzte Werte bleiben aktiv';
+  if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+  setTimeout(() => { if (wrap) wrap.classList.remove('active'); }, 1200);
+  metalsProgressState = null;
+}
 function deriveRisk(pos) {
   if (pos.risk) return pos.risk;
   if (pos.special === 'cash') return 'low';
@@ -1127,7 +1166,9 @@ async function fetchCryptoPrices() {
   } catch (e) { console.warn('Crypto fetch failed:', e); }
 }
 
-async function fetchMetalPrices() {
+async function fetchMetalPrices(opts = {}) {
+  if (opts.showProgress) startMetalsProgress();
+  let success = false;
   try {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
@@ -1145,9 +1186,28 @@ async function fetchMetalPrices() {
     goal.metalPriceSource = data.source || 'Edelmetallkurse';
     goal.metalPriceUpdatedAt = data.updatedAt || new Date().toISOString();
     await savePositionsToKV();
+    success = true;
+    return true;
   } catch (e) {
     console.warn('Metal price fetch failed:', e);
+    return false;
+  } finally {
+    if (opts.showProgress) completeMetalsProgress(success);
   }
+}
+
+async function refreshMetalsOnly() {
+  if (!appData || metalsProgressState) return;
+  const details = document.querySelector('#card-metals details');
+  const wasOpen = !!details?.open;
+  await fetchMetalPrices({ showProgress: true });
+  const totals = renderTotals();
+  renderPositions(totals);
+  const nextDetails = document.querySelector('#card-metals details');
+  if (nextDetails) nextDetails.open = wasOpen || true;
+  renderAllocation(totals);
+  const goal = renderGoal(totals);
+  renderSavingsSim(totals, goal);
 }
 
 async function fetchCryptoWeekly(cgId) {
@@ -1298,6 +1358,16 @@ function buildSpecialCard(kind, totals) {
           </div>
         </summary>
         <div class="metals-body">
+          <div class="metals-toolbar">
+            <div class="metal-meta">Aktualisiert nur Edelmetallkurse</div>
+            <button class="metals-refresh-btn" id="metalsRefreshBtn" type="button" title="Edelmetallkurse aktualisieren" aria-label="Edelmetallkurse aktualisieren">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
+            </button>
+          </div>
+          <div class="metals-progress" id="metalsProgress">
+            <div class="metals-progress-row"><span id="metalsProgressText">Edelmetallkurse werden aktualisiert…</span><span id="metalsProgressEta">Noch ca. 10 Sek</span></div>
+            <div class="metals-progress-bar"><div class="metals-progress-fill" id="metalsProgressFill"></div></div>
+          </div>
           ${METALS.map(metal => {
             const grams = metalGrams(metal);
             const price = metalPrice(metal);
@@ -1717,7 +1787,13 @@ function wireEvents() {
       if (pos) loadChartForPosition(pos, tabBtn.dataset.period);
       return;
     }
-    // Special-Karten (Cash/Gold) sind nicht klappbar
+    if (e.target.closest('#metalsRefreshBtn')) {
+      e.preventDefault();
+      e.stopPropagation();
+      refreshMetalsOnly();
+      return;
+    }
+    // Special-Karten (Cash/Edelmetalle) sind nicht klappbar
     const specialCard = e.target.closest('.card.special');
     if (specialCard) return;
     // Slider/Input nicht als Klapp-Trigger werten
