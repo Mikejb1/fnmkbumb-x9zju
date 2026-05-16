@@ -348,7 +348,7 @@
   .rec-card.rec-trim .rec-action { color: #fbbf24; }
   .rec-card.rec-watch .rec-action { color: var(--text-secondary); }
   .rec-reason { font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
-  /* ===== CASH/GOLD SPEZIAL-KARTEN ===== */
+  /* ===== CASH/EDELMETALLE SPEZIAL-KARTEN ===== */
   .special-card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
   .special-slider-wrap { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 11px; background: var(--bg-secondary); border-radius: 8px; padding: 8px 10px; }
   .special-slider-wrap input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--bg-track); border-radius: 2px; outline: none; margin: 0; }
@@ -356,8 +356,24 @@
   .special-slider-wrap input[type=range]::-moz-range-thumb { width: 18px; height: 18px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); }
   .special-slider-wrap.gold input[type=range]::-webkit-slider-thumb { background: #f59e0b; }
   .special-slider-wrap.gold input[type=range]::-moz-range-thumb { background: #f59e0b; }
+  .special-slider-wrap.silver input[type=range]::-webkit-slider-thumb { background: #cbd5e1; }
+  .special-slider-wrap.silver input[type=range]::-moz-range-thumb { background: #cbd5e1; }
+  .special-slider-wrap.platinum input[type=range]::-webkit-slider-thumb { background: #93c5fd; }
+  .special-slider-wrap.platinum input[type=range]::-moz-range-thumb { background: #93c5fd; }
+  .special-slider-wrap.palladium input[type=range]::-webkit-slider-thumb { background: #a78bfa; }
+  .special-slider-wrap.palladium input[type=range]::-moz-range-thumb { background: #a78bfa; }
   .special-slider-min, .special-slider-max { color: var(--text-tertiary); }
   .special-slider-val { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .metals-details { padding: 0; overflow: hidden; }
+  .metals-summary { list-style: none; cursor: pointer; padding: 14px 16px; }
+  .metals-summary::-webkit-details-marker { display: none; }
+  .metals-summary .special-card-row { margin-bottom: 0; }
+  .metals-body { border-top: 1px solid var(--border-light); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .metal-control-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .metal-title { font-size: 12px; font-weight: 600; }
+  .metal-meta { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .metal-gram-input { width: 74px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); padding: 5px 6px; font-size: 12px; text-align: right; font-family: inherit; }
+  .metal-gram-input:focus { outline: none; border-color: var(--positive); }
   /* ===== SPARPLAN-SIMULATION ===== */
   .savings-sim-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .savings-sim-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin: 0 0 8px 0; }
@@ -717,7 +733,7 @@ async function callAIWorker(prompt) {
 }
 
 function buildAIPrompt(totals, goal) {
-  const positions = appData.positions.map(pos => {
+  const positions = getAllPositions().map(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
     const value = live.price * pos.shares;
     const pct = (value / totals.totalCur) * 100;
@@ -832,10 +848,21 @@ function getThemeColors() { const cs = getComputedStyle(document.body); return {
 
 // ===== RISIKO + KATEGORIEN =====
 const SMALLCAP_CRYPTO_IDS = ['sui', 'apex', 'aptos', 'arbitrum', 'optimism', 'celestia', 'sei-network', 'injective-protocol', 'starknet'];
+const METALS = [
+  { key: 'gold', name: 'Gold', priceKey: 'goldPrice', gramsKey: 'goldGrams', fallbackPrice: 71.40, max: 500, color: '#f59e0b' },
+  { key: 'silver', name: 'Silber', priceKey: 'silverPrice', gramsKey: 'silverGrams', fallbackPrice: 0.95, max: 5000, color: '#cbd5e1' },
+  { key: 'platinum', name: 'Platin', priceKey: 'platinumPrice', gramsKey: 'platinumGrams', fallbackPrice: 30.50, max: 1000, color: '#93c5fd' },
+  { key: 'palladium', name: 'Palladium', priceKey: 'palladiumPrice', gramsKey: 'palladiumGrams', fallbackPrice: 28.00, max: 1000, color: '#a78bfa' }
+];
+function ensureGoal() { if (!appData.goal) appData.goal = {}; return appData.goal; }
+function metalPrice(metal) { return appData?.goal?.[metal.priceKey] || metal.fallbackPrice; }
+function metalGrams(metal) { return appData?.goal?.[metal.gramsKey] || 0; }
+function metalValue(metal) { return metalGrams(metal) * metalPrice(metal); }
+function metalsTotalValue() { return METALS.reduce((sum, metal) => sum + metalValue(metal), 0); }
 function deriveRisk(pos) {
   if (pos.risk) return pos.risk;
   if (pos.special === 'cash') return 'low';
-  if (pos.special === 'gold') return 'medium';
+  if (pos.special === 'gold' || pos.special === 'metal') return 'medium';
   const type = (pos.type || '').toLowerCase();
   if (type === 'etf') {
     const name = (pos.name || '').toLowerCase();
@@ -854,7 +881,7 @@ function deriveRisk(pos) {
 function riskLabel(r) { return { 'low': 'NIEDRIG', 'medium': 'MITTEL', 'high': 'HOCH', 'very-high': 'SEHR HOCH' }[r] || 'MITTEL'; }
 function categoryOf(pos) {
   if (pos.special === 'cash') return 'cash';
-  if (pos.special === 'gold') return 'gold';
+  if (pos.special === 'gold' || pos.special === 'metal') return 'gold';
   const t = (pos.type || '').toLowerCase();
   if (t === 'crypto') return 'crypto';
   if (t === 'etf') return 'etf';
@@ -864,12 +891,14 @@ function categoryOf(pos) {
 
 // ===== ASSET-ALLOKATION =====
 function buildAllSpecialPositions() {
-  // Konstruiert virtuelle Cash + Gold Positionen aus appData.goal
+  // Konstruiert virtuelle Cash + Edelmetall Positionen aus appData.goal
   const list = [];
   if (!appData) return list;
-  const goldGrams = appData.goal?.goldGrams || 0;
-  const goldPrice = appData.goal?.goldPrice || 71.40;
-  if (goldGrams > 0) list.push({ id: '__gold', special: 'gold', name: 'Gold', type: 'Edelmetall', symbol: `${goldPrice.toFixed(2)} €/g`, shares: goldGrams, costPrice: goldPrice, manualPrice: goldPrice });
+  METALS.forEach(metal => {
+    const grams = metalGrams(metal);
+    const price = metalPrice(metal);
+    if (grams > 0) list.push({ id: `__${metal.key}`, special: 'metal', metalKey: metal.key, name: metal.name, type: 'Edelmetall', symbol: `${price.toFixed(2)} €/g`, shares: grams, costPrice: price, manualPrice: price });
+  });
   const cash = appData.goal?.cash || 0;
   if (cash > 0) list.push({ id: '__cash', special: 'cash', name: 'Cash', type: 'Bargeld', symbol: 'Verrechnungskonto', shares: 1, costPrice: cash, manualPrice: cash });
   return list;
@@ -881,7 +910,7 @@ function getCategoryAllocation(totalCur) {
   const cats = { etf: 0, aktie: 0, crypto: 0, gold: 0, cash: 0 };
   getAllPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : (pos.special === 'gold') ? (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40) : live.price * pos.shares;
+    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : live.price * pos.shares;
     cats[categoryOf(pos)] += value;
   });
   const result = {};
@@ -907,7 +936,7 @@ function computeDiversificationScore(alloc, totalCur) {
   let maxPct = 0;
   getAllPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : (pos.special === 'gold') ? (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40) : live.price * pos.shares;
+    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : live.price * pos.shares;
     const pct = (value / totalCur) * 100;
     if (pct > maxPct) maxPct = pct;
   });
@@ -918,7 +947,7 @@ function computeDiversificationScore(alloc, totalCur) {
   if (alloc.pcts.etf >= 40) score += 20;
   else if (alloc.pcts.etf >= 20) score += 12;
   else if (alloc.pcts.etf >= 10) score += 6;
-  // Cash + Gold Stabilisator (max 15)
+  // Cash + Edelmetalle Stabilisator (max 15)
   const stable = alloc.pcts.cash + alloc.pcts.gold;
   if (stable >= 10) score += 15;
   else if (stable >= 5) score += 8;
@@ -969,7 +998,7 @@ function renderAllocation(totals) {
 
 // ===== KI-EMPFEHLUNG pro Position (heuristisch) =====
 function getRecommendation(pos, totals, alloc) {
-  if (pos.special === 'cash' || pos.special === 'gold') return null;
+  if (pos.special === 'cash' || pos.special === 'gold' || pos.special === 'metal') return null;
   const live = currentPrices[pos.id] || { price: pos.costPrice };
   const value = live.price * pos.shares;
   const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
@@ -1089,19 +1118,36 @@ function handleLogout() { appData = null; appPassword = null; currentPrices = {}
 
 async function fetchCryptoPrices() {
   const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
-  // PAX Gold (PAXG) mit-fetchen für Gold-Spotpreis (1 PAXG = 1 troy ounce)
-  const allIds = cryptoIds ? cryptoIds + ',pax-gold' : 'pax-gold';
+  if (!cryptoIds) return;
   try {
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${allIds}&vs_currencies=eur&include_24hr_change=true`);
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`);
     if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
     const data = await res.json();
     appData.positions.forEach(pos => { if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true }; });
-    if (data['pax-gold'] && data['pax-gold'].eur) {
-      const pricePerGram = data['pax-gold'].eur / 31.1035;
-      if (!appData.goal) appData.goal = {};
-      appData.goal.goldPrice = pricePerGram;
-    }
-  } catch (e) { console.warn('Crypto/Gold fetch failed:', e); }
+  } catch (e) { console.warn('Crypto fetch failed:', e); }
+}
+
+async function fetchMetalPrices() {
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'get-metal-prices' })
+    });
+    if (!res.ok) throw new Error('Metal prices HTTP ' + res.status);
+    const data = await res.json();
+    if (!data?.prices) return;
+    const goal = ensureGoal();
+    METALS.forEach(metal => {
+      const price = Number(data.prices[metal.key]);
+      if (price > 0) goal[metal.priceKey] = price;
+    });
+    goal.metalPriceSource = data.source || 'Edelmetallkurse';
+    goal.metalPriceUpdatedAt = data.updatedAt || new Date().toISOString();
+    await savePositionsToKV();
+  } catch (e) {
+    console.warn('Metal price fetch failed:', e);
+  }
 }
 
 async function fetchCryptoWeekly(cgId) {
@@ -1226,28 +1272,51 @@ function buildCard(pos, totals, alloc) {
 function buildSpecialCard(kind, totals) {
   const wrap = document.createElement('div');
   wrap.className = 'card special';
-  if (kind === 'gold') {
-    const grams = appData.goal?.goldGrams || 0;
-    const price = appData.goal?.goldPrice || 71.40;
-    const value = grams * price;
+  if (kind === 'metals') {
+    const value = metalsTotalValue();
     const pct = totals && totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
-    wrap.id = 'card-gold';
+    const gramsTotal = METALS.reduce((sum, metal) => sum + metalGrams(metal), 0);
+    const source = appData.goal?.metalPriceSource || 'Quelle wird geladen';
+    const sourceDate = appData.goal?.metalPriceUpdatedAt ? new Date(appData.goal.metalPriceUpdatedAt) : null;
+    const sourceText = sourceDate ? `${source} · ${sourceDate.toLocaleString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : source;
+    wrap.id = 'card-metals';
+    wrap.className = 'card special metals-details';
     wrap.innerHTML = `
-      <div class="special-card-row">
-        <div class="card-collapsed-left">
-          <div class="card-name-row"><span class="card-name">Gold</span><span class="risk-badge risk-medium">MITTEL</span><span class="risk-badge risk-medium">SPOT</span></div>
-          <div class="card-meta-line">Edelmetall · ${fmtNum(price, 2)} €/g · <span class="pct-portfolio">${fmtNum(pct, 0)} % Portfolio</span></div>
+      <details>
+        <summary class="metals-summary">
+          <div class="special-card-row">
+            <div class="card-collapsed-left">
+              <div class="card-name-row"><span class="card-name">Edelmetalle</span><span class="risk-badge risk-medium">MITTEL</span><span class="risk-badge risk-medium">SPOT</span></div>
+              <div class="card-meta-line">Gold · Silber · Platin · Palladium · <span class="pct-portfolio">${fmtNum(pct, 0)} % Portfolio</span></div>
+              <div class="card-meta-line">${escapeHtml(sourceText)}</div>
+            </div>
+            <div class="card-pnl-mini">
+              <div class="val" id="metalsTotalVal">${fmt.format(value)}</div>
+              <div class="pct" id="metalsTotalGrams" style="color:#fbbf24;">${fmtNum(gramsTotal, 0)} g gesamt</div>
+            </div>
+            <div class="card-chevron"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+        </summary>
+        <div class="metals-body">
+          ${METALS.map(metal => {
+            const grams = metalGrams(metal);
+            const price = metalPrice(metal);
+            const metalVal = grams * price;
+            return `
+              <div class="metal-control" data-metal="${metal.key}">
+                <div class="metal-control-head">
+                  <div><span class="metal-title">${metal.name}</span><span class="metal-meta"> · ${fmtNum(price, 2)} €/g · <span id="${metal.key}Value">${fmt.format(metalVal)}</span></span></div>
+                  <input type="number" class="metal-gram-input" id="${metal.key}GramsInput" min="0" max="${metal.max}" step="1" value="${grams}" aria-label="${metal.name} Gramm">
+                </div>
+                <div class="special-slider-wrap ${metal.key}">
+                  <span class="special-slider-min">0 g</span>
+                  <input type="range" class="metal-slider" id="${metal.key}Slider" data-metal="${metal.key}" min="0" max="${metal.max}" step="1" value="${grams}">
+                  <span class="special-slider-val" id="${metal.key}SliderVal">${fmtNum(grams, 0)} g</span>
+                </div>
+              </div>`;
+          }).join('')}
         </div>
-        <div class="card-pnl-mini">
-          <div class="val">${fmt.format(value)}</div>
-          <div class="pct" style="color:#fbbf24;">${fmtNum(grams, 1)} g</div>
-        </div>
-      </div>
-      <div class="special-slider-wrap gold">
-        <span class="special-slider-min">0 g</span>
-        <input type="range" id="goldSlider" min="0" max="500" step="10" value="${grams}">
-        <span class="special-slider-val" id="goldSliderVal">${fmtNum(grams, 1)} g</span>
-      </div>`;
+      </details>`;
   } else {
     const cash = appData.goal?.cash || 0;
     const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
@@ -1277,6 +1346,7 @@ function renderPositions(totals) {
   const container = document.getElementById('positions');
   // Expand-State der bisherigen Karten merken
   const wasExpanded = new Set([...renderExpandedRestore]);
+  const metalsWasOpen = !!container.querySelector('#card-metals details[open]');
   container.querySelectorAll('.card.expanded').forEach(c => { if (c.dataset.posId) wasExpanded.add(c.dataset.posId); });
   renderExpandedRestore = new Set();
   container.innerHTML = '';
@@ -1285,16 +1355,20 @@ function renderPositions(totals) {
     let totalCur = 0;
     getAllPositions().forEach(pos => {
       if (pos.special === 'cash') totalCur += appData.goal?.cash || 0;
-      else if (pos.special === 'gold') totalCur += (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40);
+      else if (pos.special === 'metal') totalCur += pos.costPrice * pos.shares;
       else { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; }
     });
     totals = { totalCur };
   }
   const alloc = getCategoryAllocation(totals.totalCur);
   appData.positions.forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
-  // Gold + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
-  container.appendChild(buildSpecialCard('gold', totals));
+  // Edelmetalle + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
+  container.appendChild(buildSpecialCard('metals', totals));
   container.appendChild(buildSpecialCard('cash', totals));
+  if (metalsWasOpen) {
+    const metalsDetails = container.querySelector('#card-metals details');
+    if (metalsDetails) metalsDetails.open = true;
+  }
   // Expand-State wiederherstellen + Charts ggf. neu laden
   wasExpanded.forEach(id => {
     const c = container.querySelector(`.card[data-pos-id="${id}"]`);
@@ -1319,18 +1393,18 @@ function renderTotals() {
       hasChangeData = true;
     }
   });
-  // Gold + Cash addieren
-  const goldValue = (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40);
+  // Edelmetalle + Cash addieren
+  const metalValueTotal = metalsTotalValue();
   const cashValue = appData.goal?.cash || 0;
-  totalCur += goldValue + cashValue;
-  totalCost += goldValue + cashValue; // Gold/Cash haben keinen separaten Einstandspreis
+  totalCur += metalValueTotal + cashValue;
+  totalCost += metalValueTotal + cashValue; // Edelmetalle/Cash haben keinen separaten Einstandspreis
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
   document.getElementById('totalValue').textContent = fmt.format(totalCur);
   const pnlEl = document.getElementById('totalPnl');
   pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}${fmt.format(totalPnl)} (${fmtNum(totalPnlPct)} %)`;
   pnlEl.className = 'total-pnl ' + (totalPnl >= 0 ? 'positive' : 'negative');
-  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)}`;
+  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
   document.getElementById('lastUpdate').textContent = `Stand: ${new Date().toLocaleString('de-AT')}`;
 
   // === Stat-Kacheln: Heute ===
@@ -1394,9 +1468,9 @@ function renderTotals() {
 
 function buildPortfolioHistory(monthsBack) {
   const today = new Date();
-  const goldValue = (appData.goal?.goldGrams || 0) * (appData.goal?.goldPrice || 71.40);
+  const metalValueTotal = metalsTotalValue();
   const cashValue = appData.goal?.cash || 0;
-  const extra = goldValue + cashValue;
+  const extra = metalValueTotal + cashValue;
   const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t + extra; })();
   const points = [];
   for (let i = monthsBack; i >= 1; i--) {
@@ -1416,7 +1490,7 @@ function buildPortfolioHistory(monthsBack) {
         monthTotal += live.price * pos.shares;
       }
     });
-    monthTotal += extra; // Cash + Gold (Annahme: aktueller Bestand)
+    monthTotal += extra; // Cash + Edelmetalle (Annahme: aktueller Bestand)
     points.push({ date: d, label: MONTHS_SHORT[d.getMonth()], labelLong: MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear(), value: monthTotal });
   }
   points.push({ date: today, label: MONTHS_SHORT[today.getMonth()] + '.', labelLong: MONTHS_LONG[today.getMonth()] + ' ' + today.getFullYear() + ' (heute)', value: currentTotals });
@@ -1612,7 +1686,7 @@ async function initApp() {
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
   usageRefreshTimer = setInterval(renderUsage, 60000);
   await refreshUI({ skipAI: true });
-  await fetchCryptoPrices();
+  await Promise.all([fetchCryptoPrices(), fetchMetalPrices()]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -1659,19 +1733,31 @@ function wireEvents() {
       if (pos) loadChartForPosition(pos, chartTabState[posId] || 'week');
     }
   });
-  // Cash + Gold Slider via Delegation auf positions Container
+  // Cash + Edelmetall Slider via Delegation auf positions Container
   // input = live während des Ziehens (in-place updates, KEIN renderPositions damit Slider erhalten bleibt)
   // change = nach loslassen (volles Re-Render damit % Portfolio in allen Karten aktuell ist)
   document.getElementById('positions').addEventListener('input', e => {
     if (!appData) return;
-    if (e.target.id === 'goldSlider') {
-      const grams = parseInt(e.target.value, 10);
-      if (!appData.goal) appData.goal = {};
-      appData.goal.goldGrams = grams;
-      const valEl = document.getElementById('goldSliderVal');
+    const metalInput = e.target.closest('.metal-slider, .metal-gram-input');
+    if (metalInput) {
+      const metalKey = metalInput.dataset.metal || metalInput.id.replace(/(Slider|GramsInput)$/, '');
+      const metal = METALS.find(m => m.key === metalKey);
+      if (!metal) return;
+      const grams = Math.max(0, Math.min(metal.max, parseInt(metalInput.value, 10) || 0));
+      const goalState = ensureGoal();
+      goalState[metal.gramsKey] = grams;
+      const slider = document.getElementById(`${metal.key}Slider`);
+      const input = document.getElementById(`${metal.key}GramsInput`);
+      const valEl = document.getElementById(`${metal.key}SliderVal`);
+      const valueEl = document.getElementById(`${metal.key}Value`);
+      if (slider && slider !== metalInput) slider.value = String(grams);
+      if (input && input !== metalInput) input.value = String(grams);
       if (valEl) valEl.textContent = fmtNum(grams, 0) + ' g';
-      const card = e.target.closest('.card');
-      if (card) { const pnlVal = card.querySelector('.card-pnl-mini .val'); const pnlPct = card.querySelector('.card-pnl-mini .pct'); const price = appData.goal.goldPrice || 71.40; if (pnlVal) pnlVal.textContent = fmt.format(grams * price); if (pnlPct) pnlPct.textContent = fmtNum(grams, 1) + ' g'; }
+      if (valueEl) valueEl.textContent = fmt.format(grams * metalPrice(metal));
+      const totalVal = document.getElementById('metalsTotalVal');
+      const totalGrams = document.getElementById('metalsTotalGrams');
+      if (totalVal) totalVal.textContent = fmt.format(metalsTotalValue());
+      if (totalGrams) totalGrams.textContent = fmtNum(METALS.reduce((sum, m) => sum + metalGrams(m), 0), 0) + ' g gesamt';
       const totals = renderTotals();
       renderAllocation(totals);
       const goal = renderGoal(totals);
@@ -1694,7 +1780,7 @@ function wireEvents() {
   });
   document.getElementById('positions').addEventListener('change', e => {
     if (!appData) return;
-    if (e.target.id === 'goldSlider' || e.target.id === 'cashSlider') {
+    if (e.target.closest('.metal-slider, .metal-gram-input') || e.target.id === 'cashSlider') {
       const totals = renderTotals();
       renderPositions(totals); // % Portfolio in allen Karten aktualisieren
       renderAllocation(totals);
@@ -1844,10 +1930,10 @@ function chatRemoveTyping() {
 function buildChatSystemPrompt() {
   if (!appData) return 'Du bist ein intelligenter, hilfreicher KI-Chat fuer komplexe Fragen. Antworte auf Deutsch, klar, tiefgehend und praktisch. Nutze vorhandenes Gedaechtnis, wenn es relevant ist.';
   let totalCur = 0, totalCost = 0;
-  appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; totalCost += pos.costPrice * pos.shares; });
+  getAllPositions().forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; totalCost += pos.costPrice * pos.shares; });
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
-  const positions = appData.positions.map(pos => {
+  const positions = getAllPositions().map(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
     const value = live.price * pos.shares;
     const pct = totalCur > 0 ? (value / totalCur) * 100 : 0;
