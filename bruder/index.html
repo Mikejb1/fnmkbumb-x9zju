@@ -1605,7 +1605,8 @@ async function initApp() {
   }
   loadManualPrices();
   chatHistory = [];
-  document.getElementById('chatMessages').innerHTML = '';
+  await loadChatMemory();
+  renderChatHistory();
   chatShowWelcome();
   renderUsage();
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
@@ -1723,6 +1724,50 @@ function wireEvents() {
 let chatHistory = [];
 let chatBusy = false;
 
+async function loadChatMemory() {
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'get-memory', userKey: USER_KEY })
+    });
+    if (!res.ok) throw new Error('Memory get HTTP ' + res.status);
+    const data = await res.json();
+    if (Array.isArray(data.memory)) chatHistory = data.memory;
+  } catch (e) {
+    console.warn('Memory load failed:', e);
+  }
+}
+
+async function saveChatMemory() {
+  try {
+    await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'put-memory', userKey: USER_KEY, messages: chatHistory.slice(-50) })
+    });
+  } catch (e) {
+    console.warn('Memory save failed:', e);
+  }
+}
+
+async function clearChatMemory() {
+  try {
+    await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'clear-memory', userKey: USER_KEY })
+    });
+  } catch (e) {
+    console.warn('Memory clear failed:', e);
+  }
+}
+
+function renderChatHistory() {
+  document.getElementById('chatMessages').innerHTML = '';
+  chatHistory.forEach(msg => chatAppendMessage(msg.role, msg.content));
+}
+
 function chatAppendMessage(role, content, opts = {}) {
   const container = document.getElementById('chatMessages');
   const wrap = document.createElement('div');
@@ -1801,6 +1846,7 @@ async function chatSend() {
     const reply = (data.text || '(leere Antwort)').trim();
     chatHistory.push({ role: 'assistant', content: reply });
     chatAppendMessage('ai', reply);
+    await saveChatMemory();
   } catch (e) {
     chatRemoveTyping();
     const errWrap = document.createElement('div');
@@ -1815,10 +1861,11 @@ async function chatSend() {
   }
 }
 
-function chatClear() {
+async function chatClear() {
   if (chatHistory.length > 0 && !confirm('Chat-Verlauf löschen?')) return;
   chatHistory = [];
   document.getElementById('chatMessages').innerHTML = '';
+  await clearChatMemory();
   chatShowWelcome();
 }
 
