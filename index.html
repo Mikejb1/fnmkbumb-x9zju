@@ -160,6 +160,40 @@
   .backup-btn:hover { background: var(--bg-track); }
   .backup-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
   .backup-hint { font-size: 10px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
+  .strat-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0; margin-bottom: 14px; overflow: hidden; }
+  .strat-section > summary { padding: 12px 14px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; }
+  .strat-section > summary::-webkit-details-marker { display: none; }
+  .strat-section > summary > .left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .strat-section > summary > .left svg { width: 15px; height: 15px; stroke: currentColor; fill: none; flex-shrink: 0; }
+  .strat-section > summary .count-badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-secondary); }
+  .strat-section[open] > summary { border-bottom: 1px solid var(--border-light); }
+  .strat-body { padding: 12px 14px; }
+  .strat-add-btn { background: var(--positive); color: var(--bg-page); border: 0; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .strat-add-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+  .strat-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; padding: 8px 0; }
+  .strat-item { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .strat-item .info { flex: 1; min-width: 0; }
+  .strat-item .name { font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+  .strat-item .meta { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+  .strat-item .reason { font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-top: 4px; }
+  .strat-item .actions { display: flex; gap: 4px; }
+  .strat-item .actions button { background: transparent; border: 0; color: var(--text-muted); cursor: pointer; padding: 3px; border-radius: 4px; }
+  .strat-item .actions button:hover { background: var(--bg-track); color: var(--text-primary); }
+  .strat-item .actions button.danger:hover { color: var(--negative); }
+  .strat-item .actions svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .reb-row { display: grid; grid-template-columns: 80px 1fr auto; gap: 8px; align-items: center; font-size: 12px; padding: 4px 0; }
+  .reb-row .lbl { color: var(--text-secondary); }
+  .reb-row input[type=number] { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 5px 8px; font-size: 12px; width: 70px; text-align: right; font-family: inherit; }
+  .reb-row .delta { font-variant-numeric: tabular-nums; }
+  .reb-row .delta.over { color: var(--negative); }
+  .reb-row .delta.under { color: #fbbf24; }
+  .reb-row .delta.ok { color: var(--positive); }
+  .reb-summary { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .reb-sum-total { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+  .journal-status { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; }
+  .journal-status.open { background: rgba(245,158,11,0.18); color: #fbbf24; }
+  .journal-status.due { background: rgba(239,68,68,0.18); color: #fca5a5; }
+  .journal-status.done { background: rgba(34,197,94,0.18); color: #4ade80; }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -698,6 +732,45 @@
     <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
   </div>
 
+  <details class="strat-section" id="rebalSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 21"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 3"/><polyline points="21 3 21 9 15 9"/><polyline points="3 21 3 15 9 15"/></svg>
+        <span>Rebalancing-Simulator</span>
+      </span>
+      <span class="count-badge" id="rebStatus">—</span>
+    </summary>
+    <div class="strat-body" id="rebalBody"></div>
+  </details>
+
+  <details class="strat-section" id="watchlistSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Watchlist</span>
+      </span>
+      <span class="count-badge" id="watchlistCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <button class="strat-add-btn" id="watchAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
+      <div id="watchlistList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <details class="strat-section" id="journalSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/></svg>
+        <span>Entscheidungs-Journal</span>
+      </span>
+      <span class="count-badge" id="journalCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <button class="strat-add-btn" id="journalAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
+      <div id="journalList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
   <div class="backup-section">
     <div class="backup-head">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -823,6 +896,38 @@
     <h3>Cash-Bewegungen</h3>
     <div class="cash-tx-list-wrap" id="cashTxListWrap"></div>
     <div class="modal-actions"><button class="auth-btn" id="ctxListClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="watchModal">
+  <div class="modal">
+    <h3 id="watchTitle">Watchlist-Eintrag</h3>
+    <div class="modal-field"><label>Name / Kandidat</label><input type="text" class="auth-input" id="wlName" placeholder="z.B. NVIDIA Corp"></div>
+    <div class="modal-field"><label>Symbol / Ticker (optional)</label><input type="text" class="auth-input" id="wlSymbol" placeholder="z.B. NVDA"></div>
+    <div class="modal-field"><label>Gewünschter Einstieg (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlTarget" placeholder="z.B. 95.00"></div>
+    <div class="modal-field"><label>Grund</label><input type="text" class="auth-input" id="wlReason" placeholder="z.B. AI-Wachstum, KGV-attraktiv"></div>
+    <div class="modal-field"><label>Risiko</label>
+      <select id="wlRisk" class="auth-input">
+        <option value="low">Niedrig</option>
+        <option value="medium" selected>Mittel</option>
+        <option value="high">Hoch</option>
+        <option value="very-high">Sehr hoch</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Geplante Positionsgröße (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlSize" placeholder="z.B. 1000"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="wlCancel">Abbrechen</button><button class="auth-btn" id="wlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="journalModal">
+  <div class="modal">
+    <h3 id="journalTitle">Journal-Eintrag</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="jrDate"></div>
+    <div class="modal-field"><label>Entscheidung</label><input type="text" class="auth-input" id="jrDecision" placeholder="z.B. ServiceNow halten"></div>
+    <div class="modal-field"><label>Begründung</label><input type="text" class="auth-input" id="jrReason" placeholder="z.B. unter Einstand, langer Zeithorizont"></div>
+    <div class="modal-field"><label>Erwartung</label><input type="text" class="auth-input" id="jrExpect" placeholder="z.B. Erholung auf 100€ binnen 12 Mo"></div>
+    <div class="modal-field"><label>Review-Datum</label><input type="date" class="auth-input" id="jrReview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="jrCancel">Abbrechen</button><button class="auth-btn" id="jrSave">Speichern</button></div>
   </div>
 </div>
 
@@ -1600,6 +1705,232 @@ function evaluateRiskRules(totals, alloc) {
   });
   return items;
 }
+// ============== STRATEGISCHE FEATURES (Rebalancing, Watchlist, Journal) ==
+function ensureWatchlist() { if (!Array.isArray(appData.watchlist)) appData.watchlist = []; return appData.watchlist; }
+function ensureJournal() { if (!Array.isArray(appData.journal)) appData.journal = []; return appData.journal; }
+function getTargetAllocation() {
+  return appData?.goal?.targetAllocation || { etf: 40, aktie: 25, crypto: 20, gold: 10, cash: 5 };
+}
+
+// ----- Rebalancing -----
+function renderRebalancing(totals, alloc) {
+  const body = document.getElementById('rebalBody');
+  const statusBadge = document.getElementById('rebStatus');
+  if (!body || !totals || !alloc) return;
+  const target = getTargetAllocation();
+  const cats = ['etf', 'aktie', 'crypto', 'gold', 'cash'];
+  const labels = { etf: 'ETF', aktie: 'Aktien', crypto: 'Krypto', gold: 'Edelmetalle', cash: 'Cash' };
+  let totalDelta = 0;
+  const rows = cats.map(cat => {
+    const actualPct = alloc.pcts[cat] || 0;
+    const targetPct = target[cat] || 0;
+    const deltaPct = actualPct - targetPct;
+    const deltaEur = (deltaPct / 100) * totals.totalCur;
+    totalDelta += Math.abs(deltaEur);
+    const cls = Math.abs(deltaPct) < 2 ? 'ok' : (deltaPct > 0 ? 'over' : 'under');
+    return `<div class="reb-row">
+      <span class="lbl">${labels[cat]}</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="number" step="1" min="0" max="100" data-reb-target="${cat}" value="${targetPct}"> %
+        <span style="color:var(--text-muted);font-size:10px;">aktuell ${fmtNum(actualPct, 1)} %</span>
+      </div>
+      <span class="delta ${cls}">${deltaPct >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} %<br><span style="font-size:10px;">${deltaEur >= 0 ? '+' : '−'}${fmt.format(Math.abs(deltaEur))}</span></span>
+    </div>`;
+  }).join('');
+  // Sparrate-Hinweis: in welche Klasse fließt sie?
+  const savingsRate = appData.goal?.savingsRate || 0;
+  const underweight = cats.filter(c => (alloc.pcts[c] || 0) < (target[c] || 0)).map(c => ({ cat: c, gap: (target[c] - (alloc.pcts[c] || 0)) / 100 * totals.totalCur }));
+  underweight.sort((a, b) => b.gap - a.gap);
+  let savingsHint = '';
+  if (savingsRate > 0 && underweight.length > 0) {
+    const months = [3, 6, 12].map(m => {
+      const u = underweight[0];
+      const fill = (savingsRate * m / u.gap) * 100;
+      return `${m} Mo → ${labels[u.cat]} ${fill >= 100 ? 'gedeckt' : '+' + fmtNum(fill, 0) + ' % der Lücke'}`;
+    });
+    savingsHint = `<div class="reb-sum-total">Sparrate ${fmt.format(savingsRate)}/Mo zuerst in <strong>${labels[underweight[0].cat]}</strong> (${fmt.format(underweight[0].gap)} Lücke). ${months.join(' · ')}</div>`;
+  }
+  body.innerHTML = `
+    ${rows}
+    <div class="reb-summary">
+      Gesamt-Umschichtungsbedarf: <strong>${fmt.format(totalDelta / 2)}</strong>
+      <div class="reb-sum-total">Geben die obigen Ziel-Werte ein. Werte werden in deinem Profil gespeichert.</div>
+      ${savingsHint}
+    </div>`;
+  // Status-Badge
+  const violations = cats.filter(c => Math.abs((alloc.pcts[c] || 0) - (target[c] || 0)) >= 5).length;
+  if (statusBadge) statusBadge.textContent = violations === 0 ? 'im Ziel' : violations + ' abweichend';
+  // Event-Listener für Ziel-Inputs
+  body.querySelectorAll('[data-reb-target]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const c = inp.dataset.rebTarget;
+      const v = Math.max(0, Math.min(100, parseFloat(inp.value) || 0));
+      if (!appData.goal) appData.goal = {};
+      if (!appData.goal.targetAllocation) appData.goal.targetAllocation = { ...target };
+      appData.goal.targetAllocation[c] = v;
+      await savePositionsToKV();
+      renderRebalancing(totals, alloc);
+    });
+  });
+}
+
+// ----- Watchlist -----
+let editingWatchId = null;
+function openWatchModal(id) {
+  editingWatchId = id || null;
+  const wl = ensureWatchlist();
+  const entry = id ? wl.find(w => w.id === id) : null;
+  document.getElementById('watchTitle').textContent = entry ? 'Watchlist bearbeiten' : 'Watchlist-Eintrag hinzufügen';
+  document.getElementById('wlName').value = entry?.name || '';
+  document.getElementById('wlSymbol').value = entry?.symbol || '';
+  document.getElementById('wlTarget').value = entry?.targetEntry != null ? entry.targetEntry : '';
+  document.getElementById('wlReason').value = entry?.reason || '';
+  document.getElementById('wlRisk').value = entry?.risk || 'medium';
+  document.getElementById('wlSize').value = entry?.plannedSize != null ? entry.plannedSize : '';
+  document.getElementById('watchModal').classList.add('active');
+  setTimeout(() => document.getElementById('wlName').focus(), 50);
+}
+function closeWatchModal() { document.getElementById('watchModal').classList.remove('active'); editingWatchId = null; }
+async function saveWatchModal() {
+  const name = document.getElementById('wlName').value.trim();
+  if (!name) { alert('Bitte einen Namen eingeben.'); return; }
+  const entry = {
+    name,
+    symbol: document.getElementById('wlSymbol').value.trim(),
+    targetEntry: parseFloat(document.getElementById('wlTarget').value) || null,
+    reason: document.getElementById('wlReason').value.trim(),
+    risk: document.getElementById('wlRisk').value || 'medium',
+    plannedSize: parseFloat(document.getElementById('wlSize').value) || null
+  };
+  const wl = ensureWatchlist();
+  if (editingWatchId) {
+    const idx = wl.findIndex(w => w.id === editingWatchId);
+    if (idx >= 0) wl[idx] = { ...wl[idx], ...entry };
+  } else {
+    entry.id = 'wl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    entry.createdAt = new Date().toISOString();
+    wl.push(entry);
+  }
+  closeWatchModal();
+  await savePositionsToKV();
+  renderWatchlist();
+}
+async function deleteWatchEntry(id) {
+  if (!confirm('Watchlist-Eintrag wirklich löschen?')) return;
+  appData.watchlist = (appData.watchlist || []).filter(w => w.id !== id);
+  await savePositionsToKV();
+  renderWatchlist();
+}
+function renderWatchlist() {
+  const list = document.getElementById('watchlistList');
+  const count = document.getElementById('watchlistCount');
+  if (!list) return;
+  const wl = ensureWatchlist();
+  if (count) count.textContent = String(wl.length);
+  if (wl.length === 0) {
+    list.innerHTML = '<div class="strat-empty">Noch keine Watchlist-Einträge. Tap "Eintrag hinzufügen".</div>';
+    return;
+  }
+  list.innerHTML = wl.map(w => `
+    <div class="strat-item">
+      <div class="info">
+        <div class="name">${escapeHtml(w.name)}${w.symbol ? ' <span style="color:var(--text-muted);font-weight:400;">· ' + escapeHtml(w.symbol) + '</span>' : ''}<span class="risk-badge risk-${w.risk || 'medium'}" style="margin-left:6px;">${riskLabel(w.risk || 'medium')}</span></div>
+        <div class="meta">${w.targetEntry ? 'Einstieg bei ' + fmtNum(w.targetEntry) + ' €' : ''}${w.plannedSize ? ' · Größe ' + fmt.format(w.plannedSize) : ''}</div>
+        ${w.reason ? `<div class="reason">${escapeHtml(w.reason)}</div>` : ''}
+      </div>
+      <div class="actions">
+        <button data-watch-edit="${w.id}" title="Bearbeiten" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="danger" data-watch-del="${w.id}" title="Löschen" aria-label="Löschen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`).join('');
+}
+
+// ----- Entscheidungsjournal -----
+let editingJournalId = null;
+function openJournalModal(id) {
+  editingJournalId = id || null;
+  const j = ensureJournal();
+  const entry = id ? j.find(e => e.id === id) : null;
+  document.getElementById('journalTitle').textContent = entry ? 'Journal bearbeiten' : 'Journal-Eintrag hinzufügen';
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('jrDate').value = entry?.date || today;
+  document.getElementById('jrDecision').value = entry?.decision || '';
+  document.getElementById('jrReason').value = entry?.reason || '';
+  document.getElementById('jrExpect').value = entry?.expectation || '';
+  document.getElementById('jrReview').value = entry?.reviewDate || '';
+  document.getElementById('journalModal').classList.add('active');
+  setTimeout(() => document.getElementById('jrDecision').focus(), 50);
+}
+function closeJournalModal() { document.getElementById('journalModal').classList.remove('active'); editingJournalId = null; }
+async function saveJournalModal() {
+  const decision = document.getElementById('jrDecision').value.trim();
+  if (!decision) { alert('Bitte eine Entscheidung eingeben.'); return; }
+  const entry = {
+    date: document.getElementById('jrDate').value || new Date().toISOString().slice(0, 10),
+    decision,
+    reason: document.getElementById('jrReason').value.trim(),
+    expectation: document.getElementById('jrExpect').value.trim(),
+    reviewDate: document.getElementById('jrReview').value || null,
+    status: 'open'
+  };
+  const j = ensureJournal();
+  if (editingJournalId) {
+    const idx = j.findIndex(e => e.id === editingJournalId);
+    if (idx >= 0) j[idx] = { ...j[idx], ...entry };
+  } else {
+    entry.id = 'jr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    j.push(entry);
+  }
+  j.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  closeJournalModal();
+  await savePositionsToKV();
+  renderJournal();
+}
+async function deleteJournalEntry(id) {
+  if (!confirm('Journal-Eintrag wirklich löschen?')) return;
+  appData.journal = (appData.journal || []).filter(e => e.id !== id);
+  await savePositionsToKV();
+  renderJournal();
+}
+async function toggleJournalDone(id) {
+  const j = ensureJournal();
+  const entry = j.find(e => e.id === id);
+  if (!entry) return;
+  entry.status = entry.status === 'done' ? 'open' : 'done';
+  await savePositionsToKV();
+  renderJournal();
+}
+function renderJournal() {
+  const list = document.getElementById('journalList');
+  const count = document.getElementById('journalCount');
+  if (!list) return;
+  const j = ensureJournal();
+  if (count) count.textContent = String(j.length);
+  if (j.length === 0) {
+    list.innerHTML = '<div class="strat-empty">Noch keine Journal-Einträge. Halte Entscheidungen mit Begründung und Review-Datum fest.</div>';
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  list.innerHTML = j.map(e => {
+    let statusCls = 'open', statusLabel = 'OFFEN';
+    if (e.status === 'done') { statusCls = 'done'; statusLabel = 'ERLEDIGT'; }
+    else if (e.reviewDate && e.reviewDate <= today) { statusCls = 'due'; statusLabel = 'REVIEW FÄLLIG'; }
+    return `<div class="strat-item">
+      <div class="info">
+        <div class="name">${escapeHtml(e.decision)} <span class="journal-status ${statusCls}">${statusLabel}</span></div>
+        <div class="meta">${formatDateAT(e.date)}${e.reviewDate ? ' · Review: ' + formatDateAT(e.reviewDate) : ''}</div>
+        ${e.reason ? `<div class="reason"><strong>Grund:</strong> ${escapeHtml(e.reason)}</div>` : ''}
+        ${e.expectation ? `<div class="reason"><strong>Erwartung:</strong> ${escapeHtml(e.expectation)}</div>` : ''}
+      </div>
+      <div class="actions">
+        <button data-journal-toggle="${e.id}" title="Erledigt umschalten" aria-label="Status umschalten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+        <button data-journal-edit="${e.id}" title="Bearbeiten" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="danger" data-journal-del="${e.id}" title="Löschen" aria-label="Löschen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ===== BACKUP · EXPORT · IMPORT =====
 function downloadBlob(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
@@ -1622,6 +1953,8 @@ function backupJson() {
     goal: appData.goal || {},
     transactions: appData.transactions || [],
     metalHistory: appData.metalHistory || null,
+    watchlist: appData.watchlist || [],
+    journal: appData.journal || [],
     chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
   };
   downloadBlob(JSON.stringify(payload, null, 2), `portfolio-backup-${today}.json`, 'application/json');
@@ -1667,6 +2000,8 @@ async function importJson(file) {
     if (data.goal) appData.goal = data.goal;
     if (Array.isArray(data.transactions)) appData.transactions = data.transactions;
     if (data.metalHistory) appData.metalHistory = data.metalHistory;
+    if (Array.isArray(data.watchlist)) appData.watchlist = data.watchlist;
+    if (Array.isArray(data.journal)) appData.journal = data.journal;
     if (data.schemaVersion) appData.schemaVersion = data.schemaVersion;
     if (typeof data.chatMemorySummary === 'string') {
       chatMemorySummary = data.chatMemorySummary;
@@ -1826,6 +2161,8 @@ async function handleGate() {
         if (Array.isArray(kvData.transactions)) appData.transactions = kvData.transactions;
         if (kvData.schemaVersion) appData.schemaVersion = kvData.schemaVersion;
         if (kvData.metalHistory) appData.metalHistory = kvData.metalHistory;
+        if (Array.isArray(kvData.watchlist)) appData.watchlist = kvData.watchlist;
+        if (Array.isArray(kvData.journal)) appData.journal = kvData.journal;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
     applyPositionStammdaten();
@@ -2722,10 +3059,13 @@ async function refreshUI(opts = {}) {
   loadManualPrices();
   const totals = renderTotals();
   renderPositions(totals);
-  renderAllocation(totals);
+  const alloc = renderAllocation(totals);
   renderHistory();
   const goal = renderGoal(totals);
   renderSavingsSim(totals, goal);
+  if (alloc) renderRebalancing(totals, alloc);
+  renderWatchlist();
+  renderJournal();
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
   } else {
@@ -2896,6 +3236,25 @@ function wireEvents() {
   document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
   document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFileInput').click());
   document.getElementById('backupFileInput').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) { importJson(f); e.target.value = ''; } });
+  // Watchlist
+  document.getElementById('watchAddBtn').addEventListener('click', () => openWatchModal());
+  document.getElementById('wlCancel').addEventListener('click', closeWatchModal);
+  document.getElementById('wlSave').addEventListener('click', saveWatchModal);
+  document.getElementById('watchModal').addEventListener('click', e => { if (e.target.id === 'watchModal') closeWatchModal(); });
+  document.getElementById('watchlistList').addEventListener('click', e => {
+    const edit = e.target.closest('[data-watch-edit]'); if (edit) { openWatchModal(edit.dataset.watchEdit); return; }
+    const del = e.target.closest('[data-watch-del]'); if (del) { deleteWatchEntry(del.dataset.watchDel); return; }
+  });
+  // Journal
+  document.getElementById('journalAddBtn').addEventListener('click', () => openJournalModal());
+  document.getElementById('jrCancel').addEventListener('click', closeJournalModal);
+  document.getElementById('jrSave').addEventListener('click', saveJournalModal);
+  document.getElementById('journalModal').addEventListener('click', e => { if (e.target.id === 'journalModal') closeJournalModal(); });
+  document.getElementById('journalList').addEventListener('click', e => {
+    const edit = e.target.closest('[data-journal-edit]'); if (edit) { openJournalModal(edit.dataset.journalEdit); return; }
+    const del = e.target.closest('[data-journal-del]'); if (del) { deleteJournalEntry(del.dataset.journalDel); return; }
+    const tog = e.target.closest('[data-journal-toggle]'); if (tog) { toggleJournalDone(tog.dataset.journalToggle); return; }
+  });
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
   // Position-Management
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
@@ -3198,6 +3557,8 @@ async function savePositionsToKV(debounceMs = 0) {
       goal: appData.goal,
       transactions: appData.transactions || [],
       metalHistory: appData.metalHistory || null,
+      watchlist: appData.watchlist || [],
+      journal: appData.journal || [],
       schemaVersion: appData.schemaVersion || 1,
       version: 2 // Blob-Versionsmarker (kompatibel mit alten Decoder-Versionen)
     };
