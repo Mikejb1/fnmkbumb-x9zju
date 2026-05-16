@@ -207,10 +207,16 @@
   .usage-bar { width: 100%; height: 6px; background: var(--bg-track); border-radius: 3px; overflow: hidden; }
   .usage-bar-fill { height: 100%; background: linear-gradient(90deg, var(--positive-strong), var(--positive)); border-radius: 3px; transition: width 0.4s ease; }
   .usage-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-  .usage-metric { background: var(--bg-input); border-radius: 8px; padding: 8px 10px; }
+  .usage-metric { background: var(--bg-input); border-radius: 8px; padding: 8px 10px; position: relative; }
   .usage-metric-label { font-size: 10px; color: var(--text-tertiary); }
   .usage-metric-value { font-size: 16px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
   .usage-metric-unit { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .usage-metric-reset { font-size: 9px; color: var(--text-muted); margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border-light); display: flex; align-items: center; gap: 3px; }
+  .usage-metric-reset svg { width: 9px; height: 9px; stroke: currentColor; fill: none; flex-shrink: 0; }
+  .usage-budget-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border-light); }
+  .usage-budget-label { color: var(--text-tertiary); }
+  .usage-budget-value { font-size: 13px; font-weight: 600; color: var(--positive); font-variant-numeric: tabular-nums; }
+  .usage-budget-value.low { color: var(--negative); }
   .usage-hint { font-size: 10px; color: var(--text-muted); margin-top: 10px; text-align: center; font-style: italic; }
   .ss-preview-wrap { display: none; text-align: center; margin: 10px 0; }
   .ss-preview-wrap.visible { display: block; }
@@ -336,22 +342,38 @@
         <span class="pct" id="usagePct">—</span>
       </div>
       <div class="usage-bar"><div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div></div>
+      <div class="usage-budget-row">
+        <span class="usage-budget-label">Verbleibend</span>
+        <span class="usage-budget-value" id="usageRemaining">—</span>
+      </div>
     </div>
     <div class="usage-stats">
       <div class="usage-metric">
         <div class="usage-metric-label">Heute</div>
         <div class="usage-metric-value" id="usageToday">0</div>
         <div class="usage-metric-unit">Aufrufe</div>
+        <div class="usage-metric-reset" id="usageTodayReset">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>—</span>
+        </div>
       </div>
       <div class="usage-metric">
         <div class="usage-metric-label">Diese Woche</div>
         <div class="usage-metric-value" id="usageWeek">0</div>
         <div class="usage-metric-unit">Aufrufe</div>
+        <div class="usage-metric-reset" id="usageWeekReset">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>—</span>
+        </div>
       </div>
       <div class="usage-metric">
         <div class="usage-metric-label">Ø Kosten</div>
         <div class="usage-metric-value" id="usageAvg">—</div>
         <div class="usage-metric-unit">€/Aufruf</div>
+        <div class="usage-metric-reset" style="visibility:hidden;">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>
+          <span>—</span>
+        </div>
       </div>
     </div>
     <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
@@ -865,6 +887,7 @@ function scheduleAIRefresh() {
   }, 1500);
 }
 
+let usageRefreshTimer = null;
 async function initApp() {
   if (appData.goal) { document.getElementById('goalYear').value = String(appData.goal.year); document.getElementById('goalAmount').value = String(appData.goal.amount); }
   loadManualPrices();
@@ -872,6 +895,8 @@ async function initApp() {
   document.getElementById('chatMessages').innerHTML = '';
   chatShowWelcome();
   renderUsage();
+  if (usageRefreshTimer) clearInterval(usageRefreshTimer);
+  usageRefreshTimer = setInterval(renderUsage, 60000);
   await refreshUI({ skipAI: true });
   await fetchCryptoPrices();
   await fetchAllWeeklyCharts();
@@ -1089,17 +1114,42 @@ function recordUsage(usage) {
   saveUsageState(state);
   renderUsage();
 }
+function formatTimeUntil(targetDate) {
+  const now = new Date();
+  const diffMs = targetDate - now;
+  if (diffMs <= 0) return 'jetzt';
+  const totalMin = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days > 0) return `in ${days}T ${hours}h`;
+  if (hours > 0) return `in ${hours}h ${mins}min`;
+  return `in ${mins}min`;
+}
+function getNextMidnight() { const d = new Date(); d.setHours(24, 0, 0, 0); return d; }
+function getNextMonday() { const d = new Date(); d.setHours(0, 0, 0, 0); const day = d.getDay(); const daysUntilMonday = day === 0 ? 1 : (8 - day); d.setDate(d.getDate() + daysUntilMonday); return d; }
+
 function renderUsage() {
   const state = loadUsageState();
   const spent = state.totalCost;
+  const remaining = Math.max(0, USAGE_BUDGET - spent);
   const pct = Math.min(100, (spent / USAGE_BUDGET) * 100);
   const avg = state.totalCalls > 0 ? (state.totalCost / state.totalCalls) : 0;
   const elS = document.getElementById('usageSpent'); if (elS) elS.textContent = `~${spent.toFixed(2)} € verbraucht`;
   const elP = document.getElementById('usagePct'); if (elP) elP.textContent = `${(100 - pct).toFixed(1)} % verfügbar`;
   const elB = document.getElementById('usageBarFill'); if (elB) elB.style.width = pct + '%';
+  const elR = document.getElementById('usageRemaining');
+  if (elR) {
+    elR.textContent = `${remaining.toFixed(2)} € von ${USAGE_BUDGET.toFixed(2)} €`;
+    elR.classList.toggle('low', remaining < USAGE_BUDGET * 0.2);
+  }
   const elT = document.getElementById('usageToday'); if (elT) elT.textContent = state.callsToday;
   const elW = document.getElementById('usageWeek'); if (elW) elW.textContent = state.callsThisWeek;
   const elA = document.getElementById('usageAvg'); if (elA) elA.textContent = avg > 0 ? avg.toFixed(4) : '—';
+  const elTR = document.getElementById('usageTodayReset');
+  if (elTR) { const span = elTR.querySelector('span'); if (span) span.textContent = `Reset ${formatTimeUntil(getNextMidnight())}`; }
+  const elWR = document.getElementById('usageWeekReset');
+  if (elWR) { const span = elWR.querySelector('span'); if (span) span.textContent = `Reset ${formatTimeUntil(getNextMonday())}`; }
 }
 
 // ===== POSITION-MANAGEMENT =====
