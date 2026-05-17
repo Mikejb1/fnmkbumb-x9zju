@@ -1264,7 +1264,6 @@ const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberForm
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
 const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-const POSITION_STAMMDATEN = []; // Bewusst leer — historische Stammdaten/Lots stehen jetzt in pos.stammdaten und pos.purchaseLots (KV-Schema v2)
 
 function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
 function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
@@ -1274,26 +1273,18 @@ function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function getThemeColors() { const cs = getComputedStyle(document.body); return { tooltipBg: cs.getPropertyValue('--tooltip-bg').trim(), tooltipText: cs.getPropertyValue('--tooltip-text').trim(), gridColor: cs.getPropertyValue('--chart-grid').trim(), axisText: cs.getPropertyValue('--chart-axis').trim() }; }
 function normalizeText(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
-function findStammdaten(pos) {
-  const hay = normalizeText(`${pos.name || ''} ${pos.symbol || ''}`);
-  return POSITION_STAMMDATEN.find(entry => entry.match.some(m => hay.includes(normalizeText(m))));
-}
-function applyPositionStammdaten() {
-  if (!appData?.positions) return;
-  appData.positions.forEach(pos => {
-    // Bereits in den Positionsdaten gespeicherte Stammdaten haben Vorrang (Schema v2+)
-    if (pos.stammdaten && pos.purchaseLots && pos.purchaseLots.length > 0) return;
-    const entry = findStammdaten(pos);
-    if (!entry) return;
-    if (!pos.stammdaten) pos.stammdaten = { ...(entry.depot || {}) };
-    if (!pos.purchaseLots || !pos.purchaseLots.length) pos.purchaseLots = entry.lots.map(lot => ({ ...lot }));
-  });
-}
 
 // =====================================================================
 // ============== DATENMODELL · TRANSAKTIONEN + MIGRATION (Schema v2) ==
 // =====================================================================
 function makeTxId() { return 'tx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+// Deterministische Tx-ID für Migration (verhindert Doppelmigration bei Save-Fehler)
+function makeMigrationTxId(assetId, date, qty, price, txType) {
+  const key = `${assetId}|${date}|${qty}|${price}|${txType}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0;
+  return 'tx_mig_' + Math.abs(hash).toString(36);
+}
 function assetTypeOf(pos) {
   if (!pos) return 'stock';
   if (pos.special === 'cash') return 'cash';
@@ -1304,20 +1295,24 @@ function assetTypeOf(pos) {
   return 'stock';
 }
 // Einmalige Migration von Schema v1 (Stammdaten im Code) auf v2 (Transaktionsliste)
+// Idempotent: deterministische Tx-IDs + Dedup, sodass eine Doppelausführung keine Duplikate erzeugt.
 function migrateSchemaIfNeeded() {
   if (!appData) return;
   const current = Number(appData.schemaVersion) || 1;
   if (current >= 2) return;
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  const seenIds = new Set(appData.transactions.map(t => t.id));
+  const addIfNew = tx => { if (!seenIds.has(tx.id)) { appData.transactions.push(tx); seenIds.add(tx.id); } };
 
   // 1) Aus jedem purchaseLot in Positionen eine buy-Transaktion erzeugen
   (appData.positions || []).forEach(pos => {
     if (!Array.isArray(pos.purchaseLots) || pos.purchaseLots.length === 0) {
       // Keine Lot-Historie: einzelner Buy-Eintrag (geschätzt heute) damit aktuelle shares/costPrice in Tx repräsentiert sind
       if (pos.shares > 0 && pos.costPrice > 0) {
-        appData.transactions.push({
-          id: makeTxId(), date: new Date().toISOString().slice(0, 10),
-          assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
+        const date = new Date().toISOString().slice(0, 10);
+        addIfNew({
+          id: makeMigrationTxId(pos.id, date, pos.shares, pos.costPrice, 'buy'),
+          date, assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
           quantity: pos.shares, price: pos.costPrice, value: pos.shares * pos.costPrice,
           fees: 0, note: 'Migration: Einzelposition ohne Lot-Historie'
         });
@@ -1328,10 +1323,11 @@ function migrateSchemaIfNeeded() {
       const qty = Number(lot.shares) || 0;
       const px = Number(lot.costPrice) || 0;
       const val = Number(lot.value) || qty * px;
+      const date = lot.date || new Date().toISOString().slice(0, 10);
       if (qty <= 0) return;
-      appData.transactions.push({
-        id: makeTxId(), date: lot.date || new Date().toISOString().slice(0, 10),
-        assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
+      addIfNew({
+        id: makeMigrationTxId(pos.id, date, qty, px, 'buy'),
+        date, assetId: pos.id, assetType: assetTypeOf(pos), txType: 'buy',
         quantity: qty, price: px, value: val,
         fees: Number(lot.upfrontTax || 0), note: 'Migration aus Stammdaten'
       });
@@ -1345,11 +1341,14 @@ function migrateSchemaIfNeeded() {
       lots.forEach(lot => {
         const grams = Number(lot.grams) || 0;
         const val = Number(lot.value) || 0;
+        const date = lot.date || new Date().toISOString().slice(0, 10);
         if (grams <= 0) return;
-        appData.transactions.push({
-          id: makeTxId(), date: lot.date || new Date().toISOString().slice(0, 10),
-          assetId: 'metal_' + metalKey, assetType: 'metal', txType: 'buy',
-          quantity: grams, price: grams > 0 ? val / grams : 0, value: val,
+        const assetId = 'metal_' + metalKey;
+        const px = grams > 0 ? val / grams : 0;
+        addIfNew({
+          id: makeMigrationTxId(assetId, date, grams, px, 'buy'),
+          date, assetId, assetType: 'metal', txType: 'buy',
+          quantity: grams, price: px, value: val,
           fees: Number(lot.fees || 0), note: 'Migration aus metalLots' + (lot.storage ? ' · ' + lot.storage : '')
         });
       });
@@ -1361,8 +1360,9 @@ function migrateSchemaIfNeeded() {
   if (cash > 0) {
     const allDates = appData.transactions.map(t => t.date).filter(Boolean).sort();
     const depositDate = allDates.length > 0 ? allDates[0] : new Date().toISOString().slice(0, 10);
-    appData.transactions.push({
-      id: makeTxId(), date: depositDate,
+    addIfNew({
+      id: makeMigrationTxId('cash', depositDate, cash, 1, 'deposit'),
+      date: depositDate,
       assetId: 'cash', assetType: 'cash', txType: 'deposit',
       quantity: cash, price: 1, value: cash, fees: 0,
       note: 'Initiale Cash-Erfassung (Migration)'
@@ -1381,15 +1381,19 @@ function getTransactionsFor(assetId) {
   return (appData?.transactions || []).filter(t => t.assetId === assetId);
 }
 // Berechnet aktuelle Stückzahl, Einstandswert, Ø Einkaufspreis aus Transaktionen (Average-Cost-Method)
+// Unterstützt 'adjust'-Tx: setzt State zum jeweiligen Zeitpunkt neu (für manuelle Korrekturen via Edit-Modal)
 function getComputedPosition(positionId) {
   const txs = getTransactionsFor(positionId).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   let shares = 0, costBasis = 0, realized = 0;
   txs.forEach(t => {
-    if (t.txType === 'buy') {
+    if (t.txType === 'adjust') {
+      // Reset State auf manuell korrigierte Werte
+      shares = t.quantity || 0;
+      costBasis = t.value || 0;
+    } else if (t.txType === 'buy') {
       shares += t.quantity;
       costBasis += t.value + (t.fees || 0);
     } else if (t.txType === 'sell') {
-      // Anteilig realisierter Gewinn nach Avg-Cost
       const avgBeforeSell = shares > 0 ? costBasis / shares : 0;
       const soldQty = Math.min(t.quantity, shares);
       realized += (t.price - avgBeforeSell) * soldQty - (t.fees || 0);
@@ -2129,21 +2133,65 @@ function backupCsv() {
   const csv = rows.map(row => row.map(cell => /[",\n]/.test(cell) ? `"${cell}"` : cell).join(',')).join('\n');
   downloadBlob(csv, `portfolio-transactions-${today}.csv`, 'text/csv');
 }
+function validateBackupSchema(data) {
+  // Wirft bei Schema-Verletzung einen Error; loggt nicht-kritische Probleme als Warnungen zurück
+  const warnings = [];
+  if (!data || typeof data !== 'object') throw new Error('Ungültiges JSON-Objekt');
+  if (data.schemaVersion != null && (typeof data.schemaVersion !== 'number' || data.schemaVersion < 1 || data.schemaVersion > 99)) throw new Error('Ungültige schemaVersion');
+  if (data.positions != null && !Array.isArray(data.positions)) throw new Error('Feld "positions" muss ein Array sein');
+  if (data.transactions != null && !Array.isArray(data.transactions)) throw new Error('Feld "transactions" muss ein Array sein');
+  if (data.goal != null && typeof data.goal !== 'object') throw new Error('Feld "goal" muss ein Objekt sein');
+  if (data.watchlist != null && !Array.isArray(data.watchlist)) throw new Error('Feld "watchlist" muss ein Array sein');
+  if (data.journal != null && !Array.isArray(data.journal)) throw new Error('Feld "journal" muss ein Array sein');
+  // Positionen prüfen
+  if (Array.isArray(data.positions)) {
+    data.positions.forEach((p, i) => {
+      if (!p.id || typeof p.id !== 'string') throw new Error(`Position ${i + 1}: id fehlt oder ungültig`);
+      if (!p.name || typeof p.name !== 'string') throw new Error(`Position ${i + 1}: name fehlt`);
+      if (p.shares != null && (typeof p.shares !== 'number' || !isFinite(p.shares))) throw new Error(`Position "${p.name}": shares ungültig`);
+      if (p.costPrice != null && (typeof p.costPrice !== 'number' || !isFinite(p.costPrice))) throw new Error(`Position "${p.name}": costPrice ungültig`);
+    });
+  }
+  // Transaktionen prüfen
+  if (Array.isArray(data.transactions)) {
+    const validTxTypes = new Set(['buy', 'sell', 'deposit', 'withdraw', 'fee', 'dividend', 'adjust']);
+    const validAssetTypes = new Set(['stock', 'etf', 'crypto', 'metal', 'cash']);
+    data.transactions.forEach((t, i) => {
+      if (!t.id) throw new Error(`Transaktion ${i + 1}: id fehlt`);
+      if (!t.assetId) throw new Error(`Transaktion ${i + 1}: assetId fehlt`);
+      if (!validTxTypes.has(t.txType)) throw new Error(`Transaktion ${i + 1}: ungültiger txType "${t.txType}"`);
+      if (!validAssetTypes.has(t.assetType)) warnings.push(`Transaktion ${i + 1}: unbekannter assetType "${t.assetType}"`);
+      if (t.date && !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) warnings.push(`Transaktion ${i + 1}: Datum nicht ISO-Format`);
+    });
+  }
+  return warnings;
+}
+
 async function importJson(file) {
   if (!file) return;
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    if (!data || typeof data !== 'object') throw new Error('Ungültiges JSON');
-    // Vorschau zusammenstellen
+    // Schema validieren (wirft bei Fehler)
+    const warnings = validateBackupSchema(data);
+    // Vorschau + Bestätigung
     const lines = [
       `Schema-Version: ${data.schemaVersion || '?'}`,
+      `Exportiert: ${data.exportedAt ? new Date(data.exportedAt).toLocaleString('de-AT') : '—'}`,
+      `User: ${data.user || '—'}`,
       `Positionen: ${Array.isArray(data.positions) ? data.positions.length : 0}`,
       `Transaktionen: ${Array.isArray(data.transactions) ? data.transactions.length : 0}`,
       `Ziel: ${data.goal?.amount || '?'} € bis ${data.goal?.year || '?'}`,
       `Cash: ${data.goal?.cash != null ? data.goal.cash + ' €' : '—'}`,
+      `Watchlist-Einträge: ${Array.isArray(data.watchlist) ? data.watchlist.length : 0}`,
+      `Journal-Einträge: ${Array.isArray(data.journal) ? data.journal.length : 0}`,
       `Gedächtnis: ${data.chatMemorySummary ? data.chatMemorySummary.length + ' Zeichen' : 'leer'}`
     ];
+    if (warnings.length > 0) {
+      lines.push('', '⚠ Warnungen:');
+      warnings.slice(0, 5).forEach(w => lines.push('  · ' + w));
+      if (warnings.length > 5) lines.push(`  · ... und ${warnings.length - 5} weitere`);
+    }
     const ok = confirm(`Backup importieren? Dies überschreibt deine aktuellen Daten.\n\n${lines.join('\n')}\n\nFortfahren?`);
     if (!ok) return;
     if (Array.isArray(data.positions)) appData.positions = data.positions;
@@ -2315,7 +2363,6 @@ async function handleGate() {
         if (Array.isArray(kvData.journal)) appData.journal = kvData.journal;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
-    applyPositionStammdaten();
     // Schema-Migration (v1 -> v2: Transaktionsmodell)
     const wasMigrated = !(Number(appData.schemaVersion) >= 2);
     migrateSchemaIfNeeded();
@@ -2607,6 +2654,29 @@ async function saveCashTxModal() {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
   if (!isFinite(amount) || amount <= 0) { alert('Bitte gültigen Betrag eingeben.'); return; }
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  // Erste Cash-Tx? Falls ja: automatische Initial-Einzahlung anlegen, damit computed Cash sinnvoll startet
+  // (sonst würde getCashBalance plötzlich auf -[Summe der Käufe] fallen)
+  const hasExistingCashTx = appData.transactions.some(t => t.assetType === 'cash');
+  if (!hasExistingCashTx) {
+    const allBuys = appData.transactions
+      .filter(t => t.assetType !== 'cash' && t.txType === 'buy')
+      .reduce((s, t) => s + t.value + (t.fees || 0), 0);
+    const allSells = appData.transactions
+      .filter(t => t.assetType !== 'cash' && t.txType === 'sell')
+      .reduce((s, t) => s + (t.value - (t.fees || 0)), 0);
+    const sliderCash = Number(appData.goal?.cash || 0);
+    const initialDeposit = allBuys - allSells + sliderCash;
+    if (initialDeposit > 0) {
+      const earliest = appData.transactions
+        .filter(t => t.date).map(t => t.date).sort()[0] || date;
+      appData.transactions.push({
+        id: makeTxId(), date: earliest,
+        assetId: 'cash', assetType: 'cash', txType: 'deposit',
+        quantity: initialDeposit, price: 1, value: initialDeposit, fees: 0,
+        note: 'Automatische Initial-Einzahlung (deckt bisherige Käufe + Slider-Cash)'
+      });
+    }
+  }
   appData.transactions.push({
     id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: pendingCashTxType,
     quantity: amount, price: 1, value: amount, fees: 0,
@@ -3200,6 +3270,20 @@ async function saveEditModal() {
   const newCost = parseFloat(document.getElementById('editCost').value);
   const newRisk = document.getElementById('editRisk')?.value || '';
   if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; }
+  // Vor dem Überschreiben: prüfen ob shares/costPrice geändert wurden — wenn ja, Adjust-Tx anlegen
+  const sharesDiff = Math.abs(newShares - pos.shares) > 1e-9;
+  const costDiff = Math.abs(newCost - pos.costPrice) > 1e-6;
+  if (sharesDiff || costDiff) {
+    if (!Array.isArray(appData.transactions)) appData.transactions = [];
+    const today = new Date().toISOString().slice(0, 10);
+    appData.transactions.push({
+      id: makeTxId(), date: today,
+      assetId: pos.id, assetType: assetTypeOf(pos), txType: 'adjust',
+      quantity: newShares, price: newCost, value: newShares * newCost, fees: 0,
+      note: 'Manuelle Korrektur via Edit-Modal' + (sharesDiff ? ` · Stück ${pos.shares} → ${newShares}` : '') + (costDiff ? ` · Ø ${fmtNum(pos.costPrice)} → ${fmtNum(newCost)} €` : '')
+    });
+    appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  }
   pos.shares = newShares;
   pos.costPrice = newCost;
   if (!pos.cgId) pos.manualPrice = newPrice;
@@ -3293,7 +3377,6 @@ function scheduleAIRefresh() {
 
 let usageRefreshTimer = null;
 async function initApp() {
-  applyPositionStammdaten();
   if (appData.goal) {
     document.getElementById('goalYear').value = String(appData.goal.year);
     document.getElementById('goalAmount').value = String(appData.goal.amount);
