@@ -4103,30 +4103,46 @@ function renderSavingsSim(totals, goal) {
     return;
   }
   sub.textContent = `Ziel: ${fmt.format(goal.amount)} bis Ende ${goal.year} · Lücke ${fmt.format(gap)} · ${months} Mo`;
-  const rates = [100, 200, 300, 500, 1000];
   const current = goal.savingsRate || 0;
-  // Erforderliche Sparrate ohne Rendite
   const required = gap / months;
+  const roundedRequired = Math.max(0, Math.ceil(required / 20) * 20);
+  const halfRequired = Math.max(0, Math.ceil((required / 2) / 20) * 20);
+  const rates = [...new Set([
+    0,
+    current,
+    halfRequired,
+    roundedRequired,
+    roundedRequired + 100,
+    100,
+    200,
+    300,
+    500,
+    1000,
+  ].filter(rate => Number.isFinite(rate) && rate >= 0))]
+    .sort((a, b) => a - b);
   const rows = rates.map(rate => {
     const projected = totals.totalCur + rate * months;
     const pct = Math.min(100, (projected / goal.amount) * 100);
+    const diff = projected - goal.amount;
     let cls, tag;
-    if (projected < goal.amount * 0.85) { cls = 'late'; tag = 'später'; }
-    else if (projected < goal.amount) { cls = 'tight'; tag = 'knapp'; }
-    else if (projected < goal.amount * 1.1) { cls = 'fit'; tag = 'passt'; }
-    else { cls = 'early'; tag = 'früher'; }
-    const isCurrent = Math.abs(rate - current) < 30;
+    if (projected < goal.amount * 0.85) { cls = 'late'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
+    else if (projected < goal.amount) { cls = 'tight'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
+    else if (projected < goal.amount * 1.1) { cls = 'fit'; tag = `Puffer ${fmtNoCent.format(diff)}`; }
+    else { cls = 'early'; tag = `Puffer ${fmtNoCent.format(diff)}`; }
+    const isCurrent = Math.abs(rate - current) < 1;
+    const isRequired = Math.abs(rate - roundedRequired) < 1;
+    const label = `${fmtNoCent.format(rate)}${isCurrent ? ' aktuell' : isRequired ? ' nötig' : ''}`;
     return `<span class="savings-sim-rate ${isCurrent ? 'current' : ''}">${fmtNoCent.format(rate)}</span>
       <div class="savings-sim-bar"><div class="savings-sim-fill ${cls}" style="width:${pct}%"></div></div>
-      <span class="savings-sim-tag ${cls}">${tag}</span>`;
+      <span class="savings-sim-tag ${cls}" title="${label}">${tag}</span>`;
   }).join('');
   grid.innerHTML = rows;
-  // Note
-  const minPass = rates.find(r => totals.totalCur + r * months >= goal.amount);
-  if (minPass != null) {
-    note.innerHTML = `<strong style="color:var(--positive);">${fmtNoCent.format(minPass)} €/Mo</strong> reicht rein rechnerisch ohne weitere Rendite. Aktuell eingestellt: <strong>${fmtNoCent.format(current)} €/Mo</strong>${current >= minPass ? ' ✓' : ` — Lücke noch ${fmt.format(goal.amount - (totals.totalCur + current * months))}`}.`;
+  const currentProjected = totals.totalCur + current * months;
+  const currentGap = goal.amount - currentProjected;
+  if (currentGap <= 0) {
+    note.innerHTML = `Aktuell eingestellt: <strong>${fmtNoCent.format(current)}/Mo</strong>. Damit landest du rechnerisch bei <strong>${fmt.format(currentProjected)}</strong> und hast einen Puffer von <strong style="color:var(--positive);">${fmt.format(-currentGap)}</strong>.`;
   } else {
-    note.innerHTML = `Bei ${months} Monaten Zeit bräuchtest du <strong>${fmt.format(required)}/Mo</strong> ohne Rendite. Aktuell: <strong>${fmtNoCent.format(current)} €/Mo</strong>.`;
+    note.innerHTML = `Aktuell eingestellt: <strong>${fmtNoCent.format(current)}/Mo</strong>. Ohne Rendite würdest du <strong>${fmt.format(currentProjected)}</strong> erreichen; offen bleiben <strong style="color:var(--negative);">${fmt.format(currentGap)}</strong>. Rechnerisch nötig wären etwa <strong>${fmt.format(required)}/Mo</strong>.`;
   }
 }
 
@@ -4190,7 +4206,29 @@ function wireEvents() {
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
-  ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => { document.getElementById(id).addEventListener('input', async () => { if (!appData) return; const year = parseInt(document.getElementById('goalYear').value, 10); const amount = parseInt(document.getElementById('goalAmount').value, 10); const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0; if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; } const totals = renderTotals(); const goal = renderGoal(totals); renderSavingsSim(totals, goal); renderAnalysisLocal(totals, goal); scheduleAIRefresh(); savePositionsToKV(800); }); });
+  ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => {
+    document.getElementById(id).addEventListener('input', async () => {
+      if (!appData) return;
+      const year = parseInt(document.getElementById('goalYear').value, 10);
+      const amount = parseInt(document.getElementById('goalAmount').value, 10);
+      const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0;
+      if (appData.goal) {
+        appData.goal.year = year;
+        appData.goal.amount = amount;
+        appData.goal.savingsRate = savingsRate;
+      }
+      const totals = renderTotals();
+      const goal = renderGoal(totals);
+      const alloc = getCategoryAllocation(totals.totalCur);
+      renderSavingsSim(totals, goal);
+      renderHistory();
+      if (alloc) renderRebalancing(totals, alloc);
+      if (alloc) renderScenario(totals, alloc);
+      renderAnalysisLocal(totals, goal);
+      scheduleAIRefresh();
+      savePositionsToKV(800);
+    });
+  });
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryPeriod = tab.dataset.history || '12M'; if (appData) renderHistory(); }); });
   // Legenden-Toggles für Depotchart-Serien
