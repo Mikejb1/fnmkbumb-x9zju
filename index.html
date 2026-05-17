@@ -152,6 +152,27 @@
   .risk-rule-item .val.violated { color: var(--negative); font-weight: 500; }
   .risk-rule-item .val.ok { color: var(--positive); }
   .risk-rules-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; }
+  .quality-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .quality-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px; }
+  .quality-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin: 0; }
+  .quality-title svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .quality-score { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .quality-score .denom { font-size: 11px; color: var(--text-muted); }
+  .quality-score.high { color: var(--positive); }
+  .quality-score.mid { color: #fbbf24; }
+  .quality-score.low { color: var(--negative); }
+  .quality-bar { width: 100%; height: 5px; background: var(--bg-track); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+  .quality-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease, background 0.4s ease; }
+  .quality-bar-fill.high { background: linear-gradient(90deg, var(--positive-strong), var(--positive)); }
+  .quality-bar-fill.mid { background: #fbbf24; }
+  .quality-bar-fill.low { background: var(--negative); }
+  .quality-issue { padding: 5px 0; font-size: 11px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px; border-top: 1px solid var(--border-light); }
+  .quality-issue:first-of-type { border-top: 0; }
+  .quality-issue .ico { flex-shrink: 0; line-height: 1; }
+  .quality-issue.warn .ico { color: #fbbf24; }
+  .quality-issue.info .ico { color: var(--text-tertiary); }
+  .quality-issue.good .ico { color: var(--positive); }
+  .quality-issue.error .ico { color: var(--negative); }
   .backup-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
   .backup-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
   .backup-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
@@ -194,6 +215,39 @@
   .journal-status.open { background: rgba(245,158,11,0.18); color: #fbbf24; }
   .journal-status.due { background: rgba(239,68,68,0.18); color: #fca5a5; }
   .journal-status.done { background: rgba(34,197,94,0.18); color: #4ade80; }
+  .scenario-slider-row { display: grid; grid-template-columns: 90px 1fr 90px; gap: 10px; align-items: center; padding: 5px 0; font-size: 12px; }
+  .scenario-slider-row .lbl { color: var(--text-secondary); }
+  .scenario-slider-row input[type=range] { width: 100%; accent-color: var(--positive); }
+  .scenario-slider-row .pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .scenario-slider-row .pct.up { color: var(--positive); }
+  .scenario-slider-row .pct.down { color: var(--negative); }
+  .scenario-result { background: var(--bg-secondary); border-radius: 8px; padding: 12px 14px; margin-top: 10px; }
+  .scenario-result-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 13px; }
+  .scenario-result-row .lbl { color: var(--text-secondary); }
+  .scenario-result-row .val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .scenario-result-row .val.positive { color: var(--positive); }
+  .scenario-result-row .val.negative { color: var(--negative); }
+  .scenario-violations { background: rgba(239,68,68,0.08); border-left: 3px solid var(--negative); border-radius: 6px; padding: 8px 10px; margin-top: 10px; font-size: 11px; color: #fca5a5; line-height: 1.5; }
+  .scenario-reset-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+  .scenario-reset-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .income-summary { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; }
+  .income-summary .big { font-size: 18px; font-weight: 600; color: var(--positive); font-variant-numeric: tabular-nums; }
+  .income-summary .breakdown { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .income-kind-badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-right: 4px; font-weight: 500; }
+  .income-kind-dividend { background: rgba(34,197,94,0.18); color: #4ade80; }
+  .income-kind-interest { background: rgba(59,130,246,0.18); color: #93c5fd; }
+  .income-kind-bonus { background: rgba(245,158,11,0.18); color: #fbbf24; }
+  .income-kind-staking { background: rgba(168,85,247,0.18); color: #c4b5fd; }
+  .income-kind-distribution { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .realized-section { background: rgba(34,197,94,0.06); border-left: 3px solid var(--positive); border-radius: 6px; padding: 8px 10px; margin: 8px 0; font-size: 11px; color: var(--text-secondary); }
+  .realized-section.loss { background: rgba(248,113,113,0.06); border-left-color: var(--negative); }
+  .realized-section .title { font-weight: 600; color: var(--text-primary); font-size: 12px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .realized-section .title .total.positive { color: var(--positive); }
+  .realized-section .title .total.negative { color: var(--negative); }
+  .realized-line { display: flex; justify-content: space-between; padding: 2px 0; font-variant-numeric: tabular-nums; }
+  .realized-line .lbl { color: var(--text-tertiary); }
+  .pos-action-btn.sell { color: #fbbf24; }
+  .pos-action-btn.sell:hover { background: rgba(245,158,11,0.12); }
   .mini-nav { position: sticky; top: 0; z-index: 50; background: var(--bg-page); padding: 8px 4px; margin: 0 -4px 8px -4px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--border-light); scrollbar-width: none; }
   .mini-nav::-webkit-scrollbar { display: none; }
   .mini-nav-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
@@ -578,8 +632,10 @@
     <button class="mini-nav-btn" data-jump="anchor-history">Verlauf</button>
     <button class="mini-nav-btn" data-jump="anchor-goal">Ziel</button>
     <button class="mini-nav-btn" data-jump="anchor-rebalancing">Rebalancing</button>
+    <button class="mini-nav-btn" data-jump="anchor-scenario">Szenario</button>
     <button class="mini-nav-btn" data-jump="anchor-watchlist">Watchlist</button>
     <button class="mini-nav-btn" data-jump="anchor-journal">Journal</button>
+    <button class="mini-nav-btn" data-jump="anchor-income">Erträge</button>
     <button class="mini-nav-btn" data-jump="anchor-chat">KI</button>
   </nav>
   <div class="total-bar" id="anchor-top">
@@ -658,6 +714,17 @@
       <span>Risiko-Regeln</span>
     </div>
     <div id="riskRulesList"></div>
+  </div>
+  <div class="quality-section" id="qualitySection">
+    <div class="quality-head">
+      <h2 class="quality-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Datenqualität</span>
+      </h2>
+      <div class="quality-score" id="qualityScoreVal">—<span class="denom">/100</span></div>
+    </div>
+    <div class="quality-bar"><div class="quality-bar-fill" id="qualityBarFill" style="width:0%"></div></div>
+    <div id="qualityIssues"></div>
   </div>
   <div class="positions-head-label" id="anchor-positions">
     <span>Positionen</span>
@@ -790,6 +857,28 @@
     <div class="strat-body" id="rebalBody"></div>
   </details>
 
+  <span id="anchor-scenario"></span>
+  <details class="strat-section" id="scenarioSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 17l4-4 4 4 5-5"/></svg>
+        <span>Szenario-Rechner (Was-wäre-wenn)</span>
+      </span>
+      <span class="count-badge" id="scenarioStatus">±0</span>
+    </summary>
+    <div class="strat-body">
+      <p style="font-size:11px; color:var(--text-tertiary); margin:0 0 10px 0; line-height:1.5;">Verschiebe die Regler, um zu sehen, wie dein Depot bei verschiedenen Marktentwicklungen aussehen würde. Cash bleibt unverändert.</p>
+      <div id="scenarioSliders">
+        <div class="scenario-slider-row"><span class="lbl">ETF</span><input type="range" min="-20" max="20" step="1" value="0" data-scenario="etf"><span class="pct" data-pct="etf">±0 %</span></div>
+        <div class="scenario-slider-row"><span class="lbl">Aktien</span><input type="range" min="-30" max="30" step="1" value="0" data-scenario="aktie"><span class="pct" data-pct="aktie">±0 %</span></div>
+        <div class="scenario-slider-row"><span class="lbl">Krypto</span><input type="range" min="-60" max="60" step="2" value="0" data-scenario="crypto"><span class="pct" data-pct="crypto">±0 %</span></div>
+        <div class="scenario-slider-row"><span class="lbl">Edelmetalle</span><input type="range" min="-20" max="20" step="1" value="0" data-scenario="gold"><span class="pct" data-pct="gold">±0 %</span></div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;"><button class="scenario-reset-btn" id="scenarioResetBtn" type="button">Zurücksetzen</button></div>
+      <div class="scenario-result" id="scenarioResult"></div>
+    </div>
+  </details>
+
   <span id="anchor-watchlist"></span>
   <details class="strat-section" id="watchlistSection">
     <summary>
@@ -817,6 +906,22 @@
     <div class="strat-body">
       <button class="strat-add-btn" id="journalAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
       <div id="journalList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <span id="anchor-income"></span>
+  <details class="strat-section" id="incomeSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Erträge (Dividenden, Zinsen, Staking)</span>
+      </span>
+      <span class="count-badge" id="incomeCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <div class="income-summary" id="incomeSummary"></div>
+      <button class="strat-add-btn" id="incomeAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ertrag erfassen</button>
+      <div id="incomeList" style="margin-top:10px;"></div>
     </div>
   </details>
 
@@ -1021,6 +1126,49 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="sellModal">
+  <div class="modal">
+    <h3 id="sellTitle">Verkauf erfassen</h3>
+    <p style="font-size:11px; color:var(--text-secondary); margin:0 0 10px 0;" id="sellSubtitle">—</p>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="sellDate"></div>
+    <div class="modal-field"><label>Verkaufte Stück</label><input type="number" step="0.000001" min="0" class="auth-input" id="sellShares" placeholder="z.B. 5"></div>
+    <div class="modal-field"><label>Verkaufspreis pro Stück (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="sellPrice" placeholder="z.B. 145.50"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="sellFees" placeholder="z.B. 2.50"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="sellNote" placeholder="z.B. Teilgewinn realisiert"></div>
+    <div class="realized-section" id="sellPreview" style="display:none;">
+      <div class="title">Vorschau realisierter G/V</div>
+      <div id="sellPreviewBody"></div>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="sellCancel">Abbrechen</button><button class="auth-btn" id="sellSave">Verkauf erfassen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="incomeModal">
+  <div class="modal">
+    <h3 id="incomeTitle">Ertrag erfassen</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="incDate"></div>
+    <div class="modal-field"><label>Position (optional)</label>
+      <select id="incPositionId" class="auth-input">
+        <option value="">— allgemein —</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Art</label>
+      <select id="incKind" class="auth-input">
+        <option value="dividend">Dividende</option>
+        <option value="distribution">ETF-Ausschüttung</option>
+        <option value="interest">Zinsen</option>
+        <option value="bonus">Bonus</option>
+        <option value="staking">Staking-Ertrag</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Brutto-Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="incGross" placeholder="z.B. 35.50"></div>
+    <div class="modal-field"><label>Steuer/Abzug (optional)</label><input type="number" step="0.01" min="0" class="auth-input" id="incTax" placeholder="z.B. 9.40"></div>
+    <div class="modal-field"><label>Netto (autoberechnet)</label><input type="number" step="0.01" class="auth-input" id="incNet" readonly style="opacity:0.7;"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="incNote" placeholder="z.B. Quartalsdividende Q1 2026"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="incCancel">Abbrechen</button><button class="auth-btn" id="incSave">Speichern</button></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="journalModal">
   <div class="modal">
     <h3 id="journalTitle">Journal-Eintrag</h3>
@@ -1150,6 +1298,8 @@ function buildFactSheet(totals, goal) {
 - Verletzte Regeln (${violations.length}): ${violations.length > 0 ? violations.map(v => v.label + ' (' + v.value + ')').join(', ') : 'keine'}
 - Watchlist-Kandidaten: ${(appData?.watchlist || []).length}
 - Offene Journal-Einträge: ${(appData?.journal || []).filter(e => e.status !== 'done').length}
+- Erträge ${new Date().getFullYear()} (Netto): ${fmt.format((appData?.income || []).filter(e => e.date && e.date.startsWith(String(new Date().getFullYear()))).reduce((s, e) => s + (e.net || 0), 0))}
+- Realisierte G/V gesamt: ${fmt.format((appData?.positions || []).reduce((s, p) => s + (getComputedPosition(p.id).realizedPnl || 0), 0))}
 === /FAKTENBLATT ===`;
 }
 
@@ -1805,9 +1955,125 @@ function renderAllocation(totals) {
       drill.style.display = '';
     } else { drill.style.display = 'none'; }
   }
-  // Risiko-Regeln direkt mit aktualisieren
+  // Risiko-Regeln + Datenqualität mit aktualisieren
   renderRiskRules(totals, alloc);
+  renderDataQuality(totals);
   return alloc;
+}
+
+// ===== DATENQUALITÄTS-SCORE =====
+const BACKUP_TS_KEY = 'portfolio_last_backup_ts';
+function computeDataQuality(totals) {
+  const issues = [];
+  let score = 0;
+
+  // 1) Positionen mit Stückzahl, Einstand, aktuellem Wert (25 %)
+  const positions = appData?.positions || [];
+  if (positions.length === 0) {
+    issues.push({ severity: 'info', text: 'Noch keine Positionen erfasst.' });
+  } else {
+    const complete = positions.filter(p => p.shares > 0 && p.costPrice > 0).length;
+    score += (complete / positions.length) * 25;
+    const missing = positions.length - complete;
+    if (missing > 0) issues.push({ severity: 'warn', text: `Bei ${missing} Position${missing === 1 ? '' : 'en'} fehlen Stückzahl oder Einstandspreis.` });
+  }
+
+  // 2) Kauf-Lots mit Datum und Betrag (25 %) — Anzahl Positionen mit ≥ 1 zugeordneter buy-Transaktion
+  if (positions.length > 0) {
+    const txs = appData?.transactions || [];
+    const posWithTx = positions.filter(p => txs.some(t => t.assetId === p.id && t.txType === 'buy' && t.date && t.value > 0)).length;
+    score += (posWithTx / positions.length) * 25;
+    const noLot = positions.length - posWithTx;
+    if (noLot > 0) issues.push({ severity: 'warn', text: `Bei ${noLot} Position${noLot === 1 ? '' : 'en'} fehlen Kaufdaten (Datum + Betrag).` });
+  }
+
+  // 3) Cash-Bewegungen gepflegt (15 %)
+  const cashAmount = Number(appData?.goal?.cash || 0);
+  const hasCashTx = (appData?.transactions || []).some(t => t.assetType === 'cash');
+  if (hasCashTx) {
+    score += 15;
+  } else if (cashAmount > 0) {
+    score += 5;
+    issues.push({ severity: 'info', text: 'Cash-Bewegungen sind nicht einzeln gepflegt (nur Slider-Wert).' });
+  } else {
+    score += 5;
+  }
+
+  // 4) Stammdaten (ISIN/WKN/Sektor/Custodian) (15 %)
+  if (positions.length > 0) {
+    const fields = ['isin', 'wkn', 'sektor', 'custodian', 'custodyType', 'land'];
+    let totalFields = 0, filledFields = 0;
+    positions.forEach(p => {
+      const sd = p.stammdaten || {};
+      fields.forEach(f => { totalFields++; if (sd[f] && String(sd[f]).trim()) filledFields++; });
+    });
+    const stammRatio = totalFields > 0 ? filledFields / totalFields : 0;
+    score += stammRatio * 15;
+    const posWithoutAny = positions.filter(p => {
+      const sd = p.stammdaten || {};
+      return !fields.some(f => sd[f] && String(sd[f]).trim());
+    }).length;
+    if (posWithoutAny > 0) issues.push({ severity: 'info', text: `Bei ${posWithoutAny} Position${posWithoutAny === 1 ? '' : 'en'} fehlen Stammdaten (ISIN/WKN/Sektor).` });
+  }
+
+  // 5) Ziel, Sparrate, Zieljahr (10 %)
+  const g = appData?.goal || {};
+  let goalPts = 0;
+  if (g.year && g.year >= 2025) goalPts += 3;
+  if (g.amount && g.amount > 0) goalPts += 4;
+  if (g.savingsRate != null && g.savingsRate > 0) goalPts += 3;
+  score += goalPts;
+  if (goalPts < 10) {
+    const miss = [];
+    if (!g.year) miss.push('Zieljahr');
+    if (!g.amount) miss.push('Zielbetrag');
+    if (!g.savingsRate) miss.push('Sparrate');
+    if (miss.length > 0) issues.push({ severity: 'info', text: `Ziel-Eingaben unvollständig (${miss.join(', ')}).` });
+  }
+
+  // 6) Backup vorhanden / aktuell (10 %)
+  let backupTs = 0;
+  try { backupTs = parseInt(localStorage.getItem(BACKUP_TS_KEY) || '0', 10); } catch (e) {}
+  if (backupTs > 0) {
+    const ageDays = (Date.now() - backupTs) / (1000 * 60 * 60 * 24);
+    if (ageDays < 30) score += 10;
+    else if (ageDays < 90) { score += 5; issues.push({ severity: 'warn', text: `Letztes Backup ist ${Math.floor(ageDays)} Tage alt — neues JSON-Backup empfohlen.` }); }
+    else { score += 2; issues.push({ severity: 'warn', text: `Backup älter als 3 Monate — bitte aktuelles JSON-Backup herunterladen.` }); }
+  } else {
+    issues.push({ severity: 'warn', text: 'Noch kein lokales Backup heruntergeladen — JSON-Backup im Backup-Bereich nutzen.' });
+  }
+
+  // Edelmetall-Hinweis: Lagerart/Gebühren bei vorhandenen Lots
+  if (appData?.goal?.metalLots) {
+    let totalLots = 0, lotsWithStorage = 0;
+    Object.values(appData.goal.metalLots).forEach(lots => {
+      if (!Array.isArray(lots)) return;
+      lots.forEach(l => { totalLots++; if (l.storage) lotsWithStorage++; });
+    });
+    if (totalLots > 0 && lotsWithStorage < totalLots) {
+      issues.push({ severity: 'info', text: `Bei Edelmetall-Käufen fehlt teilweise Lagerart/Gebühren-Info.` });
+    }
+  }
+
+  if (issues.length === 0) issues.push({ severity: 'good', text: 'Alle wichtigen Daten sind gepflegt — Auswertungen sind belastbar.' });
+
+  return { score: Math.round(Math.min(100, score)), issues };
+}
+function renderDataQuality(totals) {
+  const valEl = document.getElementById('qualityScoreVal');
+  const barEl = document.getElementById('qualityBarFill');
+  const issuesEl = document.getElementById('qualityIssues');
+  if (!valEl || !barEl || !issuesEl) return;
+  const { score, issues } = computeDataQuality(totals);
+  const tier = score >= 80 ? 'high' : (score >= 55 ? 'mid' : 'low');
+  valEl.innerHTML = `${score}<span class="denom">/100</span>`;
+  valEl.className = 'quality-score ' + tier;
+  barEl.style.width = score + '%';
+  barEl.className = 'quality-bar-fill ' + tier;
+  issuesEl.innerHTML = issues.map(i => {
+    const icoMap = { warn: '⚠', info: 'ℹ', good: '✓', error: '✕' };
+    return `<div class="quality-issue ${i.severity}"><span class="ico">${icoMap[i.severity] || '·'}</span><span>${escapeHtml(i.text)}</span></div>`;
+  }).join('');
 }
 
 // ===== RISIKO-REGELN =====
@@ -2085,6 +2351,268 @@ function renderJournal() {
   }).join('');
 }
 
+// ===== VERKÄUFE / REALISIERTE G/V =====
+let sellingPosId = null;
+function openSellModal(posId) {
+  const pos = appData.positions.find(p => p.id === posId);
+  if (!pos) return;
+  sellingPosId = posId;
+  document.getElementById('sellTitle').textContent = 'Verkauf: ' + pos.name;
+  const live = currentPrices[posId] || { price: pos.costPrice };
+  document.getElementById('sellSubtitle').textContent = `Aktuell ${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)} Stk im Bestand · letzter Kurs ${fmtNum(live.price)} €`;
+  document.getElementById('sellDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('sellShares').value = '';
+  document.getElementById('sellShares').max = pos.shares;
+  document.getElementById('sellPrice').value = live.price.toFixed(2);
+  document.getElementById('sellFees').value = '';
+  document.getElementById('sellNote').value = '';
+  document.getElementById('sellPreview').style.display = 'none';
+  document.getElementById('sellModal').classList.add('active');
+  setTimeout(() => document.getElementById('sellShares').focus(), 50);
+}
+function closeSellModal() { document.getElementById('sellModal').classList.remove('active'); sellingPosId = null; }
+function updateSellPreview() {
+  if (!sellingPosId) return;
+  const pos = appData.positions.find(p => p.id === sellingPosId);
+  if (!pos) return;
+  const shares = parseFloat(document.getElementById('sellShares').value) || 0;
+  const price = parseFloat(document.getElementById('sellPrice').value) || 0;
+  const fees = parseFloat(document.getElementById('sellFees').value) || 0;
+  const preview = document.getElementById('sellPreview');
+  const body = document.getElementById('sellPreviewBody');
+  if (shares <= 0 || price <= 0) { preview.style.display = 'none'; return; }
+  const erlös = shares * price;
+  const avgBefore = pos.costPrice;
+  const costAnteilig = avgBefore * shares;
+  const realized = erlös - costAnteilig - fees;
+  const cls = realized >= 0 ? 'positive' : 'negative';
+  body.innerHTML = `
+    <div class="realized-line"><span class="lbl">Verkaufserlös brutto</span><span>${fmt.format(erlös)}</span></div>
+    <div class="realized-line"><span class="lbl">Einstand anteilig (Avg ${fmtNum(avgBefore)} €/Stk)</span><span>${fmt.format(costAnteilig)}</span></div>
+    ${fees > 0 ? `<div class="realized-line"><span class="lbl">Gebühr</span><span>−${fmt.format(fees)}</span></div>` : ''}
+    <div class="realized-line" style="font-weight:600;border-top:1px solid var(--border-light);margin-top:4px;padding-top:4px;"><span class="lbl">Realisierter G/V</span><span class="${cls}">${realized >= 0 ? '+' : ''}${fmt.format(realized)}</span></div>
+  `;
+  preview.style.display = '';
+  preview.classList.toggle('loss', realized < 0);
+}
+async function saveSellModal() {
+  if (!sellingPosId) return;
+  const pos = appData.positions.find(p => p.id === sellingPosId);
+  if (!pos) return;
+  const date = document.getElementById('sellDate').value;
+  const shares = parseFloat(document.getElementById('sellShares').value);
+  const price = parseFloat(document.getElementById('sellPrice').value);
+  const fees = parseFloat(document.getElementById('sellFees').value || '0');
+  const note = document.getElementById('sellNote').value.trim();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
+  if (!isFinite(shares) || shares <= 0) { alert('Bitte gültige Stückzahl.'); return; }
+  if (shares > pos.shares + 1e-6) { alert(`Du hast nur ${pos.shares} Stk im Bestand.`); return; }
+  if (!isFinite(price) || price <= 0) { alert('Bitte gültigen Verkaufspreis.'); return; }
+  const erlös = shares * price;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  // Sell-Transaktion anlegen
+  appData.transactions.push({
+    id: makeTxId(), date, assetId: pos.id, assetType: assetTypeOf(pos),
+    txType: 'sell', quantity: shares, price, value: erlös, fees: isFinite(fees) ? fees : 0,
+    note: note || 'Verkauf'
+  });
+  // pos.shares reduzieren (Avg-Cost bleibt gleich beim sell)
+  pos.shares = Math.max(0, pos.shares - shares);
+  // Cash gutbuchen, falls Cash-Tx-Modus aktiv
+  const hasCashTx = appData.transactions.some(t => t.assetType === 'cash');
+  if (hasCashTx) {
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: 'deposit',
+      quantity: erlös - (isFinite(fees) ? fees : 0), price: 1, value: erlös - (isFinite(fees) ? fees : 0), fees: 0,
+      note: 'Verkaufserlös ' + pos.name
+    });
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  // Falls Position auf 0 fällt: User fragen ob entfernen
+  if (pos.shares < 1e-6 && confirm('Position auf 0 Stück — komplett aus der Liste entfernen? (Verkaufs-Historie bleibt erhalten)')) {
+    appData.positions = appData.positions.filter(p => p.id !== pos.id);
+    delete currentPrices[pos.id]; delete weeklyData[pos.id];
+  }
+  closeSellModal();
+  await savePositionsToKV();
+  await refreshUI();
+}
+
+// ===== ERTRÄGE (Dividenden, Zinsen, Staking) =====
+function ensureIncome() { if (!Array.isArray(appData.income)) appData.income = []; return appData.income; }
+let editingIncomeId = null;
+const INCOME_KIND_LABELS = { dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking' };
+function openIncomeModal(id) {
+  editingIncomeId = id || null;
+  const list = ensureIncome();
+  const entry = id ? list.find(e => e.id === id) : null;
+  document.getElementById('incomeTitle').textContent = entry ? 'Ertrag bearbeiten' : 'Ertrag erfassen';
+  document.getElementById('incDate').value = entry?.date || new Date().toISOString().slice(0, 10);
+  // Position-Dropdown füllen
+  const sel = document.getElementById('incPositionId');
+  sel.innerHTML = '<option value="">— allgemein —</option>';
+  (appData?.positions || []).forEach(p => {
+    const o = document.createElement('option'); o.value = p.id; o.textContent = p.name + (p.symbol ? ' (' + p.symbol + ')' : '');
+    sel.appendChild(o);
+  });
+  sel.value = entry?.positionId || '';
+  document.getElementById('incKind').value = entry?.kind || 'dividend';
+  document.getElementById('incGross').value = entry?.gross != null ? entry.gross : '';
+  document.getElementById('incTax').value = entry?.tax != null ? entry.tax : '';
+  document.getElementById('incNet').value = entry?.net != null ? entry.net : (entry?.gross || 0);
+  document.getElementById('incNote').value = entry?.note || '';
+  document.getElementById('incomeModal').classList.add('active');
+  setTimeout(() => document.getElementById('incGross').focus(), 50);
+}
+function closeIncomeModal() { document.getElementById('incomeModal').classList.remove('active'); editingIncomeId = null; }
+function updateIncomeNet() {
+  const gross = parseFloat(document.getElementById('incGross').value) || 0;
+  const tax = parseFloat(document.getElementById('incTax').value) || 0;
+  const net = Math.max(0, gross - tax);
+  document.getElementById('incNet').value = net.toFixed(2);
+}
+async function saveIncomeModal() {
+  const date = document.getElementById('incDate').value;
+  const gross = parseFloat(String(document.getElementById('incGross').value).replace(',', '.'));
+  const tax = parseFloat(String(document.getElementById('incTax').value || '0').replace(',', '.'));
+  const positionId = document.getElementById('incPositionId').value || null;
+  const kind = document.getElementById('incKind').value || 'dividend';
+  const note = document.getElementById('incNote').value.trim();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
+  if (!isFinite(gross) || gross <= 0) { alert('Bitte gültigen Brutto-Betrag eingeben.'); return; }
+  const net = Math.max(0, gross - (isFinite(tax) ? tax : 0));
+  const list = ensureIncome();
+  if (editingIncomeId) {
+    const idx = list.findIndex(e => e.id === editingIncomeId);
+    if (idx >= 0) list[idx] = { ...list[idx], date, positionId, kind, gross, tax: tax || 0, net, note };
+  } else {
+    list.push({ id: 'inc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6), date, positionId, kind, gross, tax: tax || 0, net, note });
+  }
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  closeIncomeModal();
+  await savePositionsToKV();
+  renderIncome();
+}
+async function deleteIncome(id) {
+  if (!confirm('Ertrag wirklich löschen?')) return;
+  appData.income = (appData.income || []).filter(e => e.id !== id);
+  await savePositionsToKV();
+  renderIncome();
+}
+function renderIncome() {
+  const list = ensureIncome();
+  const countEl = document.getElementById('incomeCount');
+  if (countEl) countEl.textContent = String(list.length);
+  const summaryEl = document.getElementById('incomeSummary');
+  const listEl = document.getElementById('incomeList');
+  if (!summaryEl || !listEl) return;
+  const thisYear = new Date().getFullYear();
+  const yearItems = list.filter(e => e.date && e.date.startsWith(String(thisYear)));
+  const totalYear = yearItems.reduce((s, e) => s + (e.net || 0), 0);
+  const byKind = {};
+  yearItems.forEach(e => { byKind[e.kind] = (byKind[e.kind] || 0) + (e.net || 0); });
+  const breakdown = Object.entries(byKind).map(([k, v]) => `${INCOME_KIND_LABELS[k] || k}: ${fmt.format(v)}`).join(' · ');
+  summaryEl.innerHTML = `<div>Erträge ${thisYear}</div><div class="big">${fmt.format(totalYear)}</div>${breakdown ? `<div class="breakdown">${breakdown}</div>` : ''}`;
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="strat-empty">Noch keine Erträge erfasst.</div>';
+    return;
+  }
+  listEl.innerHTML = list.map(e => {
+    const posName = e.positionId ? (appData.positions.find(p => p.id === e.positionId)?.name || 'gelöschte Position') : 'allgemein';
+    return `<div class="strat-item">
+      <div class="info">
+        <div class="name"><span class="income-kind-badge income-kind-${e.kind}">${INCOME_KIND_LABELS[e.kind] || e.kind}</span>${escapeHtml(posName)}</div>
+        <div class="meta">${formatDateAT(e.date)}${e.note ? ' · ' + escapeHtml(e.note) : ''}</div>
+        <div class="reason">Brutto ${fmt.format(e.gross)}${e.tax > 0 ? ' · Steuer −' + fmt.format(e.tax) : ''} · <strong>Netto ${fmt.format(e.net)}</strong></div>
+      </div>
+      <div class="actions">
+        <button data-income-edit="${e.id}" title="Bearbeiten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="danger" data-income-del="${e.id}" title="Löschen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== SZENARIO-RECHNER =====
+function getScenarioDeltas() {
+  const d = { etf: 0, aktie: 0, crypto: 0, gold: 0 };
+  document.querySelectorAll('[data-scenario]').forEach(inp => {
+    const k = inp.dataset.scenario;
+    if (k in d) d[k] = parseFloat(inp.value) || 0;
+  });
+  return d;
+}
+function applyScenario(totals, alloc, deltas) {
+  // Berechne neue Werte je Kategorie: aktueller €-Wert × (1 + delta/100)
+  if (!totals || !alloc || totals.totalCur <= 0) return null;
+  const cats = ['etf', 'aktie', 'crypto', 'gold', 'cash'];
+  const oldEur = {};
+  cats.forEach(c => { oldEur[c] = alloc.abs[c] || 0; });
+  const newEur = {
+    etf: oldEur.etf * (1 + (deltas.etf || 0) / 100),
+    aktie: oldEur.aktie * (1 + (deltas.aktie || 0) / 100),
+    crypto: oldEur.crypto * (1 + (deltas.crypto || 0) / 100),
+    gold: oldEur.gold * (1 + (deltas.gold || 0) / 100),
+    cash: oldEur.cash
+  };
+  const newTotal = cats.reduce((s, c) => s + newEur[c], 0);
+  const change = newTotal - totals.totalCur;
+  const newAlloc = {};
+  cats.forEach(c => { newAlloc[c] = newTotal > 0 ? (newEur[c] / newTotal) * 100 : 0; });
+  return { newEur, newTotal, change, changePct: totals.totalCur > 0 ? (change / totals.totalCur) * 100 : 0, newAlloc };
+}
+function renderScenario(totals, alloc) {
+  if (!totals || !alloc) return;
+  const deltas = getScenarioDeltas();
+  // Live-Labels in den Slidern
+  document.querySelectorAll('[data-pct]').forEach(el => {
+    const k = el.dataset.pct;
+    const v = deltas[k] || 0;
+    el.textContent = (v >= 0 ? '+' : '') + v + ' %';
+    el.classList.toggle('up', v > 0);
+    el.classList.toggle('down', v < 0);
+  });
+  // Status-Badge im Sektions-Header
+  const statusEl = document.getElementById('scenarioStatus');
+  const absSum = Math.abs(deltas.etf) + Math.abs(deltas.aktie) + Math.abs(deltas.crypto) + Math.abs(deltas.gold);
+  if (statusEl) statusEl.textContent = absSum === 0 ? '±0' : `Δ ${absSum}`;
+  const result = applyScenario(totals, alloc, deltas);
+  const resEl = document.getElementById('scenarioResult');
+  if (!resEl) return;
+  if (!result || absSum === 0) {
+    resEl.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);text-align:center;padding:8px;">Verschiebe einen Regler, um ein Szenario zu simulieren.</div>';
+    return;
+  }
+  // Neue Allokation: Risiko-Regeln neu prüfen
+  const fakeTotals = { totalCur: result.newTotal };
+  const fakeAlloc = { pcts: result.newAlloc, abs: result.newEur };
+  const newRules = evaluateRiskRules(fakeTotals, fakeAlloc);
+  const violations = newRules.filter(r => r.violated);
+  // Ziel-Berechnung
+  const goal = appData?.goal || {};
+  let goalText = '';
+  if (goal.amount && goal.year) {
+    const gap = goal.amount - result.newTotal;
+    const today = new Date();
+    const endDate = new Date(goal.year, 11, 31);
+    const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
+    if (gap <= 0) {
+      goalText = `Ziel <strong>bereits übertroffen</strong> (Puffer ${fmt.format(-gap)})`;
+    } else {
+      const requiredPerMo = gap / monthsToGoal;
+      goalText = `Lücke zum Ziel: <strong>${fmt.format(gap)}</strong> in ${monthsToGoal} Monaten · ${fmt.format(requiredPerMo)}/Mo ohne Rendite`;
+    }
+  }
+  const cls = result.change >= 0 ? 'positive' : 'negative';
+  resEl.innerHTML = `
+    <div class="scenario-result-row"><span class="lbl">Neuer Depotwert</span><span class="val">${fmt.format(result.newTotal)}</span></div>
+    <div class="scenario-result-row"><span class="lbl">Veränderung</span><span class="val ${cls}">${result.change >= 0 ? '+' : ''}${fmt.format(result.change)} (${result.changePct >= 0 ? '+' : ''}${fmtNum(result.changePct, 1)} %)</span></div>
+    <div class="scenario-result-row"><span class="lbl">Allokation neu</span><span class="val" style="font-size:11px;font-weight:400;color:var(--text-secondary);">ETF ${fmtNum(result.newAlloc.etf, 0)} % · Aktie ${fmtNum(result.newAlloc.aktie, 0)} % · Krypto ${fmtNum(result.newAlloc.crypto, 0)} % · Gold ${fmtNum(result.newAlloc.gold, 0)} % · Cash ${fmtNum(result.newAlloc.cash, 0)} %</span></div>
+    ${goalText ? `<div class="scenario-result-row"><span class="lbl">Ziel-Status</span><span class="val" style="font-weight:400;font-size:12px;">${goalText}</span></div>` : ''}
+    ${violations.length > 0 ? `<div class="scenario-violations"><strong>Neue Regel-Verletzungen:</strong><br>${violations.map(v => '· ' + v.label + ': ' + v.value).join('<br>')}</div>` : ''}
+  `;
+}
+
 // ===== BACKUP · EXPORT · IMPORT =====
 function downloadBlob(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
@@ -2109,9 +2637,14 @@ function backupJson() {
     metalHistory: appData.metalHistory || null,
     watchlist: appData.watchlist || [],
     journal: appData.journal || [],
+    income: appData.income || [],
     chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
   };
   downloadBlob(JSON.stringify(payload, null, 2), `portfolio-backup-${today}.json`, 'application/json');
+  try { localStorage.setItem(BACKUP_TS_KEY, String(Date.now())); } catch (e) {}
+  if (typeof renderDataQuality === 'function') {
+    try { renderDataQuality(); } catch (e) {}
+  }
 }
 function backupCsv() {
   if (!appData) return;
@@ -2200,6 +2733,7 @@ async function importJson(file) {
     if (data.metalHistory) appData.metalHistory = data.metalHistory;
     if (Array.isArray(data.watchlist)) appData.watchlist = data.watchlist;
     if (Array.isArray(data.journal)) appData.journal = data.journal;
+    if (Array.isArray(data.income)) appData.income = data.income;
     if (data.schemaVersion) appData.schemaVersion = data.schemaVersion;
     if (typeof data.chatMemorySummary === 'string') {
       chatMemorySummary = data.chatMemorySummary;
@@ -2361,6 +2895,7 @@ async function handleGate() {
         if (kvData.metalHistory) appData.metalHistory = kvData.metalHistory;
         if (Array.isArray(kvData.watchlist)) appData.watchlist = kvData.watchlist;
         if (Array.isArray(kvData.journal)) appData.journal = kvData.journal;
+        if (Array.isArray(kvData.income)) appData.income = kvData.income;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
     // Schema-Migration (v1 -> v2: Transaktionsmodell)
@@ -2558,11 +3093,16 @@ function buildCard(pos, totals, alloc) {
       <div class="chart-wrap" id="chartWrap-${pos.id}" style="height:130px;"></div>
       <div class="chart-stamp" id="chartStamp-${pos.id}">&nbsp;</div>
       ${warning}
+      ${buildRealizedSection(pos)}
       ${recBlock}
       <div class="card-action-row">
         <button class="pos-action-btn" data-edit-id="${pos.id}">
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           <span>Bearbeiten</span>
+        </button>
+        <button class="pos-action-btn sell" data-sell-id="${pos.id}">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+          <span>Verkauf</span>
         </button>
         <button class="pos-action-btn danger" data-remove-id="${pos.id}">
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -2571,6 +3111,26 @@ function buildCard(pos, totals, alloc) {
       </div>
     </div>`;
   return wrap;
+}
+
+function buildRealizedSection(pos) {
+  if (!pos || !Array.isArray(appData?.transactions)) return '';
+  const sells = appData.transactions.filter(t => t.assetId === pos.id && t.txType === 'sell');
+  if (sells.length === 0) return '';
+  // Realisierte G/V berechnen — vereinfacht (Avg-Cost zum Verkaufszeitpunkt)
+  // Wir nehmen die computed-Berechnung von getComputedPosition als Quelle der Wahrheit
+  const comp = getComputedPosition(pos.id);
+  const totalSoldValue = sells.reduce((s, t) => s + (t.value || 0), 0);
+  const totalSoldFees = sells.reduce((s, t) => s + (t.fees || 0), 0);
+  const realized = comp.realizedPnl || 0;
+  const cls = realized >= 0 ? 'positive' : 'negative';
+  return `<div class="realized-section ${realized < 0 ? 'loss' : ''}">
+    <div class="title">Realisierte Ergebnisse (${sells.length} Verkauf${sells.length === 1 ? '' : 'e'})<span class="total ${cls}">${realized >= 0 ? '+' : ''}${fmt.format(realized)}</span></div>
+    <div class="realized-line"><span class="lbl">Verkauft gesamt</span><span>${fmt.format(totalSoldValue)}</span></div>
+    ${totalSoldFees > 0 ? `<div class="realized-line"><span class="lbl">Gebühren</span><span>${fmt.format(totalSoldFees)}</span></div>` : ''}
+    <div class="realized-line"><span class="lbl">Realisierter G/V (Avg-Cost)</span><span class="${cls}">${realized >= 0 ? '+' : ''}${fmt.format(realized)}</span></div>
+    <div class="realized-line" style="font-size:10px;color:var(--text-muted);margin-top:4px;">Hinweis: Keine Steuerberatung. Realisierungs-Steuern werden hier nicht berechnet.</div>
+  </div>`;
 }
 
 function buildMetalLotsBlock(metal) {
@@ -3355,8 +3915,10 @@ async function refreshUI(opts = {}) {
   const goal = renderGoal(totals);
   renderSavingsSim(totals, goal);
   if (alloc) renderRebalancing(totals, alloc);
+  if (alloc) renderScenario(totals, alloc);
   renderWatchlist();
   renderJournal();
+  renderIncome();
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
   } else {
@@ -3429,6 +3991,8 @@ function wireEvents() {
     if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
     const editBtn = e.target.closest('[data-edit-id]');
     if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.editId); return; }
+    const sellBtn = e.target.closest('[data-sell-id]');
+    if (sellBtn) { e.stopPropagation(); openSellModal(sellBtn.dataset.sellId); return; }
     const removeBtn = e.target.closest('[data-remove-id]');
     if (removeBtn) { e.stopPropagation(); removePosition(removeBtn.dataset.removeId); return; }
     const tabBtn = e.target.closest('.chart-tab');
@@ -3552,6 +4116,23 @@ function wireEvents() {
   document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
   document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFileInput').click());
   document.getElementById('backupFileInput').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) { importJson(f); e.target.value = ''; } });
+  // Szenario-Rechner
+  document.querySelectorAll('[data-scenario]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (!appData) return;
+      const totals = renderTotals();
+      const alloc = getCategoryAllocation(totals.totalCur);
+      renderScenario({ totalCur: totals.totalCur }, alloc);
+    });
+  });
+  const scenResetBtn = document.getElementById('scenarioResetBtn');
+  if (scenResetBtn) scenResetBtn.addEventListener('click', () => {
+    document.querySelectorAll('[data-scenario]').forEach(inp => { inp.value = 0; });
+    if (!appData) return;
+    const totals = renderTotals();
+    const alloc = getCategoryAllocation(totals.totalCur);
+    renderScenario({ totalCur: totals.totalCur }, alloc);
+  });
   // Watchlist
   document.getElementById('watchAddBtn').addEventListener('click', () => openWatchModal());
   document.getElementById('wlCancel').addEventListener('click', closeWatchModal);
@@ -3560,6 +4141,25 @@ function wireEvents() {
   document.getElementById('watchlistList').addEventListener('click', e => {
     const edit = e.target.closest('[data-watch-edit]'); if (edit) { openWatchModal(edit.dataset.watchEdit); return; }
     const del = e.target.closest('[data-watch-del]'); if (del) { deleteWatchEntry(del.dataset.watchDel); return; }
+  });
+  // Verkauf-Modal
+  document.getElementById('sellCancel').addEventListener('click', closeSellModal);
+  document.getElementById('sellSave').addEventListener('click', saveSellModal);
+  document.getElementById('sellModal').addEventListener('click', e => { if (e.target.id === 'sellModal') closeSellModal(); });
+  ['sellShares', 'sellPrice', 'sellFees'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateSellPreview);
+  });
+  // Erträge
+  document.getElementById('incomeAddBtn').addEventListener('click', () => openIncomeModal());
+  document.getElementById('incCancel').addEventListener('click', closeIncomeModal);
+  document.getElementById('incSave').addEventListener('click', saveIncomeModal);
+  document.getElementById('incGross').addEventListener('input', updateIncomeNet);
+  document.getElementById('incTax').addEventListener('input', updateIncomeNet);
+  document.getElementById('incomeModal').addEventListener('click', e => { if (e.target.id === 'incomeModal') closeIncomeModal(); });
+  document.getElementById('incomeList').addEventListener('click', e => {
+    const edit = e.target.closest('[data-income-edit]'); if (edit) { openIncomeModal(edit.dataset.incomeEdit); return; }
+    const del = e.target.closest('[data-income-del]'); if (del) { deleteIncome(del.dataset.incomeDel); return; }
   });
   // Journal
   document.getElementById('journalAddBtn').addEventListener('click', () => openJournalModal());
@@ -3887,6 +4487,7 @@ async function savePositionsToKV(debounceMs = 0) {
       metalHistory: appData.metalHistory || null,
       watchlist: appData.watchlist || [],
       journal: appData.journal || [],
+      income: appData.income || [],
       schemaVersion: appData.schemaVersion || 1,
       version: 2 // Blob-Versionsmarker (kompatibel mit alten Decoder-Versionen)
     };
