@@ -194,6 +194,35 @@
   .journal-status.open { background: rgba(245,158,11,0.18); color: #fbbf24; }
   .journal-status.due { background: rgba(239,68,68,0.18); color: #fca5a5; }
   .journal-status.done { background: rgba(34,197,94,0.18); color: #4ade80; }
+  .mini-nav { position: sticky; top: 0; z-index: 50; background: var(--bg-page); padding: 8px 4px; margin: 0 -4px 8px -4px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--border-light); scrollbar-width: none; }
+  .mini-nav::-webkit-scrollbar { display: none; }
+  .mini-nav-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  .mini-nav-btn:hover, .mini-nav-btn:active { background: var(--bg-card); color: var(--text-primary); }
+  .privacy-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+  .privacy-section h3 { font-size: 13px; font-weight: 500; margin: 0 0 8px 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .privacy-section h3 svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .privacy-section ul { list-style: none; padding: 0; margin: 0; }
+  .privacy-section li { padding: 4px 0; padding-left: 18px; position: relative; }
+  .privacy-section li::before { content: "✓"; position: absolute; left: 0; color: var(--positive); font-weight: 600; }
+  .positions-toggle { display: inline-flex; background: var(--bg-track); border-radius: 6px; padding: 2px; gap: 0; }
+  .positions-toggle-btn { background: transparent; border: 0; color: var(--text-tertiary); font-size: 10px; font-family: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .positions-toggle-btn.active { background: var(--bg-card); color: var(--text-primary); font-weight: 500; }
+  .positions.compact .card .card-collapsed-row { gap: 8px; }
+  .positions.compact .card { padding: 8px 11px; }
+  .positions.compact .card.expanded .card-expanded-content { display: none; }
+  .positions.compact .card .card-meta-line { display: none; }
+  .positions.compact .card .card-chevron { display: none; }
+  .positions.compact .card .card-quick-edit { width: 22px; height: 22px; padding: 2px; }
+  .positions.compact .card .card-name-row { margin-bottom: 0; gap: 4px; }
+  .positions.compact .card .card-pnl-mini .val { font-size: 13px; }
+  .positions.compact .card .card-pnl-mini .pct { font-size: 10px; }
+  .positions.compact .card .special-slider-wrap, .positions.compact .card .cash-tx-toolbar, .positions.compact .card .metals-body { display: none; }
+  .positions.compact .card.special details summary .card-chevron { display: none; }
+  .ss-conflicts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .ss-conflict-item { padding: 8px 10px; border-radius: 6px; font-size: 11px; line-height: 1.4; }
+  .ss-conflict-item.warn { background: rgba(245,158,11,0.12); color: #fbbf24; border-left: 3px solid #f59e0b; }
+  .ss-conflict-item.info { background: rgba(59,130,246,0.12); color: #93c5fd; border-left: 3px solid #3b82f6; }
+  .ss-conflict-item.error { background: var(--error-bg); color: var(--error-text); border-left: 3px solid var(--negative); }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -543,13 +572,23 @@
       <button class="icon-btn" id="logoutBtn" title="Abmelden"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
   </div>
-  <div class="total-bar">
+  <nav class="mini-nav">
+    <button class="mini-nav-btn" data-jump="anchor-top">Übersicht</button>
+    <button class="mini-nav-btn" data-jump="anchor-positions">Positionen</button>
+    <button class="mini-nav-btn" data-jump="anchor-history">Verlauf</button>
+    <button class="mini-nav-btn" data-jump="anchor-goal">Ziel</button>
+    <button class="mini-nav-btn" data-jump="anchor-rebalancing">Rebalancing</button>
+    <button class="mini-nav-btn" data-jump="anchor-watchlist">Watchlist</button>
+    <button class="mini-nav-btn" data-jump="anchor-journal">Journal</button>
+    <button class="mini-nav-btn" data-jump="anchor-chat">KI</button>
+  </nav>
+  <div class="total-bar" id="anchor-top">
     <div class="total-bar-head">
       <div><div class="total-label">Depot Stand</div><div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div></div>
       <div class="total-value-line"><div class="total-value" id="totalValue">—</div><div class="total-pnl" id="totalPnl">—</div></div>
     </div>
     <div class="total-stats">
-      <div class="stat-tile neutral" id="statToday">
+      <div class="stat-tile neutral" id="statToday" title="Tagesveränderung: Wertänderung gegenüber gestern. Bei Crypto live aus CoinGecko 24h-Daten. Bei manuellen Positionen ggf. nicht verfügbar.">
         <div class="stat-label">
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           <span>Heute</span>
@@ -557,7 +596,7 @@
         <div class="stat-value" id="statTodayValue">—</div>
         <div class="stat-sub" id="statTodaySub">&nbsp;</div>
       </div>
-      <div class="stat-tile neutral" id="statDrawdown">
+      <div class="stat-tile neutral" id="statDrawdown" title="Drawdown: aktuelle Abweichung vom historischen Höchststand (ATH). 0 % bedeutet aktuelles Hoch, negativ = Korrektur. Hilft bei Risikoeinschätzung.">
         <div class="stat-label">
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
           <span>Drawdown</span>
@@ -601,7 +640,7 @@
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
         <span>Asset-Allokation</span>
       </h2>
-      <div class="alloc-score-wrap">
+      <div class="alloc-score-wrap" title="Diversifikations-Score (0–100): bewertet Anzahl Positionen, max Einzelposition, ETF-Anteil, Cash/Gold-Stabilisator und Krypto-Anteil. Höher = besser gestreut.">
         <div class="alloc-score-label">Diversifikation</div>
         <div class="alloc-score-value" id="allocScore">—<span class="denom">/100</span></div>
       </div>
@@ -620,9 +659,15 @@
     </div>
     <div id="riskRulesList"></div>
   </div>
-  <div class="positions-head-label"><span>Positionen</span><span>Tap zum Aufklappen</span></div>
+  <div class="positions-head-label" id="anchor-positions">
+    <span>Positionen</span>
+    <span class="positions-toggle" role="group" aria-label="Ansicht">
+      <button type="button" class="positions-toggle-btn active" data-view="details">Details</button>
+      <button type="button" class="positions-toggle-btn" data-view="compact">Kompakt</button>
+    </span>
+  </div>
   <div class="positions" id="positions"></div>
-  <div class="history-section">
+  <div class="history-section" id="anchor-history">
     <div class="history-head">
       <h2 class="history-title">Depot-Entwicklung</h2>
       <div class="history-tabs">
@@ -644,11 +689,12 @@
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
       <div class="history-balance-row" title="Inklusive Einzahlungen — zeigt wie sich dein Vermögen entwickelt hat. Cash-Einzahlungen ziehen das Ergebnis nach oben."><span>Inkl. Einzahlungen</span><strong id="historyReturnGross">—</strong></div>
       <div class="history-balance-row" title="Geldgewichtete Rendite (MWR) auf Basis aller Transaktionen — bereinigt um Einzahlungen. Zeigt die reine Performance deiner Anlageentscheidungen."><span>Performance (MWR)</span><strong id="historyReturnMwr">—</strong></div>
+      <div class="history-balance-row" title="Zeitgewichtete Rendite (TWR) — verkettet tägliche Segmentrenditen. Vergleichbar mit ETF-/Benchmark-Renditen, unabhängig vom Einzahlungszeitpunkt."><span>Performance (TWR)</span><strong id="historyReturnTwr">—</strong></div>
       <div class="history-disclaimer">Tagespunkte aus Kaufdaten und verfügbaren historischen Kursen. Bei manuellen Titeln ohne Tageskurs wird der passende Monatskurs verwendet.</div>
       <div class="history-disclaimer" id="cashHistoryNote" style="display:none;">Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.</div>
     </div>
   </div>
-  <div class="goal-section">
+  <div class="goal-section" id="anchor-goal">
     <div class="goal-head"><span class="goal-title" id="goalTitle">Ziel</span><span class="goal-pct" id="goalPct">—</span></div>
     <div class="goal-bar"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
     <div class="goal-sliders">
@@ -732,6 +778,7 @@
     <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
   </div>
 
+  <span id="anchor-rebalancing"></span>
   <details class="strat-section" id="rebalSection">
     <summary>
       <span class="left">
@@ -743,6 +790,7 @@
     <div class="strat-body" id="rebalBody"></div>
   </details>
 
+  <span id="anchor-watchlist"></span>
   <details class="strat-section" id="watchlistSection">
     <summary>
       <span class="left">
@@ -757,6 +805,7 @@
     </div>
   </details>
 
+  <span id="anchor-journal"></span>
   <details class="strat-section" id="journalSection">
     <summary>
       <span class="left">
@@ -770,6 +819,21 @@
       <div id="journalList" style="margin-top:10px;"></div>
     </div>
   </details>
+
+  <div class="privacy-section">
+    <h3>
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Datenschutz</span>
+    </h3>
+    <ul>
+      <li>Portfolio-Daten clientseitig mit AES-GCM (PBKDF2 150k Iterationen) verschlüsselt — Worker speichert nur unentschlüsselbaren Blob in Cloudflare KV</li>
+      <li>Master-Code wird niemals übertragen — Entschlüsselung passiert nur im Browser</li>
+      <li>KI-Anfragen senden aggregierten Portfolio-Kontext an Anthropic API (über Cloudflare Worker)</li>
+      <li>Chat-Gedächtnis wird als Klartext-Zusammenfassung in deinem KV-Slot gespeichert — nur du mit deinem Master-Code kannst es entschlüsseln</li>
+      <li>Krypto-Preise via CoinGecko (öffentlich, keine Auth), Edelmetalle via Worker-Proxy</li>
+      <li>Lokales API-Usage-Tracking nur in localStorage — keine Server-Speicherung</li>
+    </ul>
+  </div>
 
   <div class="backup-section">
     <div class="backup-head">
@@ -785,7 +849,7 @@
     <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import wird Vorschau angezeigt.</div>
   </div>
 
-  <div class="chat-section">
+  <div class="chat-section" id="anchor-chat">
     <div class="chat-head">
       <h2 class="chat-title">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -830,6 +894,15 @@
         <option value="very-high">Sehr hoch</option>
       </select>
     </div>
+    <details style="margin-top:12px;">
+      <summary style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;padding:6px 0;">Stammdaten (optional)</summary>
+      <div class="modal-field"><label>Lagerstelle / Custodian</label><input type="text" class="auth-input" id="editCustodian" placeholder="z.B. Clearstream Lux."></div>
+      <div class="modal-field"><label>Verwahrart</label><input type="text" class="auth-input" id="editCustodyType" placeholder="z.B. Wertpapierrechnung"></div>
+      <div class="modal-field"><label>ISIN</label><input type="text" class="auth-input" id="editIsin" placeholder="z.B. LU1681043599"></div>
+      <div class="modal-field"><label>WKN</label><input type="text" class="auth-input" id="editWkn" placeholder="z.B. A2H59X"></div>
+      <div class="modal-field"><label>Land / Region</label><input type="text" class="auth-input" id="editLand" placeholder="z.B. USA"></div>
+      <div class="modal-field"><label>Sektor</label><input type="text" class="auth-input" id="editSektor" placeholder="z.B. Technology"></div>
+    </details>
     <div class="modal-actions"><button class="auth-btn secondary" id="editCancel">Abbrechen</button><button class="auth-btn" id="editSave">Speichern</button></div>
   </div>
 </div>
@@ -896,6 +969,35 @@
     <h3>Cash-Bewegungen</h3>
     <div class="cash-tx-list-wrap" id="cashTxListWrap"></div>
     <div class="modal-actions"><button class="auth-btn" id="ctxListClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="ssPreviewModal">
+  <div class="modal">
+    <h3>KI-Vorschau prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Haiku hat aus deinem Screenshot folgende Daten ausgelesen. Bitte prüfen und korrigieren, dann übernehmen.</p>
+    <div class="ss-conflicts" id="ssConflicts"></div>
+    <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="sspName"></div>
+    <div class="modal-field"><label>Symbol / Ticker</label><input type="text" class="auth-input" id="sspSymbol"></div>
+    <div class="modal-field"><label>Typ</label>
+      <select id="sspType" class="auth-input">
+        <option value="ETF">ETF</option>
+        <option value="Aktie">Aktie</option>
+        <option value="Crypto">Crypto</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="sspShares"></div>
+    <div class="modal-field"><label>Einstand pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="sspCost"></div>
+    <div class="modal-field"><label>Aktueller Kurs (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="sspPrice"></div>
+    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="sspDate"></div>
+    <div class="modal-field" id="sspExistingWrap" style="display:none;">
+      <label>Existierende Position erkannt — was tun?</label>
+      <select id="sspMergeMode" class="auth-input">
+        <option value="addTx">Als Nachkauf-Transaktion zur bestehenden Position hinzufügen (empfohlen)</option>
+        <option value="newPos">Trotzdem als neue Position anlegen</option>
+      </select>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="sspCancel">Abbrechen</button><button class="auth-btn" id="sspSave">Übernehmen</button></div>
   </div>
 </div>
 
@@ -999,6 +1101,58 @@ async function callAIWorker(prompt) {
   } catch (e) { console.warn('AI Worker failed:', e); return null; }
 }
 
+// Erzeugt ein kompaktes Faktenblatt für KI-Aufrufe (Analyse + Chat)
+function buildFactSheet(totals, goal) {
+  if (!totals || !goal) return '';
+  const alloc = getCategoryAllocation(totals.totalCur);
+  const rules = evaluateRiskRules(totals, alloc);
+  const violations = rules.filter(r => r.violated);
+  // Größte Position
+  let largest = null, largestPct = 0;
+  getAllPositions().forEach(pos => {
+    let value = 0;
+    if (pos.special === 'cash') value = appData.goal?.cash || 0;
+    else if (pos.special === 'metals') value = metalsTotalValue();
+    else { const live = currentPrices[pos.id] || { price: pos.costPrice }; value = live.price * (pos.shares || 0); }
+    const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
+    if (pct > largestPct) { largestPct = pct; largest = pos; }
+  });
+  // Käufe letzte 30 Tage
+  const cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const recentBuys = (appData?.transactions || []).filter(t => t.txType === 'buy' && t.date > cutoff);
+  const totalDeposits = getTotalDeposits();
+  const investedCap = getInvestedCapital();
+  const unrealizedPnl = totals.totalCur - investedCap;
+  const monthlyNeeded = goal.monthlyNeeded || 0;
+  // Zielpfad-Status
+  let goalStatus = '—';
+  if (goal.amount && goal.year) {
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const endOfGoal = new Date(goal.year, 11, 31).getTime();
+    const now = Date.now();
+    const elapsed = (now - startOfYear) / (endOfGoal - startOfYear);
+    const expectedProgress = goal.amount * elapsed;
+    if (totals.totalCur >= expectedProgress * 1.05) goalStatus = 'vor Plan';
+    else if (totals.totalCur >= expectedProgress * 0.95) goalStatus = 'auf Plan';
+    else goalStatus = 'hinter Plan';
+  }
+  return `=== FAKTENBLATT (Stand: ${new Date().toLocaleDateString('de-AT')}) ===
+- Gesamtwert: ${fmt.format(totals.totalCur)}
+- Einstand (investiertes Kapital): ${fmt.format(investedCap)}
+- Unrealisierter G/V: ${unrealizedPnl >= 0 ? '+' : ''}${fmt.format(unrealizedPnl)}
+- Einzahlungen gesamt (Cash-Deposits): ${fmt.format(totalDeposits)}
+- Allokation: ETF ${fmtNum(alloc.pcts.etf, 0)} % · Aktien ${fmtNum(alloc.pcts.aktie, 0)} % · Krypto ${fmtNum(alloc.pcts.crypto, 0)} % · Gold ${fmtNum(alloc.pcts.gold, 0)} % · Cash ${fmtNum(alloc.pcts.cash, 0)} %
+- Größte Position: ${largest ? `${largest.name} (${fmtNum(largestPct, 1)} %)` : '—'}
+- Ziel: ${fmt.format(goal.amount)} bis ${goal.year} · Status: ${goalStatus}
+- Benötigte monatliche Sparrate: ${fmt.format(monthlyNeeded)}
+- Aktuelle Sparrate: ${fmt.format(goal.savingsRate || 0)} €/Monat
+- Käufe letzte 30 Tage: ${recentBuys.length} Stk${recentBuys.length > 0 ? ', gesamt ' + fmt.format(recentBuys.reduce((s, t) => s + t.value, 0)) : ''}
+- Verletzte Regeln (${violations.length}): ${violations.length > 0 ? violations.map(v => v.label + ' (' + v.value + ')').join(', ') : 'keine'}
+- Watchlist-Kandidaten: ${(appData?.watchlist || []).length}
+- Offene Journal-Einträge: ${(appData?.journal || []).filter(e => e.status !== 'done').length}
+=== /FAKTENBLATT ===`;
+}
+
 function buildAIPrompt(totals, goal) {
   const positions = getAllPositions().map(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
@@ -1024,7 +1178,11 @@ function buildAIPrompt(totals, goal) {
   const focus = focuses[Math.floor(Math.random() * focuses.length)];
   const nonce = Math.random().toString(36).slice(2, 8);
 
+  const factSheet = buildFactSheet(totals, goal);
+
   return `Du bist ein nüchterner Portfolio-Analyst (KEIN Finanzberater). Sprache: Deutsch. Antworte direkt, ohne Floskeln, mit konkreten Zahlen und Beträgen.
+
+${factSheet}
 
 PORTFOLIO HEUTE (${today}):
 ${positions}
@@ -1106,75 +1264,7 @@ const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberForm
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
 const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-const POSITION_STAMMDATEN = [
-  {
-    match: ['servicenow'],
-    depot: { custodian: 'Clearstream Nat.', custodyType: 'Girosammelverwahrung' },
-    lots: [
-      { date: '2026-05-14', shares: 10, costPrice: 75.08, value: 750.80 },
-      { date: '2026-05-07', shares: 10, costPrice: 76.38, value: 763.80 },
-      { date: '2026-01-29', shares: 11, costPrice: 96.65, value: 1063.15 },
-      { date: '2026-01-13', shares: 5, costPrice: 119.62, value: 598.10 },
-      { date: '2025-11-17', shares: 10, costPrice: 149.01, value: 1490.05 },
-      { date: '2025-10-17', shares: 5, costPrice: 149.01, value: 745.03 },
-      { date: '2025-10-10', shares: 5, costPrice: 149.01, value: 745.03 }
-    ]
-  },
-  {
-    match: ['solana'],
-    depot: { custodian: 'Tangany GmbH', custodyType: 'Kryptoverwahrung' },
-    lots: [
-      { date: '2026-03-07', shares: 12.641356, costPrice: 72.77, value: 919.94 },
-      { date: '2026-02-20', shares: 6.991442, costPrice: 71.46, value: 499.62 },
-      { date: '2026-02-15', shares: 5.3859, costPrice: 74.29, value: 400.13 },
-      { date: '2025-12-01', shares: 3.730334, costPrice: 107.28, value: 400.21 },
-      { date: '2025-11-27', shares: 2.030605, costPrice: 123.11, value: 249.98 },
-      { date: '2025-10-29', shares: 0.811707, costPrice: 169.93, value: 137.93 },
-      { date: '2025-10-19', shares: 2.433564, costPrice: 164.37, value: 400.00 },
-      { date: '2025-10-12', shares: 0.536032, costPrice: 170.32, value: 91.30 }
-    ]
-  },
-  {
-    match: ['ripple', 'xrp'],
-    depot: { custodian: 'Tangany GmbH', custodyType: 'Kryptoverwahrung' },
-    lots: [
-      { date: '2026-05-15', shares: 33, costPrice: 1.24, value: 40.80 },
-      { date: '2026-03-11', shares: 20.903115, costPrice: 1.20, value: 25.00 },
-      { date: '2026-02-20', shares: 743.191744, costPrice: 1.21, value: 900.76 },
-      { date: '2026-02-20', shares: 165.196009, costPrice: 1.21, value: 200.02 },
-      { date: '2026-02-16', shares: 235.342478, costPrice: 1.28, value: 300.07 },
-      { date: '2026-02-15', shares: 179.05955, costPrice: 1.24, value: 222.07 },
-      { date: '2026-02-06', shares: 16.095763, costPrice: 1.24, value: 19.99 },
-      { date: '2026-02-06', shares: 97.325668, costPrice: 1.13, value: 109.89 },
-      { date: '2026-01-21', shares: 230.143078, costPrice: 1.69, value: 389.99 },
-      { date: '2026-01-06', shares: 2.477298, costPrice: 2.02, value: 5.00 },
-      { date: '2025-12-04', shares: 32.75254, costPrice: 1.83, value: 59.98 },
-      { date: '2025-12-01', shares: 115.463975, costPrice: 1.73, value: 199.93 },
-      { date: '2025-11-27', shares: 67.750466, costPrice: 1.92, value: 129.99 },
-      { date: '2025-11-04', shares: 101.709327, costPrice: 1.97, value: 200.18 },
-      { date: '2025-10-06', shares: 77.412083, costPrice: 2.58, value: 200.03 },
-      { date: '2025-09-05', shares: 41.389238, costPrice: 2.42, value: 100.02 },
-      { date: '2025-08-26', shares: 39.404193, costPrice: 2.54, value: 100.04 }
-    ]
-  },
-  {
-    match: ['global x video games', 'esports'],
-    depot: { fundSharePct: 59.30, portfolioSharePct: 5.81, custodian: 'Clearstream Lux.', custodyType: 'Wertpapierrechnung' },
-    lots: [
-      { date: '2026-01-06', shares: 9, costPrice: 12.36, value: 111.28, upfrontTax: 0 },
-      { date: '2025-11-26', shares: 50, costPrice: 12.63, value: 631.30, upfrontTax: 0 }
-    ]
-  },
-  {
-    match: ['amundi core msci world'],
-    depot: { fundSharePct: 40.70, portfolioSharePct: 3.99, custodian: 'Clearstream Lux.', custodyType: 'Wertpapierrechnung' },
-    lots: [
-      { date: '2025-09-05', shares: 1, costPrice: 131.62, value: 131.62, upfrontTax: 0 },
-      { date: '2025-06-04', shares: 1, costPrice: 141.43, value: 141.43, upfrontTax: 0 },
-      { date: '2025-02-17', shares: 0.870678, costPrice: 141.44, value: 123.15, upfrontTax: 0 }
-    ]
-  }
-];
+const POSITION_STAMMDATEN = []; // Bewusst leer — historische Stammdaten/Lots stehen jetzt in pos.stammdaten und pos.purchaseLots (KV-Schema v2)
 
 function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
 function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
@@ -1358,6 +1448,41 @@ function getTotalDeposits() {
 function getTotalWithdrawals() {
   return (appData?.transactions || []).filter(t => t.assetType === 'cash' && t.txType === 'withdraw').reduce((s, t) => s + t.value, 0);
 }
+// Zeitgewichtete Rendite (Time-Weighted Return / TWR) auf Basis täglicher Werte und Cashflows
+// Erwartet `points` aus buildPortfolioHistory mit value + invested (täglich). Cashflows werden aus Tx-Tagen extrahiert.
+function computeTWR(points) {
+  if (!points || points.length < 2) return null;
+  // Cashflows je Datum: positive = Einzahlung/Buy (Geld kommt rein), Buys = +value
+  const cashflowsByDate = {};
+  (appData?.transactions || []).forEach(t => {
+    if (t.assetType === 'cash') return; // Einzahlungen sind Externals, nicht relevant für TWR der Investments
+    const k = t.date;
+    if (!k) return;
+    if (t.txType === 'buy') cashflowsByDate[k] = (cashflowsByDate[k] || 0) + (t.value + (t.fees || 0));
+    else if (t.txType === 'sell') cashflowsByDate[k] = (cashflowsByDate[k] || 0) - (t.value - (t.fees || 0));
+  });
+  // Segmentrendite: r_i = (V_i - CF_i) / V_{i-1}
+  let product = 1;
+  let validSegments = 0;
+  for (let i = 1; i < points.length; i++) {
+    const dateKey = points[i].date.toISOString().slice(0, 10);
+    const cf = cashflowsByDate[dateKey] || 0;
+    const prev = points[i - 1].value;
+    const cur = points[i].value;
+    if (prev <= 0) continue;
+    const segRet = (cur - cf) / prev;
+    if (!isFinite(segRet) || segRet <= 0) continue;
+    product *= segRet;
+    validSegments++;
+  }
+  if (validSegments === 0) return null;
+  // Annualisieren
+  const firstMs = points[0].date.getTime();
+  const lastMs = points[points.length - 1].date.getTime();
+  const years = (lastMs - firstMs) / (365.25 * 24 * 3600 * 1000);
+  if (years <= 0) return product - 1;
+  return Math.pow(product, 1 / years) - 1;
+}
 // Geldgewichtete Rendite (Money-Weighted Return / IRR) auf Basis aller Cashflows
 // Cashflows: Buys = negativ (Geld geht aus Cash raus), Sells = positiv. Aktueller Depotwert = final positive cashflow heute.
 function computeMWR(currentValue) {
@@ -1451,19 +1576,44 @@ function metalGramsAtDate(metal, date) {
   const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
   return lots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.grams) || 0) : sum, 0);
 }
-// Versucht historischen Preis pro Gramm zum Datum zu finden. Fallback: aktueller Spotpreis.
+// Versucht historischen Preis pro Gramm zum Datum zu finden.
+// Bei Gold: Daten aus PAXG-Historie (CoinGecko). Bei anderen Metallen: lineare Interpolation
+// zwischen Kauf-Lot-Preisen (date+value/grams) und aktuellem Spotpreis.
 function metalPriceAtDate(metal, date) {
-  const hist = appData?.metalHistory?.[metal.key];
-  if (!hist) return metalPrice(metal);
   const iso = date instanceof Date ? toIsoDate(date) : String(date);
-  // Sortierte Keys-Liste; nehme den letzten verfügbaren <= iso
-  const keys = Object.keys(hist).sort();
-  let matched = null;
-  for (const k of keys) { if (k <= iso) matched = k; else break; }
-  if (matched && hist[matched] > 0) return hist[matched];
-  // Falls iso vor erstem Eintrag liegt: nimm den ältesten verfügbaren
-  if (keys.length > 0 && hist[keys[0]] > 0) return hist[keys[0]];
-  return metalPrice(metal);
+  // 1) Echte Historie (Gold)
+  const hist = appData?.metalHistory?.[metal.key];
+  if (hist) {
+    const keys = Object.keys(hist).sort();
+    let matched = null;
+    for (const k of keys) { if (k <= iso) matched = k; else break; }
+    if (matched && hist[matched] > 0) return hist[matched];
+    if (keys.length > 0 && hist[keys[0]] > 0) return hist[keys[0]];
+  }
+  // 2) Interpolation aus Kauf-Lots: behandle Lot-Preis als Anker, Spot als heutigen Anker
+  const lots = metalLots(metal);
+  const spotPrice = metalPrice(metal);
+  if (lots.length > 0) {
+    // Anker: für jeden Lot ein {date, price/g}, plus heute mit aktuellem Spot
+    const anchors = lots
+      .filter(l => l.grams > 0 && l.value > 0)
+      .map(l => ({ date: l.date, price: l.value / l.grams }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    anchors.push({ date: toIsoDate(new Date()), price: spotPrice });
+    // Finde den passenden Anker oder interpoliere linear
+    let before = null, after = null;
+    for (const a of anchors) {
+      if (a.date <= iso) before = a;
+      else if (a.date > iso && !after) { after = a; break; }
+    }
+    if (before && after) {
+      const t = (new Date(iso).getTime() - new Date(before.date).getTime()) / (new Date(after.date).getTime() - new Date(before.date).getTime() || 1);
+      return before.price + (after.price - before.price) * t;
+    }
+    if (before) return before.price;
+    if (after) return after.price;
+  }
+  return spotPrice;
 }
 function metalsValueAtDate(date, isToday) {
   return METALS.reduce((sum, metal) => sum + metalGramsAtDate(metal, date) * (isToday ? metalPrice(metal) : metalPriceAtDate(metal, date)), 0);
@@ -2896,6 +3046,15 @@ function renderHistory() {
       mwrEl.className = pct >= 0 ? 'positive' : 'negative';
     } else { mwrEl.textContent = '—'; }
   }
+  const twrEl = document.getElementById('historyReturnTwr');
+  if (twrEl) {
+    const twr = computeTWR(points);
+    if (twr != null && isFinite(twr)) {
+      const pct = twr * 100;
+      twrEl.textContent = `${pct >= 0 ? '+' : ''}${fmtNum(pct, 1)} % p.a.`;
+      twrEl.className = pct >= 0 ? 'positive' : 'negative';
+    } else { twrEl.textContent = '—'; }
+  }
   // Cash-Historie-Hinweis einblenden, wenn Cash > 0 und (noch) keine Cash-Transaktionen vorhanden
   const cashNoteEl = document.getElementById('cashHistoryNote');
   if (cashNoteEl) {
@@ -3010,8 +3169,56 @@ function renderAnalysisLocal(totals, goal) {
 }
 
 let editingId = null;
-function openEditModal(posId) { const pos = appData.positions.find(p => p.id === posId); if (!pos) return; editingId = posId; document.getElementById('editTitle').textContent = pos.name; const live = currentPrices[posId] || { price: pos.costPrice }; document.getElementById('editPrice').value = live.price.toFixed(2); document.getElementById('editShares').value = pos.shares; document.getElementById('editCost').value = pos.costPrice; const riskSel = document.getElementById('editRisk'); if (riskSel) riskSel.value = pos.risk || ''; document.getElementById('editModal').classList.add('active'); }
-async function saveEditModal() { if (!editingId) return; const pos = appData.positions.find(p => p.id === editingId); if (!pos) return; const newPrice = parseFloat(document.getElementById('editPrice').value); const newShares = parseFloat(document.getElementById('editShares').value); const newCost = parseFloat(document.getElementById('editCost').value); const newRisk = document.getElementById('editRisk')?.value || ''; if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; } pos.shares = newShares; pos.costPrice = newCost; if (!pos.cgId) pos.manualPrice = newPrice; if (newRisk) pos.risk = newRisk; else delete pos.risk; currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId }; closeEditModal(); await savePositionsToKV(); await refreshUI(); }
+function openEditModal(posId) {
+  const pos = appData.positions.find(p => p.id === posId);
+  if (!pos) return;
+  editingId = posId;
+  document.getElementById('editTitle').textContent = pos.name;
+  const live = currentPrices[posId] || { price: pos.costPrice };
+  document.getElementById('editPrice').value = live.price.toFixed(2);
+  document.getElementById('editShares').value = pos.shares;
+  document.getElementById('editCost').value = pos.costPrice;
+  const riskSel = document.getElementById('editRisk');
+  if (riskSel) riskSel.value = pos.risk || '';
+  // Stammdaten-Felder vorausfüllen
+  const sd = pos.stammdaten || {};
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  setVal('editCustodian', sd.custodian);
+  setVal('editCustodyType', sd.custodyType);
+  setVal('editIsin', sd.isin);
+  setVal('editWkn', sd.wkn);
+  setVal('editLand', sd.land);
+  setVal('editSektor', sd.sektor);
+  document.getElementById('editModal').classList.add('active');
+}
+async function saveEditModal() {
+  if (!editingId) return;
+  const pos = appData.positions.find(p => p.id === editingId);
+  if (!pos) return;
+  const newPrice = parseFloat(document.getElementById('editPrice').value);
+  const newShares = parseFloat(document.getElementById('editShares').value);
+  const newCost = parseFloat(document.getElementById('editCost').value);
+  const newRisk = document.getElementById('editRisk')?.value || '';
+  if (isNaN(newPrice) || isNaN(newShares) || isNaN(newCost)) { alert('Bitte gültige Zahlen eingeben.'); return; }
+  pos.shares = newShares;
+  pos.costPrice = newCost;
+  if (!pos.cgId) pos.manualPrice = newPrice;
+  if (newRisk) pos.risk = newRisk; else delete pos.risk;
+  // Stammdaten übernehmen
+  const getVal = id => (document.getElementById(id)?.value || '').trim();
+  const stammdaten = { ...(pos.stammdaten || {}) };
+  const fields = { custodian: 'editCustodian', custodyType: 'editCustodyType', isin: 'editIsin', wkn: 'editWkn', land: 'editLand', sektor: 'editSektor' };
+  Object.entries(fields).forEach(([key, id]) => {
+    const v = getVal(id);
+    if (v) stammdaten[key] = v; else delete stammdaten[key];
+  });
+  if (Object.keys(stammdaten).length > 0) pos.stammdaten = stammdaten;
+  else delete pos.stammdaten;
+  currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId };
+  closeEditModal();
+  await savePositionsToKV();
+  await refreshUI();
+}
 function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
 
 function renderSavingsSim(totals, goal) {
@@ -3231,6 +3438,32 @@ function wireEvents() {
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
   document.getElementById('chatWipeBtn').addEventListener('click', chatWipeMemory);
+  // Positionen-Ansichts-Toggle (Details / Kompakt)
+  const POSVIEW_KEY = 'portfolio_positions_view';
+  const applyPosView = view => {
+    const container = document.getElementById('positions');
+    if (!container) return;
+    container.classList.toggle('compact', view === 'compact');
+    document.querySelectorAll('.positions-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    try { localStorage.setItem(POSVIEW_KEY, view); } catch (e) {}
+  };
+  document.querySelectorAll('.positions-toggle-btn').forEach(b => b.addEventListener('click', () => applyPosView(b.dataset.view)));
+  try {
+    const savedView = localStorage.getItem(POSVIEW_KEY);
+    if (savedView === 'compact') applyPosView('compact');
+  } catch (e) {}
+  // Mini-Navigation
+  document.querySelectorAll('.mini-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.jump);
+      if (!target) return;
+      // Für details-Element: öffnen
+      const det = target.closest && target.closest('details');
+      if (det && !det.open) det.open = true;
+      const top = target.getBoundingClientRect().top + window.scrollY - 60;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+  });
   // Backup / Export / Import
   document.getElementById('backupJsonBtn').addEventListener('click', backupJson);
   document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
@@ -3279,6 +3512,10 @@ function wireEvents() {
   });
   // Screenshot-Modal
   document.getElementById('ssFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) handleScreenshotFile(f); });
+  // Screenshot-Vorschau-Modal
+  document.getElementById('sspCancel').addEventListener('click', closeScreenshotPreviewModal);
+  document.getElementById('sspSave').addEventListener('click', saveScreenshotPreview);
+  document.getElementById('ssPreviewModal').addEventListener('click', e => { if (e.target.id === 'ssPreviewModal') closeScreenshotPreviewModal(); });
   document.getElementById('ssCancel').addEventListener('click', closeScreenshotModal);
   document.getElementById('ssAnalyze').addEventListener('click', analyzeScreenshot);
   document.getElementById('screenshotModal').addEventListener('click', e => { if (e.target.id === 'screenshotModal') closeScreenshotModal(); });
@@ -3419,7 +3656,15 @@ function buildChatSystemPrompt() {
     return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${pos.shares} Stk × ${live.price.toFixed(2)} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
   }).join('\n');
   const goal = appData.goal || { year: 2026, amount: 15000 };
+  // Faktenblatt + abgeleitete Goal-Daten für Tiefe
+  const today = new Date();
+  const endDate = new Date(goal.year, 11, 31);
+  const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
+  const goalEnriched = { ...goal, monthsToGoal, gap: goal.amount - totalCur, monthlyNeeded: (goal.amount - totalCur) / monthsToGoal, requiredReturnPct: totalCur > 0 ? ((goal.amount / totalCur) - 1) * 100 : 0 };
+  const factSheet = buildFactSheet({ totalCur, totalCost, totalPnl, totalPnlPct }, goalEnriched);
   return `Du bist ein intelligenter KI-Chat fuer dieses Portfolio und fuer komplexe Fragen des Nutzers. Sprache: Deutsch.
+
+${factSheet}
 
 Arbeitsweise:
 - Antworte nicht kuenstlich knapp. Wenn die Frage komplex ist, gib eine strukturierte, gruendlich durchdachte Antwort.
@@ -3774,12 +4019,125 @@ NUR JSON, sonst nichts.`;
     const data = JSON.parse(jsonMatch[0]);
     if (!data.name || !data.shares || !data.costPrice) throw new Error('Wichtige Felder fehlen (Name/Stück/Einstand) — bitte manuell ergänzen');
     closeScreenshotModal();
-    openAddPositionModal(data);
+    // Neuer Flow: Vorschau-Modal mit Konflikterkennung statt direkt openAddPositionModal
+    openScreenshotPreviewModal(data);
   } catch (e) {
     status.classList.add('error');
     status.textContent = 'Fehler: ' + e.message;
     btn.disabled = false;
   }
+}
+
+// ===== SCREENSHOT-IMPORT — Vorschau + Konflikterkennung + Übernahme als Transaktion =====
+let ssPreviewMatchedPosId = null;
+function findMatchingPosition(name, symbol) {
+  if (!Array.isArray(appData?.positions)) return null;
+  const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const nName = normalize(name);
+  const nSym = normalize(symbol);
+  // 1) Exakter Symbol-Match (wenn vorhanden)
+  if (nSym) {
+    const bySym = appData.positions.find(p => normalize(p.symbol) === nSym);
+    if (bySym) return bySym;
+  }
+  // 2) Name-Substring-Match
+  return appData.positions.find(p => {
+    const pn = normalize(p.name);
+    return pn === nName || pn.includes(nName) || nName.includes(pn);
+  });
+}
+function openScreenshotPreviewModal(data) {
+  ssPreviewMatchedPosId = null;
+  document.getElementById('sspName').value = data.name || '';
+  document.getElementById('sspSymbol').value = data.symbol || '';
+  document.getElementById('sspType').value = data.type || 'Aktie';
+  document.getElementById('sspShares').value = data.shares != null ? data.shares : '';
+  document.getElementById('sspCost').value = data.costPrice != null ? data.costPrice : '';
+  document.getElementById('sspPrice').value = data.manualPrice != null ? data.manualPrice : '';
+  document.getElementById('sspDate').value = new Date().toISOString().slice(0, 10);
+  // Konflikterkennung
+  const conflictsEl = document.getElementById('ssConflicts');
+  const existingWrap = document.getElementById('sspExistingWrap');
+  const items = [];
+  const matched = findMatchingPosition(data.name, data.symbol);
+  if (matched) {
+    ssPreviewMatchedPosId = matched.id;
+    items.push({ kind: 'warn', text: `Position <strong>${escapeHtml(matched.name)}</strong> existiert bereits (${matched.shares} Stk @ ${fmtNum(matched.costPrice)} €). Standard: als Nachkauf-Transaktion hinzufügen.` });
+    existingWrap.style.display = '';
+    document.getElementById('sspMergeMode').value = 'addTx';
+  } else {
+    existingWrap.style.display = 'none';
+  }
+  // Plausibilitäts-Checks
+  if (data.manualPrice && data.costPrice) {
+    const diffPct = ((data.manualPrice - data.costPrice) / data.costPrice) * 100;
+    if (Math.abs(diffPct) > 80) {
+      items.push({ kind: 'warn', text: `Großer Unterschied zwischen Kurs (${fmtNum(data.manualPrice)} €) und Einstand (${fmtNum(data.costPrice)} €) — ${fmtNum(diffPct, 0)} %. Bitte verifizieren.` });
+    }
+  }
+  if (data.shares && data.shares > 100000) {
+    items.push({ kind: 'warn', text: `Sehr hohe Stückzahl erkannt (${data.shares}). Bitte verifizieren.` });
+  }
+  if (data.costPrice && data.costPrice > 100000) {
+    items.push({ kind: 'warn', text: `Sehr hoher Einstandspreis (${fmtNum(data.costPrice)} €). Bitte verifizieren.` });
+  }
+  if (items.length === 0) {
+    items.push({ kind: 'info', text: 'Alle Werte plausibel. Tap "Übernehmen" zum Speichern.' });
+  }
+  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
+  document.getElementById('ssPreviewModal').classList.add('active');
+}
+function closeScreenshotPreviewModal() {
+  document.getElementById('ssPreviewModal').classList.remove('active');
+  ssPreviewMatchedPosId = null;
+}
+async function saveScreenshotPreview() {
+  const name = document.getElementById('sspName').value.trim();
+  const symbol = document.getElementById('sspSymbol').value.trim();
+  const type = document.getElementById('sspType').value;
+  const shares = parseFloat(document.getElementById('sspShares').value);
+  const costPrice = parseFloat(document.getElementById('sspCost').value);
+  const priceStr = document.getElementById('sspPrice').value;
+  const manualPrice = priceStr ? parseFloat(priceStr) : costPrice;
+  const date = document.getElementById('sspDate').value || new Date().toISOString().slice(0, 10);
+  const mergeMode = ssPreviewMatchedPosId ? document.getElementById('sspMergeMode').value : 'newPos';
+  if (!name || !isFinite(shares) || !isFinite(costPrice) || shares <= 0 || costPrice <= 0) {
+    alert('Bitte Name, Stück und Einstand korrekt prüfen.');
+    return;
+  }
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  if (ssPreviewMatchedPosId && mergeMode === 'addTx') {
+    // Nachkauf zu existierender Position: avg-Cost neu berechnen, Tx anlegen
+    const pos = appData.positions.find(p => p.id === ssPreviewMatchedPosId);
+    if (!pos) { alert('Position nicht mehr gefunden.'); return; }
+    const newTotalShares = pos.shares + shares;
+    const newCostBasis = pos.costPrice * pos.shares + costPrice * shares;
+    pos.shares = newTotalShares;
+    pos.costPrice = newCostBasis / newTotalShares;
+    if (!pos.cgId) pos.manualPrice = manualPrice;
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: pos.id, assetType: assetTypeOf(pos),
+      txType: 'buy', quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
+      note: 'Per Screenshot-Import'
+    });
+  } else {
+    // Neue Position + Tx
+    const id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const newPos = { id, name, symbol, type, shares, costPrice };
+    if (type !== 'Crypto') newPos.manualPrice = manualPrice;
+    appData.positions.push(newPos);
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: id, assetType: assetTypeOf(newPos),
+      txType: 'buy', quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
+      note: 'Per Screenshot-Import (neue Position)'
+    });
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeScreenshotPreviewModal();
+  await savePositionsToKV();
+  await fetchCryptoPrices();
+  await fetchAllWeeklyCharts();
+  await refreshUI();
 }
 
 function bootstrap() { initTheme(); wireEvents(); showScreen('gateScreen'); }
