@@ -248,6 +248,8 @@
   .realized-line .lbl { color: var(--text-tertiary); }
   .pos-action-btn.sell { color: #fbbf24; }
   .pos-action-btn.sell:hover { background: rgba(245,158,11,0.12); }
+  .pos-action-btn.buy { color: var(--positive); }
+  .pos-action-btn.buy:hover { background: rgba(34,197,94,0.12); }
   .mini-nav { position: sticky; top: 0; z-index: 50; background: var(--bg-page); padding: 8px 4px; margin: 0 -4px 8px -4px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--border-light); scrollbar-width: none; }
   .mini-nav::-webkit-scrollbar { display: none; }
   .mini-nav-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
@@ -1028,6 +1030,7 @@
     <div class="modal-field"><label>Einstandspreis € pro Stück</label><input type="number" step="0.01" class="auth-input" id="apCost" placeholder="z.B. 145.50"></div>
     <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
     <div class="modal-field" id="apCgIdField" style="display:none;"><label>CoinGecko-ID (für Live-Krypto)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
+    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="apDate"><span style="font-size:10px;color:var(--text-muted);">Für Käufe in der Vergangenheit ein älteres Datum wählen.</span></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
   </div>
 </div>
@@ -1123,6 +1126,23 @@
     </div>
     <div class="modal-field"><label>Geplante Positionsgröße (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlSize" placeholder="z.B. 1000"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="wlCancel">Abbrechen</button><button class="auth-btn" id="wlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="buyMoreModal">
+  <div class="modal">
+    <h3 id="buyMoreTitle">Nachkauf erfassen</h3>
+    <p style="font-size:11px; color:var(--text-secondary); margin:0 0 10px 0;" id="buyMoreSubtitle">—</p>
+    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="bmDate"><span style="font-size:10px;color:var(--text-muted);">Auch Käufe in der Vergangenheit erlaubt — der Depot-Verlauf wird automatisch angepasst.</span></div>
+    <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" min="0" class="auth-input" id="bmShares" placeholder="z.B. 5"></div>
+    <div class="modal-field"><label>Kaufpreis pro Stück (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="bmPrice" placeholder="z.B. 145.50"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="bmFees" placeholder="z.B. 1.50"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="bmNote" placeholder="z.B. Nachkauf nach Kursrücksetzer"></div>
+    <div class="realized-section" id="bmPreview" style="display:none;background:rgba(34,197,94,0.06);border-left-color:var(--positive);">
+      <div class="title">Vorschau neuer Ø-Einstand</div>
+      <div id="bmPreviewBody"></div>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="bmCancel">Abbrechen</button><button class="auth-btn" id="bmSave">Nachkauf erfassen</button></div>
   </div>
 </div>
 
@@ -1671,6 +1691,21 @@ function formatDateAT(iso) {
   return y && m && d ? `${d}.${m}.${y}` : String(iso);
 }
 function sharesAtDate(pos, date) {
+  // Wenn Transaktionen vorhanden, primär aus Tx-Modell rechnen (berücksichtigt Käufe + Verkäufe + Adjust in der Vergangenheit)
+  if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
+    const cutoff = date instanceof Date ? date.toISOString().slice(0, 10) : String(date);
+    const txs = appData.transactions.filter(t => t.assetId === pos.id && (t.date || '') <= cutoff);
+    if (txs.length > 0) {
+      let shares = 0;
+      txs.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).forEach(t => {
+        if (t.txType === 'buy') shares += Number(t.quantity) || 0;
+        else if (t.txType === 'sell') shares -= Number(t.quantity) || 0;
+        else if (t.txType === 'adjust') shares = Number(t.quantity) || 0;
+      });
+      return Math.max(0, shares);
+    }
+  }
+  // Fallback: alte Lot-Daten
   if (!pos.purchaseLots || !pos.purchaseLots.length) return pos.shares;
   const cutoff = date instanceof Date ? date.toISOString().slice(0, 10) : String(date);
   return pos.purchaseLots.reduce((sum, lot) => lot.date <= cutoff ? sum + (Number(lot.shares) || 0) : sum, 0);
@@ -1725,6 +1760,21 @@ function metalValue(metal) { return metalGrams(metal) * metalPrice(metal); }
 function metalsTotalValue() { return METALS.reduce((sum, metal) => sum + metalValue(metal), 0); }
 function metalsTotalCost() { return METALS.reduce((sum, metal) => sum + (hasMetalLots(metal) ? metalCost(metal) : metalValue(metal)), 0); }
 function metalGramsAtDate(metal, date) {
+  // Primär aus Tx-Modell (berücksichtigt nachträgliche/historische Käufe)
+  const assetId = 'metal_' + metal.key;
+  if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
+    const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
+    const txs = appData.transactions.filter(t => t.assetId === assetId && (t.date || '') <= cutoff);
+    if (txs.length > 0) {
+      let grams = 0;
+      txs.forEach(t => {
+        if (t.txType === 'buy') grams += Number(t.quantity) || 0;
+        else if (t.txType === 'sell') grams -= Number(t.quantity) || 0;
+      });
+      return Math.max(0, grams);
+    }
+  }
+  // Fallback: alte metalLots-Daten
   const lots = metalLots(metal);
   if (!lots.length) return metalGrams(metal);
   const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
@@ -2349,6 +2399,85 @@ function renderJournal() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ===== NACHKÄUFE (auch in der Vergangenheit) =====
+let buyingMorePosId = null;
+function openBuyMoreModal(posId) {
+  const pos = appData.positions.find(p => p.id === posId);
+  if (!pos) return;
+  buyingMorePosId = posId;
+  document.getElementById('buyMoreTitle').textContent = 'Nachkauf: ' + pos.name;
+  const live = currentPrices[posId] || { price: pos.costPrice };
+  document.getElementById('buyMoreSubtitle').textContent = `Aktuell ${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)} Stk @ Ø ${fmtNum(pos.costPrice)} € · letzter Kurs ${fmtNum(live.price)} €`;
+  document.getElementById('bmDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('bmShares').value = '';
+  document.getElementById('bmPrice').value = live.price.toFixed(2);
+  document.getElementById('bmFees').value = '';
+  document.getElementById('bmNote').value = '';
+  document.getElementById('bmPreview').style.display = 'none';
+  document.getElementById('buyMoreModal').classList.add('active');
+  setTimeout(() => document.getElementById('bmShares').focus(), 50);
+}
+function closeBuyMoreModal() { document.getElementById('buyMoreModal').classList.remove('active'); buyingMorePosId = null; }
+function updateBuyMorePreview() {
+  if (!buyingMorePosId) return;
+  const pos = appData.positions.find(p => p.id === buyingMorePosId);
+  if (!pos) return;
+  const shares = parseFloat(document.getElementById('bmShares').value) || 0;
+  const price = parseFloat(document.getElementById('bmPrice').value) || 0;
+  const fees = parseFloat(document.getElementById('bmFees').value) || 0;
+  const preview = document.getElementById('bmPreview');
+  const body = document.getElementById('bmPreviewBody');
+  if (shares <= 0 || price <= 0) { preview.style.display = 'none'; return; }
+  const newShares = pos.shares + shares;
+  const newCostBasis = pos.costPrice * pos.shares + price * shares + fees;
+  const newAvg = newShares > 0 ? newCostBasis / newShares : 0;
+  body.innerHTML = `
+    <div class="realized-line"><span class="lbl">Bestand neu</span><span>${fmtNum(newShares, newShares % 1 === 0 ? 0 : 4)} Stk</span></div>
+    <div class="realized-line"><span class="lbl">Ø Einstand neu</span><span>${fmtNum(newAvg)} € (vorher ${fmtNum(pos.costPrice)} €)</span></div>
+    <div class="realized-line"><span class="lbl">Kaufwert</span><span>${fmt.format(shares * price + fees)}</span></div>
+  `;
+  preview.style.display = '';
+}
+async function saveBuyMoreModal() {
+  if (!buyingMorePosId) return;
+  const pos = appData.positions.find(p => p.id === buyingMorePosId);
+  if (!pos) return;
+  const date = document.getElementById('bmDate').value;
+  const shares = parseFloat(document.getElementById('bmShares').value);
+  const price = parseFloat(document.getElementById('bmPrice').value);
+  const fees = parseFloat(document.getElementById('bmFees').value || '0');
+  const note = document.getElementById('bmNote').value.trim();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
+  if (!isFinite(shares) || shares <= 0) { alert('Bitte gültige Stückzahl.'); return; }
+  if (!isFinite(price) || price <= 0) { alert('Bitte gültigen Kaufpreis.'); return; }
+  const kaufwert = shares * price;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  // Buy-Tx anlegen
+  appData.transactions.push({
+    id: makeTxId(), date, assetId: pos.id, assetType: assetTypeOf(pos),
+    txType: 'buy', quantity: shares, price, value: kaufwert, fees: isFinite(fees) ? fees : 0,
+    note: note || 'Nachkauf'
+  });
+  // Position aktualisieren: Avg-Cost neu berechnen
+  const newShares = pos.shares + shares;
+  const newCostBasis = pos.costPrice * pos.shares + price * shares + (isFinite(fees) ? fees : 0);
+  pos.shares = newShares;
+  pos.costPrice = newShares > 0 ? newCostBasis / newShares : 0;
+  // Cash abbuchen, falls Cash-Tx-Modus aktiv
+  const hasCashTx = appData.transactions.some(t => t.assetType === 'cash');
+  if (hasCashTx) {
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: 'withdraw',
+      quantity: kaufwert + (isFinite(fees) ? fees : 0), price: 1, value: kaufwert + (isFinite(fees) ? fees : 0), fees: 0,
+      note: 'Nachkauf ' + pos.name
+    });
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeBuyMoreModal();
+  await savePositionsToKV();
+  await refreshUI();
 }
 
 // ===== VERKÄUFE / REALISIERTE G/V =====
@@ -3100,6 +3229,10 @@ function buildCard(pos, totals, alloc) {
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           <span>Bearbeiten</span>
         </button>
+        <button class="pos-action-btn buy" data-buy-id="${pos.id}">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Nachkauf</span>
+        </button>
         <button class="pos-action-btn sell" data-sell-id="${pos.id}">
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
           <span>Verkauf</span>
@@ -3584,6 +3717,24 @@ function priceForHistoryDate(pos, date, isToday) {
 function purchaseEventsForDate(date) {
   const iso = toIsoDate(date);
   const events = [];
+  // Primär aus Transaktionsmodell (Schema v2) — zeigt Buys, Sells und Cash-Bewegungen
+  if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
+    const dayTxs = appData.transactions.filter(t => t.date === iso);
+    dayTxs.forEach(t => {
+      const pos = appData.positions.find(p => p.id === t.assetId);
+      const metalKey = t.assetId && t.assetId.startsWith('metal_') ? t.assetId.slice(6) : null;
+      const metal = metalKey ? METALS.find(m => m.key === metalKey) : null;
+      const name = pos ? pos.name : (metal ? metal.name : (t.assetId === 'cash' ? 'Cash' : t.assetId));
+      const unit = metal ? 'g' : 'Stk';
+      const qty = fmtNum(t.quantity, t.quantity % 1 ? (metal ? 3 : 6) : 0);
+      if (t.txType === 'buy') events.push(`Kauf: ${name} · ${qty} ${unit} · ${fmt.format(t.value)}`);
+      else if (t.txType === 'sell') events.push(`Verkauf: ${name} · ${qty} ${unit} · ${fmt.format(t.value)}`);
+      else if (t.txType === 'deposit' && t.assetType === 'cash') events.push(`Einzahlung: ${fmt.format(t.value)}`);
+      else if (t.txType === 'withdraw' && t.assetType === 'cash') events.push(`Auszahlung: ${fmt.format(t.value)}`);
+    });
+    if (events.length > 0) return events;
+  }
+  // Fallback auf alte Lots
   appData.positions.forEach(pos => {
     (pos.purchaseLots || []).forEach(lot => {
       if (lot.date === iso) events.push(`Kauf: ${pos.name} · ${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)} Stk · ${fmt.format(lot.value || lot.shares * lot.costPrice)}`);
@@ -3991,6 +4142,8 @@ function wireEvents() {
     if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
     const editBtn = e.target.closest('[data-edit-id]');
     if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.editId); return; }
+    const buyBtn = e.target.closest('[data-buy-id]');
+    if (buyBtn) { e.stopPropagation(); openBuyMoreModal(buyBtn.dataset.buyId); return; }
     const sellBtn = e.target.closest('[data-sell-id]');
     if (sellBtn) { e.stopPropagation(); openSellModal(sellBtn.dataset.sellId); return; }
     const removeBtn = e.target.closest('[data-remove-id]');
@@ -4141,6 +4294,14 @@ function wireEvents() {
   document.getElementById('watchlistList').addEventListener('click', e => {
     const edit = e.target.closest('[data-watch-edit]'); if (edit) { openWatchModal(edit.dataset.watchEdit); return; }
     const del = e.target.closest('[data-watch-del]'); if (del) { deleteWatchEntry(del.dataset.watchDel); return; }
+  });
+  // Nachkauf-Modal
+  document.getElementById('bmCancel').addEventListener('click', closeBuyMoreModal);
+  document.getElementById('bmSave').addEventListener('click', saveBuyMoreModal);
+  document.getElementById('buyMoreModal').addEventListener('click', e => { if (e.target.id === 'buyMoreModal') closeBuyMoreModal(); });
+  ['bmShares', 'bmPrice', 'bmFees'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateBuyMorePreview);
   });
   // Verkauf-Modal
   document.getElementById('sellCancel').addEventListener('click', closeSellModal);
@@ -4579,6 +4740,8 @@ function openAddPositionModal(prefill) {
   document.getElementById('apCost').value = prefill.costPrice != null ? prefill.costPrice : '';
   document.getElementById('apPrice').value = prefill.manualPrice != null ? prefill.manualPrice : '';
   document.getElementById('apCgId').value = prefill.cgId || '';
+  const dateField = document.getElementById('apDate');
+  if (dateField) dateField.value = prefill.date || new Date().toISOString().slice(0, 10);
   updateAddPosTypeFields();
   document.getElementById('addPosModal').classList.add('active');
 }
@@ -4596,6 +4759,8 @@ async function saveNewPosition() {
   const priceStr = document.getElementById('apPrice').value;
   const manualPrice = priceStr ? parseFloat(priceStr) : costPrice;
   const cgId = document.getElementById('apCgId').value.trim();
+  const dateInput = document.getElementById('apDate').value;
+  const buyDate = (dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) ? dateInput : new Date().toISOString().slice(0, 10);
   if (!name || isNaN(shares) || isNaN(costPrice) || shares <= 0 || costPrice <= 0) {
     alert('Bitte Name, Stück und Einstandspreis korrekt ausfüllen.');
     return;
@@ -4605,14 +4770,15 @@ async function saveNewPosition() {
   if (type === 'Crypto' && cgId) newPos.cgId = cgId;
   else newPos.manualPrice = manualPrice;
   appData.positions.push(newPos);
-  // Transaktion für die neue Position erzeugen (Schema v2)
+  // Transaktion für die neue Position erzeugen (Schema v2) — mit gewähltem Datum
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
   appData.transactions.push({
-    id: makeTxId(), date: new Date().toISOString().slice(0, 10),
+    id: makeTxId(), date: buyDate,
     assetId: id, assetType: assetTypeOf(newPos), txType: 'buy',
     quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
     note: 'Manuell hinzugefügt'
   });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeAddPositionModal();
   await savePositionsToKV();
   await fetchCryptoPrices();
