@@ -342,11 +342,11 @@
   .chat-clear.chat-wipe { color: var(--negative); border-color: var(--negative); }
   .chat-clear.chat-wipe:hover { background: var(--error-bg); }
   .chat-memory-status { font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; padding: 4px 8px; background: var(--bg-secondary); border-radius: 6px; font-style: italic; }
-  .chat-messages { background: var(--bg-page); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; min-height: 220px; max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+  .chat-messages { background: var(--bg-page); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; min-height: 220px; overflow-y: visible; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
   .chat-msg { max-width: 82%; display: flex; flex-direction: column; }
   .chat-msg-ai { align-self: flex-start; }
   .chat-msg-user { align-self: flex-end; align-items: flex-end; }
-  .chat-bubble { padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; word-wrap: break-word; overflow-wrap: anywhere; }
+  .chat-bubble { padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; word-wrap: break-word; overflow-wrap: anywhere; white-space: normal; }
   .chat-msg-ai .chat-bubble { background: var(--bg-track); color: var(--text-primary); border-bottom-left-radius: 2px; }
   .chat-msg-user .chat-bubble { background: var(--positive-strong); color: white; border-bottom-right-radius: 2px; }
   .chat-bubble strong { font-weight: 600; }
@@ -3132,7 +3132,18 @@ async function fetchCryptoPrices() {
     const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`);
     if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
     const data = await res.json();
-    appData.positions.forEach(pos => { if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true }; });
+    const updatedAt = new Date().toISOString();
+    appData.positions.forEach(pos => {
+      if (pos.cgId && data[pos.cgId]) {
+        currentPrices[pos.id] = {
+          price: data[pos.cgId].eur,
+          changePct: data[pos.cgId].eur_24h_change,
+          live: true,
+          source: 'CoinGecko',
+          updatedAt
+        };
+      }
+    });
   } catch (e) { console.warn('Crypto fetch failed:', e); }
 }
 
@@ -3311,6 +3322,26 @@ function reRenderAllCharts() {
   Object.entries(chartRegistry).forEach(([id, entry]) => { if (entry?.points) renderChart(id, entry.points, entry.valueKey, entry.opts); });
 }
 
+function getPositionTodayChange(pos, live) {
+  const pct = Number(live?.changePct);
+  const price = Number(live?.price);
+  const shares = Number(pos?.shares || 0);
+  if (!Number.isFinite(pct) || !Number.isFinite(price) || price <= 0 || shares <= 0 || pct <= -99.9) return null;
+  const value = price * shares;
+  const prevValue = value / (1 + pct / 100);
+  const eur = value - prevValue;
+  return { eur, pct, value };
+}
+
+function formatLiveUpdatedAt(live) {
+  if (!live?.live) return 'manuell';
+  const d = live.updatedAt ? new Date(live.updatedAt) : null;
+  if (d && !isNaN(d.getTime())) {
+    return `${d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })}, ${d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  return 'gerade geladen';
+}
+
 function buildCard(pos, totals, alloc) {
   const wrap = document.createElement('div');
   wrap.className = 'card';
@@ -3326,6 +3357,10 @@ function buildCard(pos, totals, alloc) {
   const isClump = pctPortfolio > 30;
   const risk = deriveRisk(pos);
   const liveBadge = live.live ? `<span class="risk-badge risk-low">LIVE</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
+  const todayMove = getPositionTodayChange(pos, live);
+  const todayClass = todayMove && todayMove.eur >= 0 ? 'positive' : 'negative';
+  const todayText = todayMove ? `${todayMove.eur >= 0 ? '+' : ''}${fmt.format(todayMove.eur)} (${todayMove.pct >= 0 ? '+' : ''}${fmtNum(todayMove.pct, 2)} %)` : '—';
+  const updatedText = `${live.source ? escapeHtml(live.source) + ' · ' : ''}${escapeHtml(formatLiveUpdatedAt(live))}`;
   const portfolioInfo = isClump ? `<span class="pct-portfolio warn">${fmtNum(pctPortfolio, 0)} % Portfolio · Klumpenrisiko</span>` : `<span class="pct-portfolio">${fmtNum(pctPortfolio, 0)} % Portfolio</span>`;
   const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
   const rec = getRecommendation(pos, totals, alloc);
@@ -3356,6 +3391,8 @@ function buildCard(pos, totals, alloc) {
         <div class="price-grid-cell"><div class="lbl">Aktuell</div><div class="val">${fmtNum(live.price)} €</div></div>
         <div class="price-grid-cell"><div class="lbl">Abstand</div><div class="val ${pnlClass}">${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 1)} %</div></div>
         <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
+        <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
       </div>
       ${stammdatenBlock}
       <div class="chart-controls-row">
@@ -4207,7 +4244,13 @@ async function saveEditModal() {
   });
   if (Object.keys(stammdaten).length > 0) pos.stammdaten = stammdaten;
   else delete pos.stammdaten;
-  currentPrices[editingId] = { price: newPrice, changePct: currentPrices[editingId]?.changePct ?? 0, live: !!pos.cgId };
+  currentPrices[editingId] = {
+    price: newPrice,
+    changePct: currentPrices[editingId]?.changePct ?? 0,
+    live: !!pos.cgId,
+    source: currentPrices[editingId]?.source || (pos.cgId ? 'CoinGecko' : 'manuell'),
+    updatedAt: currentPrices[editingId]?.updatedAt || new Date().toISOString()
+  };
   closeEditModal();
   await savePositionsToKV();
   await refreshUI();
@@ -4796,7 +4839,7 @@ async function chatSend() {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ messages, system })
+      body: JSON.stringify({ messages, system, maxTokens: 4000 })
     });
     chatRemoveTyping();
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
