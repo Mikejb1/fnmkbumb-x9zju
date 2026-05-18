@@ -41,6 +41,7 @@
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-page); color: var(--text-primary); font-size: 15px; line-height: 1.5; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
   .screen { display: none; padding: 16px; max-width: 720px; margin: 0 auto; }
   .screen.active { display: block; }
+  #appScreen.active { display: flex; flex-direction: column; }
   #gateScreen { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 24px; }
   #gateScreen.active { display: flex; }
   .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; }
@@ -60,8 +61,41 @@
   .header .subtitle { font-size: 11px; color: var(--text-tertiary); }
   .header-actions { display: flex; gap: 8px; align-items: center; }
   .icon-btn { background: transparent; border: 1px solid var(--border); border-radius: 999px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); padding: 0; transition: background 0.2s, transform 0.1s; }
+  .icon-btn.active { border-color: var(--positive); color: var(--positive); background: rgba(34,197,94,0.1); }
   .icon-btn:active { transform: scale(0.93); }
   .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+  .layout-hidden { display: none !important; }
+  .layout-modal { max-width: 520px; }
+  .layout-modal p { margin: 0; }
+  .layout-note { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.18); border-radius: 8px; padding: 9px 10px; color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin-bottom: 12px; }
+  .layout-editor-block { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px; margin-top: 10px; }
+  .layout-editor-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .layout-editor-title { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .layout-editor-sub { font-size: 10px; color: var(--text-tertiary); }
+  .layout-list { display: flex; flex-direction: column; gap: 6px; }
+  .layout-row { display: grid; grid-template-columns: 24px 1fr auto auto; gap: 8px; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 9px; }
+  .layout-row.dragging { opacity: 0.45; border-color: var(--positive); }
+  .layout-grip { color: var(--text-muted); font-size: 15px; line-height: 1; cursor: grab; user-select: none; }
+  .layout-name { min-width: 0; }
+  .layout-title { display: block; font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .layout-meta { display: block; font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
+  .layout-switch { position: relative; display: inline-flex; align-items: center; width: 38px; height: 22px; }
+  .layout-switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .layout-switch span { width: 100%; height: 100%; border-radius: 999px; background: var(--bg-track); border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s; }
+  .layout-switch span::after { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: var(--text-tertiary); transition: transform 0.15s, background 0.15s; }
+  .layout-switch input:checked + span { background: rgba(34,197,94,0.18); border-color: var(--positive); }
+  .layout-switch input:checked + span::after { transform: translateX(16px); background: var(--positive); }
+  .layout-row-actions { display: inline-flex; gap: 4px; }
+  .layout-move-btn { width: 25px; height: 25px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  .layout-move-btn:hover { color: var(--text-primary); background: var(--bg-secondary); }
+  .layout-move-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; }
+  .layout-modal-actions { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin-top: 14px; }
+  .layout-reset-btn { width: 100%; padding: 12px 10px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+  @media (max-width: 520px) {
+    .layout-row { grid-template-columns: 22px 1fr auto; }
+    .layout-row-actions { grid-column: 2 / -1; justify-content: flex-end; }
+    .layout-modal-actions { grid-template-columns: 1fr; }
+  }
   body:not(.light) .icon-sun { display: block; } body:not(.light) .icon-moon { display: none; }
   body.light .icon-sun { display: none; } body.light .icon-moon { display: block; }
   .total-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
@@ -692,6 +726,9 @@
     </div>
     <div class="header-actions">
       <button class="icon-btn" id="refreshBtn" title="Live-Kurse holen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg></button>
+      <button class="icon-btn" id="layoutEditBtn" title="Ansicht bearbeiten" aria-label="Ansicht bearbeiten">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg>
+      </button>
       <button class="icon-btn" id="themeToggleBtn" title="Hell/Dunkel">
         <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -1173,6 +1210,36 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="layoutModal">
+  <div class="modal layout-modal">
+    <h3>Ansicht bearbeiten</h3>
+    <div class="layout-note">Blende Bereiche aus, sortiere sie neu und ordne deine Titel. Ausgeblendete Bereiche bleiben erhalten und können jederzeit wieder eingeblendet werden.</div>
+    <div class="layout-editor-block">
+      <div class="layout-editor-head">
+        <div>
+          <div class="layout-editor-title">Bereiche</div>
+          <div class="layout-editor-sub">Ziehen oder mit Pfeilen verschieben</div>
+        </div>
+      </div>
+      <div class="layout-list" id="layoutSectionsList"></div>
+    </div>
+    <div class="layout-editor-block">
+      <div class="layout-editor-head">
+        <div>
+          <div class="layout-editor-title">Titel-Reihenfolge</div>
+          <div class="layout-editor-sub">Gilt für Aktien, ETF und Krypto</div>
+        </div>
+      </div>
+      <div class="layout-list" id="layoutPositionsList"></div>
+    </div>
+    <div class="layout-modal-actions">
+      <button class="layout-reset-btn" id="layoutResetBtn" type="button">Standard</button>
+      <button class="auth-btn secondary" id="layoutCancelBtn" type="button">Abbrechen</button>
+      <button class="auth-btn" id="layoutSaveBtn" type="button">Speichern</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="ssPreviewModal">
   <div class="modal">
     <h3>KI-Vorschau prüfen</h3>
@@ -1333,6 +1400,226 @@ const USER_KEY = 'michael';  // KV-Trennung pro Person
 const AI_DURATION_KEY = 'ai_avg_duration_ms';
 const AI_DEFAULT_DURATION = 10000;
 let aiProgressState = null, aiRegenTimer = null;
+
+const LAYOUT_STORAGE_KEY = `portfolio_layout_${USER_KEY}`;
+const LAYOUT_SECTIONS = [
+  { key: 'overview', label: 'Depot Stand', meta: 'Gesamtwert, Tageswert, Drawdown, Sparrate', selectors: ['#anchor-top'], nav: 'anchor-top' },
+  { key: 'addPosition', label: 'Position hinzufügen', meta: 'Manuell oder per Screenshot & KI', selectors: ['.add-position-section'] },
+  { key: 'allocation', label: 'Asset-Allokation', meta: 'Aufteilung und Diversifikation', selectors: ['.alloc-section'] },
+  { key: 'riskRules', label: 'Risiko-Regeln', meta: 'Grenzen und Hinweise', selectors: ['#riskRulesSection'] },
+  { key: 'quality', label: 'Datenqualität', meta: 'Prüfung der Eingaben', selectors: ['#qualitySection'] },
+  { key: 'positions', label: 'Positionen', meta: 'Aktien, ETF, Krypto, Edelmetalle, Cash', selectors: ['#anchor-positions', '#positions'], nav: 'anchor-positions' },
+  { key: 'history', label: 'Depot-Entwicklung', meta: 'Chart, Wochen-/Monatsansicht', selectors: ['#anchor-history'], nav: 'anchor-history' },
+  { key: 'goal', label: 'Ziel', meta: 'Zielbetrag, Sparrate, Risiko', selectors: ['#anchor-goal'], nav: 'anchor-goal' },
+  { key: 'savings', label: 'Sparplan-Simulation', meta: 'Monatsraten und Ziel-Lücke', selectors: ['.savings-sim-section'] },
+  { key: 'analysis', label: 'Analyse & Tipps', meta: 'Lokale und KI-Analyse', selectors: ['.analysis-section'] },
+  { key: 'usage', label: 'API-Nutzung', meta: 'Kosten und Aufrufe', selectors: ['.usage-section'] },
+  { key: 'rebalancing', label: 'Rebalancing-Simulator', meta: 'Soll-/Ist-Abgleich', selectors: ['#anchor-rebalancing', '#rebalSection'], nav: 'anchor-rebalancing' },
+  { key: 'scenario', label: 'Szenario-Rechner', meta: 'Was-wäre-wenn Regler', selectors: ['#anchor-scenario', '#scenarioSection'], nav: 'anchor-scenario' },
+  { key: 'watchlist', label: 'Watchlist', meta: 'Kandidaten beobachten', selectors: ['#anchor-watchlist', '#watchlistSection'], nav: 'anchor-watchlist' },
+  { key: 'journal', label: 'Entscheidungs-Journal', meta: 'Gedanken und Reviews', selectors: ['#anchor-journal', '#journalSection'], nav: 'anchor-journal' },
+  { key: 'income', label: 'Erträge', meta: 'Dividenden, Zinsen, Staking', selectors: ['#anchor-income', '#incomeSection'], nav: 'anchor-income' },
+  { key: 'privacy', label: 'Datenschutz', meta: 'Speicherung und Verschlüsselung', selectors: ['.privacy-section'] },
+  { key: 'backup', label: 'Backup & Export', meta: 'JSON und CSV', selectors: ['.backup-section'] },
+  { key: 'chat', label: 'KI-Chat', meta: 'Fragen und Gedächtnis', selectors: ['#anchor-chat'], nav: 'anchor-chat' },
+  { key: 'footer', label: 'Fußzeile', meta: 'Kurzer Hinweis am Ende', selectors: ['.footer'] }
+];
+
+function defaultLayoutSettings() {
+  return { sectionOrder: LAYOUT_SECTIONS.map(s => s.key), hidden: [] };
+}
+
+function loadLayoutSettings() {
+  const fallback = defaultLayoutSettings();
+  try {
+    if (appData?.layout) {
+      const parsed = appData.layout;
+      const validKeys = new Set(LAYOUT_SECTIONS.map(s => s.key));
+      const sectionOrder = Array.isArray(parsed.sectionOrder)
+        ? parsed.sectionOrder.filter(k => validKeys.has(k))
+        : [];
+      LAYOUT_SECTIONS.forEach(s => { if (!sectionOrder.includes(s.key)) sectionOrder.push(s.key); });
+      const hidden = Array.isArray(parsed.hidden)
+        ? parsed.hidden.filter(k => validKeys.has(k))
+        : [];
+      return { sectionOrder, hidden };
+    }
+    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    const validKeys = new Set(LAYOUT_SECTIONS.map(s => s.key));
+    const sectionOrder = Array.isArray(parsed.sectionOrder)
+      ? parsed.sectionOrder.filter(k => validKeys.has(k))
+      : [];
+    LAYOUT_SECTIONS.forEach(s => { if (!sectionOrder.includes(s.key)) sectionOrder.push(s.key); });
+    const hidden = Array.isArray(parsed.hidden)
+      ? parsed.hidden.filter(k => validKeys.has(k))
+      : [];
+    return { sectionOrder, hidden };
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveLayoutSettings(settings) {
+  try { localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(settings)); } catch (e) {}
+  if (appData) appData.layout = settings;
+}
+
+function sectionNodes(section) {
+  return section.selectors.flatMap(selector => [...document.querySelectorAll(selector)]);
+}
+
+function applyLayoutSettings() {
+  const settings = loadLayoutSettings();
+  const hidden = new Set(settings.hidden || []);
+  const order = settings.sectionOrder || LAYOUT_SECTIONS.map(s => s.key);
+  const orderMap = new Map(order.map((key, idx) => [key, idx]));
+  LAYOUT_SECTIONS.forEach(section => {
+    const baseOrder = (orderMap.has(section.key) ? orderMap.get(section.key) : 999) * 10 + 20;
+    sectionNodes(section).forEach((node, idx) => {
+      node.style.order = String(baseOrder + idx);
+      node.classList.toggle('layout-hidden', hidden.has(section.key));
+    });
+    if (section.nav) {
+      document.querySelectorAll(`.mini-nav-btn[data-jump="${section.nav}"]`).forEach(btn => {
+        btn.classList.toggle('layout-hidden', hidden.has(section.key));
+        btn.style.order = String(baseOrder);
+      });
+    }
+  });
+}
+
+function layoutRowHtml({ key, label, meta }, visible, draggable = true) {
+  return `
+    <div class="layout-row" draggable="${draggable ? 'true' : 'false'}" data-layout-key="${escapeHtml(key)}">
+      <span class="layout-grip" title="Ziehen">⋮⋮</span>
+      <span class="layout-name"><span class="layout-title">${escapeHtml(label)}</span><span class="layout-meta">${escapeHtml(meta || '')}</span></span>
+      <label class="layout-switch" title="${visible ? 'Angezeigt' : 'Ausgeblendet'}">
+        <input type="checkbox" ${visible ? 'checked' : ''} aria-label="${escapeHtml(label)} anzeigen">
+        <span></span>
+      </label>
+      <span class="layout-row-actions">
+        <button class="layout-move-btn" type="button" data-layout-move="up" aria-label="Nach oben"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+        <button class="layout-move-btn" type="button" data-layout-move="down" aria-label="Nach unten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      </span>
+    </div>`;
+}
+
+function positionLayoutRowHtml(pos) {
+  const live = currentPrices[pos.id] || { price: pos.costPrice };
+  const value = (Number(live.price) || 0) * (Number(pos.shares) || 0);
+  const meta = `${pos.type || 'Position'} · ${pos.symbol || '—'} · ${fmt.format(value)}`;
+  return `
+    <div class="layout-row" draggable="true" data-pos-key="${escapeHtml(pos.id)}">
+      <span class="layout-grip" title="Ziehen">⋮⋮</span>
+      <span class="layout-name"><span class="layout-title">${escapeHtml(pos.name || 'Position')}</span><span class="layout-meta">${escapeHtml(meta)}</span></span>
+      <span></span>
+      <span class="layout-row-actions">
+        <button class="layout-move-btn" type="button" data-layout-move="up" aria-label="Nach oben"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+        <button class="layout-move-btn" type="button" data-layout-move="down" aria-label="Nach unten"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      </span>
+    </div>`;
+}
+
+function wireLayoutListInteractions(list) {
+  if (!list || list.dataset.wired === 'true') return;
+  list.dataset.wired = 'true';
+  let dragged = null;
+  list.addEventListener('dragstart', e => {
+    const row = e.target.closest('.layout-row');
+    if (!row) return;
+    dragged = row;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  list.addEventListener('dragend', () => {
+    if (dragged) dragged.classList.remove('dragging');
+    dragged = null;
+  });
+  list.addEventListener('dragover', e => {
+    if (!dragged) return;
+    e.preventDefault();
+    const target = e.target.closest('.layout-row');
+    if (!target || target === dragged || target.parentElement !== list) return;
+    const rect = target.getBoundingClientRect();
+    const after = e.clientY > rect.top + rect.height / 2;
+    list.insertBefore(dragged, after ? target.nextSibling : target);
+  });
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('[data-layout-move]');
+    if (!btn) return;
+    const row = btn.closest('.layout-row');
+    if (!row) return;
+    if (btn.dataset.layoutMove === 'up' && row.previousElementSibling) {
+      list.insertBefore(row, row.previousElementSibling);
+    } else if (btn.dataset.layoutMove === 'down' && row.nextElementSibling) {
+      list.insertBefore(row.nextElementSibling, row);
+    }
+  });
+}
+
+function renderLayoutModal(settingsOverride) {
+  const settings = settingsOverride || loadLayoutSettings();
+  const hidden = new Set(settings.hidden || []);
+  const order = settings.sectionOrder || LAYOUT_SECTIONS.map(s => s.key);
+  const sectionByKey = new Map(LAYOUT_SECTIONS.map(s => [s.key, s]));
+  const orderedSections = order.map(k => sectionByKey.get(k)).filter(Boolean);
+  LAYOUT_SECTIONS.forEach(s => { if (!orderedSections.includes(s)) orderedSections.push(s); });
+  const sectionList = document.getElementById('layoutSectionsList');
+  const positionList = document.getElementById('layoutPositionsList');
+  if (sectionList) {
+    sectionList.innerHTML = orderedSections.map(section => layoutRowHtml(section, !hidden.has(section.key))).join('');
+    wireLayoutListInteractions(sectionList);
+  }
+  if (positionList) {
+    const positions = Array.isArray(appData?.positions) ? appData.positions : [];
+    positionList.innerHTML = positions.length
+      ? positions.map(positionLayoutRowHtml).join('')
+      : '<div class="layout-meta" style="padding:8px;">Noch keine Titel vorhanden.</div>';
+    wireLayoutListInteractions(positionList);
+  }
+}
+
+function openLayoutModal() {
+  renderLayoutModal();
+  document.getElementById('layoutModal').classList.add('active');
+  document.getElementById('layoutEditBtn')?.classList.add('active');
+}
+
+function closeLayoutModal() {
+  document.getElementById('layoutModal').classList.remove('active');
+  document.getElementById('layoutEditBtn')?.classList.remove('active');
+}
+
+async function saveLayoutModal() {
+  const sectionRows = [...document.querySelectorAll('#layoutSectionsList .layout-row')];
+  const sectionOrder = sectionRows.map(row => row.dataset.layoutKey).filter(Boolean);
+  const hidden = sectionRows
+    .filter(row => !row.querySelector('input[type="checkbox"]')?.checked)
+    .map(row => row.dataset.layoutKey)
+    .filter(Boolean);
+  saveLayoutSettings({ sectionOrder, hidden });
+
+  const posRows = [...document.querySelectorAll('#layoutPositionsList .layout-row')];
+  const posOrder = posRows.map(row => row.dataset.posKey).filter(Boolean);
+  if (appData?.positions && posOrder.length) {
+    const posById = new Map(appData.positions.map(pos => [pos.id, pos]));
+    const ordered = posOrder.map(id => posById.get(id)).filter(Boolean);
+    appData.positions.forEach(pos => { if (!posOrder.includes(pos.id)) ordered.push(pos); });
+    appData.positions = ordered;
+    const totals = renderTotals();
+    renderPositions(totals);
+  }
+
+  applyLayoutSettings();
+  if (appData) await savePositionsToKV(0);
+  closeLayoutModal();
+}
+
+function resetLayoutModal() {
+  renderLayoutModal(defaultLayoutSettings());
+}
 
 function getEstimatedAIDuration() { try { const v = parseInt(localStorage.getItem(AI_DURATION_KEY), 10); if (v > 1000 && v < 60000) return v; } catch (e) {} return AI_DEFAULT_DURATION; }
 function saveEstimatedAIDuration(ms) { try { const prev = getEstimatedAIDuration(); localStorage.setItem(AI_DURATION_KEY, String(Math.round(prev * 0.6 + ms * 0.4))); } catch (e) {} }
@@ -2951,6 +3238,7 @@ function backupJson() {
     watchlist: appData.watchlist || [],
     journal: appData.journal || [],
     income: appData.income || [],
+    layout: appData.layout || null,
     chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
   };
   downloadBlob(JSON.stringify(payload, null, 2), `portfolio-backup-${today}.json`, 'application/json');
@@ -3047,6 +3335,7 @@ async function importJson(file) {
     if (Array.isArray(data.watchlist)) appData.watchlist = data.watchlist;
     if (Array.isArray(data.journal)) appData.journal = data.journal;
     if (Array.isArray(data.income)) appData.income = data.income;
+    if (data.layout) appData.layout = data.layout;
     if (data.schemaVersion) appData.schemaVersion = data.schemaVersion;
     if (typeof data.chatMemorySummary === 'string') {
       chatMemorySummary = data.chatMemorySummary;
@@ -3210,6 +3499,7 @@ async function handleGate() {
         if (Array.isArray(kvData.watchlist)) appData.watchlist = kvData.watchlist;
         if (Array.isArray(kvData.journal)) appData.journal = kvData.journal;
         if (Array.isArray(kvData.income)) appData.income = kvData.income;
+        if (kvData.layout) appData.layout = kvData.layout;
       }
     } catch (kvErr) { console.warn('KV-Sync beim Login fehlgeschlagen:', kvErr); }
     // Schema-Migration (v1 -> v2: Transaktionsmodell)
@@ -4139,6 +4429,7 @@ async function refreshLiveValuesOnly() {
   const totals = renderTotals();
   renderPositions(totals);
   renderHistory();
+  applyLayoutSettings();
   await savePositionsToKV(800);
 }
 
@@ -4598,6 +4889,7 @@ async function refreshUI(opts = {}) {
   renderWatchlist();
   renderJournal();
   renderIncome();
+  applyLayoutSettings();
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
   } else {
@@ -4683,6 +4975,11 @@ function wireEvents() {
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', refreshLiveValuesOnly);
+  document.getElementById('layoutEditBtn').addEventListener('click', openLayoutModal);
+  document.getElementById('layoutCancelBtn').addEventListener('click', closeLayoutModal);
+  document.getElementById('layoutSaveBtn').addEventListener('click', saveLayoutModal);
+  document.getElementById('layoutResetBtn').addEventListener('click', resetLayoutModal);
+  document.getElementById('layoutModal').addEventListener('click', e => { if (e.target.id === 'layoutModal') closeLayoutModal(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   document.getElementById('goalApplyBtn').addEventListener('click', applyGoalSettingsUpdate);
   ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk'].forEach(id => {
@@ -5248,6 +5545,7 @@ async function savePositionsToKV(debounceMs = 0) {
       watchlist: appData.watchlist || [],
       journal: appData.journal || [],
       income: appData.income || [],
+      layout: appData.layout || null,
       schemaVersion: appData.schemaVersion || 1,
       version: 2 // Blob-Versionsmarker (kompatibel mit alten Decoder-Versionen)
     };
