@@ -3000,8 +3000,9 @@ const chartTabState = {}; // { posId: 'day'|'week'|'month' }
 function showChartLoading(posId, periodLabel) {
   const wrap = document.getElementById(`chartWrap-${posId}`);
   if (!wrap) return;
-  const isLive = !!(appData.positions.find(p => p.id === posId)?.cgId);
-  const src = isLive ? `CoinGecko · ${periodLabel}-Verlauf` : 'Snapshot-Daten';
+  const pos = appData.positions.find(p => p.id === posId);
+  const live = currentPrices[posId];
+  const src = pos?.cgId ? `CoinGecko · ${periodLabel}-Verlauf` : live?.live ? `${live.source || 'Marktdaten'} · aktueller Kurs` : 'Snapshot-Daten';
   wrap.innerHTML = `<div class="chart-loading">
     <div class="chart-loading-row">
       <span class="chart-loading-label">${periodLabel}chart wird geladen…</span>
@@ -3059,8 +3060,8 @@ async function loadChartForPosition(pos, period) {
   if (stampEl) {
     const first = data[0].price, last = data[data.length - 1].price;
     const deltaPct = ((last - first) / first) * 100;
-    const live = pos.cgId ? `Live · ${new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}` : 'manuelle Snapshots';
-    stampEl.textContent = `${periodLabel === 'Tag' ? 'Letzte 24h' : periodLabel === 'Wochen' ? 'Letzte 7 Tage' : 'Letzte 30 Tage'} · ${deltaPct >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} % · ${live}`;
+    const liveInfo = pos.cgId ? `Live · ${new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}` : currentPrices[pos.id]?.live ? `${currentPrices[pos.id].source || 'Marktdaten'} · aktueller Kurs` : 'manuelle Snapshots';
+    stampEl.textContent = `${periodLabel === 'Tag' ? 'Letzte 24h' : periodLabel === 'Wochen' ? 'Letzte 7 Tage' : 'Letzte 30 Tage'} · ${deltaPct >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} % · ${liveInfo}`;
   }
 }
 
@@ -3108,6 +3109,57 @@ async function fetchCryptoPrices() {
     const data = await res.json();
     appData.positions.forEach(pos => { if (pos.cgId && data[pos.cgId]) currentPrices[pos.id] = { price: data[pos.cgId].eur, changePct: data[pos.cgId].eur_24h_change, live: true }; });
   } catch (e) { console.warn('Crypto fetch failed:', e); }
+}
+
+function quoteSymbolForPosition(pos) {
+  if (!pos || pos.cgId || pos.special) return '';
+  const type = String(pos.type || '').toLowerCase();
+  if (type !== 'aktie' && type !== 'etf') return '';
+  const raw = String(pos.quoteSymbol || pos.symbol || '').trim();
+  const name = normalizeText(pos.name || '');
+  if (/servicenow/i.test(raw) || name.includes('servicenow')) return 'NOW';
+  return raw.replace(/\s+/g, '').toUpperCase();
+}
+
+async function fetchMarketPrices() {
+  const positions = (appData?.positions || [])
+    .map(pos => ({
+      id: pos.id,
+      name: pos.name,
+      symbol: quoteSymbolForPosition(pos),
+      type: pos.type
+    }))
+    .filter(pos => pos.symbol);
+  if (positions.length === 0) return false;
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      body: JSON.stringify({ action: 'get-market-prices', positions })
+    });
+    if (!res.ok) throw new Error('Market prices HTTP ' + res.status);
+    const data = await res.json();
+    const quotes = data?.quotes || {};
+    (appData.positions || []).forEach(pos => {
+      const q = quotes[pos.id];
+      const price = Number(q?.price);
+      if (price > 0) {
+        currentPrices[pos.id] = {
+          price,
+          changePct: Number.isFinite(Number(q.changePct)) ? Number(q.changePct) : 0,
+          live: true,
+          source: q.source || data.source || 'Marktdaten',
+          symbol: q.symbol || quoteSymbolForPosition(pos),
+          currency: q.currency || 'EUR',
+          updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
+        };
+      }
+    });
+    return true;
+  } catch (e) {
+    console.warn('Market price fetch failed:', e);
+    return false;
+  }
 }
 
 async function fetchMetalPrices(opts = {}) {
@@ -3183,7 +3235,7 @@ async function fetchAllWeeklyCharts() {
 
 function loadManualPrices() {
   appData.positions.forEach(pos => {
-    if (!pos.cgId) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, changePct: pos.manualChangePct ?? 0, live: false };
+    if (!pos.cgId && !currentPrices[pos.id]?.live) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, changePct: pos.manualChangePct ?? 0, live: false };
     if (!pos.cgId && pos.weeklyHistory) weeklyData[pos.id] = pos.weeklyHistory;
   });
 }
@@ -3248,7 +3300,7 @@ function buildCard(pos, totals, alloc) {
   const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
   const isClump = pctPortfolio > 30;
   const risk = deriveRisk(pos);
-  const liveBadge = pos.cgId ? `<span class="risk-badge risk-low">LIVE</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
+  const liveBadge = live.live ? `<span class="risk-badge risk-low">LIVE</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
   const portfolioInfo = isClump ? `<span class="pct-portfolio warn">${fmtNum(pctPortfolio, 0)} % Portfolio · Klumpenrisiko</span>` : `<span class="pct-portfolio">${fmtNum(pctPortfolio, 0)} % Portfolio</span>`;
   const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
   const rec = getRecommendation(pos, totals, alloc);
@@ -4194,7 +4246,7 @@ async function initApp() {
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
   usageRefreshTimer = setInterval(renderUsage, 60000);
   await refreshUI({ skipAI: true });
-  await Promise.all([fetchCryptoPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -4204,7 +4256,7 @@ function wireEvents() {
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await fetchCryptoPrices(); await fetchAllWeeklyCharts(); await refreshUI(); });
+  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => {
     document.getElementById(id).addEventListener('input', async () => {
@@ -4892,7 +4944,7 @@ async function saveNewPosition() {
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeAddPositionModal();
   await savePositionsToKV();
-  await fetchCryptoPrices();
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -5096,7 +5148,7 @@ async function saveScreenshotPreview() {
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeScreenshotPreviewModal();
   await savePositionsToKV();
-  await fetchCryptoPrices();
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
