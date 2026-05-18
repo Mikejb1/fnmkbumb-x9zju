@@ -1034,6 +1034,7 @@
   <div class="modal">
     <h3 id="editTitle">Position bearbeiten</h3>
     <div class="modal-field"><label>Aktueller Kurs (EUR)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
+    <div class="modal-field"><label>Live-Symbol / Handelsplatz</label><input type="text" class="auth-input" id="editQuoteSymbol" placeholder="z.B. 4S0.DE, NVD.DE, P911.DE"></div>
     <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
     <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
     <div class="modal-field"><label>Risiko-Level</label>
@@ -3163,14 +3164,36 @@ async function fetchCryptoPrices() {
   } catch (e) { console.warn('Crypto fetch failed:', e); }
 }
 
+const KNOWN_YAHOO_BY_ISIN = {
+  US81762P1021: '4S0.DE',     // ServiceNow Xetra
+  US67066G1040: 'NVD.DE',     // NVIDIA Xetra
+  US02079K3059: 'ABEA.DE',    // Alphabet A Xetra
+  DE000PAG9113: 'P911.DE',    // Porsche AG Xetra
+};
+const KNOWN_YAHOO_BY_NAME = [
+  { test: /servicenow/i, symbol: '4S0.DE' },
+  { test: /nvidia/i, symbol: 'NVD.DE' },
+  { test: /alphabet/i, symbol: 'ABEA.DE' },
+  { test: /porsche/i, symbol: 'P911.DE' },
+];
+
+function cleanQuoteSymbol(symbol) {
+  return String(symbol || '').trim().replace(/\s+/g, '').toUpperCase();
+}
+
 function quoteSymbolForPosition(pos) {
   if (!pos || pos.cgId || pos.special) return '';
   const type = String(pos.type || '').toLowerCase();
   if (type !== 'aktie' && type !== 'etf') return '';
-  const raw = String(pos.quoteSymbol || pos.symbol || '').trim();
+  const explicit = cleanQuoteSymbol(pos.quoteSymbol);
+  if (explicit) return explicit;
+  const raw = cleanQuoteSymbol(pos.symbol);
+  const isin = cleanQuoteSymbol(pos.stammdaten?.isin || pos.isin || pos.symbol);
+  if (KNOWN_YAHOO_BY_ISIN[isin]) return KNOWN_YAHOO_BY_ISIN[isin];
   const name = normalizeText(pos.name || '');
-  if (/servicenow/i.test(raw) || name.includes('servicenow')) return 'NOW';
-  return raw.replace(/\s+/g, '').toUpperCase();
+  const knownByName = KNOWN_YAHOO_BY_NAME.find(entry => entry.test.test(pos.name || '') || name.includes(entry.symbol.toLowerCase()));
+  if (knownByName) return knownByName.symbol;
+  return raw;
 }
 
 async function fetchMarketPrices() {
@@ -4216,6 +4239,7 @@ function openEditModal(posId) {
   document.getElementById('editTitle').textContent = pos.name;
   const live = currentPrices[posId] || { price: pos.costPrice };
   document.getElementById('editPrice').value = live.price.toFixed(2);
+  document.getElementById('editQuoteSymbol').value = pos.quoteSymbol || quoteSymbolForPosition(pos) || '';
   document.getElementById('editShares').value = pos.shares;
   document.getElementById('editCost').value = pos.costPrice;
   const riskSel = document.getElementById('editRisk');
@@ -4236,6 +4260,7 @@ async function saveEditModal() {
   const pos = appData.positions.find(p => p.id === editingId);
   if (!pos) return;
   const newPrice = parseFloat(document.getElementById('editPrice').value);
+  const newQuoteSymbol = cleanQuoteSymbol(document.getElementById('editQuoteSymbol')?.value || '');
   const newShares = parseFloat(document.getElementById('editShares').value);
   const newCost = parseFloat(document.getElementById('editCost').value);
   const newRisk = document.getElementById('editRisk')?.value || '';
@@ -4256,6 +4281,7 @@ async function saveEditModal() {
   }
   pos.shares = newShares;
   pos.costPrice = newCost;
+  if (newQuoteSymbol) pos.quoteSymbol = newQuoteSymbol; else delete pos.quoteSymbol;
   if (!pos.cgId) pos.manualPrice = newPrice;
   if (newRisk) pos.risk = newRisk; else delete pos.risk;
   // Stammdaten übernehmen
