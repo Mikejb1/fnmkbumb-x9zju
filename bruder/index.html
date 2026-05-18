@@ -812,7 +812,7 @@
     <div class="goal-update-row">
       <button class="goal-update-btn" id="goalApplyBtn" type="button">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-        <span>Ziel & Analyse aktualisieren</span>
+        <span>Alle Werte & Simulationen aktualisieren</span>
       </button>
       <div class="goal-update-status" id="goalApplyStatus">Aktuell</div>
     </div>
@@ -3368,6 +3368,7 @@ function buildCard(pos, totals, alloc) {
   const costValue = pos.costPrice * pos.shares;
   const pnlAbs = valueEur - costValue;
   const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
+  const priceDistance = live.price - pos.costPrice;
   const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
   const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
   const isClump = pctPortfolio > 30;
@@ -3405,7 +3406,7 @@ function buildCard(pos, totals, alloc) {
       <div class="price-grid">
         <div class="price-grid-cell"><div class="lbl">Ø Einstieg</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktuell</div><div class="val">${fmtNum(live.price)} €</div></div>
-        <div class="price-grid-cell"><div class="lbl">Abstand</div><div class="val ${pnlClass}">${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 1)} %</div></div>
+        <div class="price-grid-cell"><div class="lbl">Abstand Ø</div><div class="val ${pnlClass}">${priceDistance >= 0 ? '+' : ''}${fmtNum(priceDistance, 2)} € · ${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 2)} %</div></div>
         <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
         <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
@@ -3817,18 +3818,25 @@ function renderTotals() {
       hasChangeData = true;
     }
   });
-  // Edelmetalle + Cash addieren
+  // Obere Depot-Anzeige ohne Edelmetalle; Edelmetalle werden separat ausgewiesen.
   const metalValueTotal = metalsTotalValue();
+  const metalCostTotal = metalsTotalCost();
   const cashValue = appData.goal?.cash || 0;
+  const depotValueExMetals = totalCur + cashValue;
+  const depotCostExMetals = totalCost + cashValue;
+  const depotPnlExMetals = depotValueExMetals - depotCostExMetals;
+  const depotPnlPctExMetals = depotCostExMetals > 0 ? (depotPnlExMetals / depotCostExMetals) * 100 : 0;
+
+  // Interne Gesamtwerte bleiben inklusive Edelmetalle, damit Simulationen/Allokation weiter vollständig rechnen.
   totalCur += metalValueTotal + cashValue;
-  totalCost += metalsTotalCost() + cashValue;
+  totalCost += metalCostTotal + cashValue;
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
-  document.getElementById('totalValue').textContent = fmt.format(totalCur);
+  document.getElementById('totalValue').textContent = fmt.format(depotValueExMetals);
   const pnlEl = document.getElementById('totalPnl');
-  pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}${fmt.format(totalPnl)} (${fmtNum(totalPnlPct)} %)`;
-  pnlEl.className = 'total-pnl ' + (totalPnl >= 0 ? 'positive' : 'negative');
-  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
+  pnlEl.textContent = `${depotPnlExMetals >= 0 ? '+' : ''}${fmt.format(depotPnlExMetals)} (${fmtNum(depotPnlPctExMetals)} %)`;
+  pnlEl.className = 'total-pnl ' + (depotPnlExMetals >= 0 ? 'positive' : 'negative');
+  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(depotCostExMetals)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
   document.getElementById('lastUpdate').textContent = `Stand: ${new Date().toLocaleString('de-AT')}`;
 
   // === Stat-Kacheln: Heute ===
@@ -3836,7 +3844,7 @@ function renderTotals() {
   const todayVal = document.getElementById('statTodayValue');
   const todaySub = document.getElementById('statTodaySub');
   if (hasChangeData) {
-    const todayPct = totalCur > 0 ? (todayChangeEur / (totalCur - todayChangeEur)) * 100 : 0;
+    const todayPct = depotValueExMetals > 0 ? (todayChangeEur / (depotValueExMetals - todayChangeEur)) * 100 : 0;
     const cls = todayChangeEur >= 0 ? 'pos' : 'neg';
     const color = todayChangeEur >= 0 ? 'var(--positive)' : 'var(--negative)';
     todayTile.className = 'stat-tile ' + cls;
@@ -3854,16 +3862,16 @@ function renderTotals() {
 
   // === Stat-Kacheln: Drawdown vom ATH ===
   if (!appData.goal) appData.goal = {};
-  const prevAth = appData.goal.ath || 0;
+  const prevAth = appData.goal.athDepotExMetals || 0;
   let athUpdated = false;
-  if (totalCur > prevAth) {
-    appData.goal.ath = totalCur;
-    appData.goal.athDate = new Date().toISOString().slice(0, 10);
+  if (depotValueExMetals > prevAth) {
+    appData.goal.athDepotExMetals = depotValueExMetals;
+    appData.goal.athDepotExMetalsDate = new Date().toISOString().slice(0, 10);
     athUpdated = true;
   }
-  const ath = appData.goal.ath || totalCur;
-  const athDate = appData.goal.athDate ? new Date(appData.goal.athDate) : new Date();
-  const drawdownPct = ath > 0 ? ((totalCur - ath) / ath) * 100 : 0;
+  const ath = appData.goal.athDepotExMetals || depotValueExMetals;
+  const athDate = appData.goal.athDepotExMetalsDate ? new Date(appData.goal.athDepotExMetalsDate) : new Date();
+  const drawdownPct = ath > 0 ? ((depotValueExMetals - ath) / ath) * 100 : 0;
   const ddTile = document.getElementById('statDrawdown');
   const ddVal = document.getElementById('statDrawdownValue');
   const ddSub = document.getElementById('statDrawdownSub');
@@ -4381,16 +4389,15 @@ async function applyGoalSettingsUpdate() {
   if (btn) { btn.disabled = true; btn.classList.add('loading'); }
   if (status) { status.textContent = 'Aktualisiert alles…'; status.classList.remove('dirty'); }
   try {
+    if (status) status.textContent = 'Lädt aktuelle Kurse…';
+    await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
+    await fetchAllWeeklyCharts();
+    if (status) status.textContent = 'Berechnet Simulationen…';
+    await refreshUI({ skipAI: true });
     const totals = renderTotals();
-    renderPositions(totals);
-    const alloc = renderAllocation(totals);
-    renderHistory();
     const goal = renderGoal(totals);
-    renderSavingsSim(totals, goal);
-    if (alloc) renderRebalancing(totals, alloc);
-    if (alloc) renderScenario(totals, alloc);
-    renderAnalysisLocal(totals, goal);
     await savePositionsToKV();
+    if (status) status.textContent = 'Erstellt KI-Analyse…';
     await generateAIAnalysis(totals, goal);
     markGoalSettingsDirty(false);
     if (status) status.textContent = `Aktualisiert · ${new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}`;
