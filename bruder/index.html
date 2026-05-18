@@ -3686,7 +3686,7 @@ async function fetchMarketPrices(opts = {}) {
           live: true,
           source: q.source || data.source || 'Marktdaten',
           symbol: q.symbol || quoteSymbolForPosition(pos),
-          currency: q.currency || 'EUR',
+          currency: 'EUR',
           venue: q.venue || venueOf(pos),
           venueLabel: q.venueLabel || getVenueByCode(q.venue || venueOf(pos)).short,
           updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
