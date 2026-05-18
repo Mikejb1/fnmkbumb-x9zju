@@ -279,6 +279,18 @@
   .ss-conflict-item.warn { background: rgba(245,158,11,0.12); color: #fbbf24; border-left: 3px solid #f59e0b; }
   .ss-conflict-item.info { background: rgba(59,130,246,0.12); color: #93c5fd; border-left: 3px solid #3b82f6; }
   .ss-conflict-item.error { background: var(--error-bg); color: var(--error-text); border-left: 3px solid var(--negative); }
+  .ss-batch-preview { display: none; max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
+  .ss-batch-row { display: grid; grid-template-columns: 68px 1fr 64px; gap: 8px; align-items: start; padding: 8px 10px; border-bottom: 1px solid var(--border-light); font-size: 11px; }
+  .ss-batch-row:last-child { border-bottom: 0; }
+  .ss-batch-row .date { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .ss-batch-row .name { font-weight: 600; color: var(--text-primary); line-height: 1.25; }
+  .ss-batch-row .meta { color: var(--text-secondary); margin-top: 2px; line-height: 1.25; }
+  .ss-batch-row .type { justify-self: end; font-weight: 700; font-size: 10px; padding: 3px 6px; border-radius: 5px; background: var(--bg-secondary); color: var(--text-secondary); }
+  .ss-batch-row.buy .type { color: var(--positive); }
+  .ss-batch-row.sell .type { color: var(--negative); }
+  .ss-batch-row.ignore { opacity: 0.62; }
+  .strategy-note { margin-top: 8px; padding: 9px 10px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border-light); font-size: 11px; line-height: 1.45; color: var(--text-secondary); }
+  .strategy-note strong { color: var(--text-primary); }
   .goal-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .goal-title { font-size: 13px; font-weight: 500; }
@@ -703,7 +715,7 @@
         <span>Per Screenshot &amp; KI</span>
       </button>
     </div>
-    <div class="add-pos-hint">Screenshot deines Depot-Eintrags hochladen — Haiku liest Stück, Einstand und Kurs automatisch aus</div>
+    <div class="add-pos-hint">Screenshot einer Depotposition oder Buchungstabelle hochladen — Haiku liest Stück, Einstand, Kurs und Käufe/Verkäufe automatisch aus</div>
   </div>
   <div class="alloc-section">
     <div class="alloc-head">
@@ -783,8 +795,11 @@
       <div class="slider-row"><label for="goalYear">Zieljahr</label><input type="range" id="goalYear" min="2026" max="2040" step="1" value="2026"><span class="slider-value" id="goalYearVal">2026</span></div>
       <div class="slider-row"><label for="goalAmount">Zielbetrag</label><input type="range" id="goalAmount" min="5000" max="100000" step="500" value="15000"><span class="slider-value" id="goalAmountVal">15.000 €</span></div>
       <div class="slider-row"><label for="goalSavings">Sparrate</label><input type="range" id="goalSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalSavingsVal">0 €</span></div>
+      <div class="slider-row"><label for="goalPath">Zielweg</label><input type="range" id="goalPath" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalPathVal">50% / 50%</span></div>
+      <div class="slider-row"><label for="goalRisk">Risiko</label><input type="range" id="goalRisk" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalRiskVal">Ausgewogen</span></div>
     </div>
     <div class="goal-meta" id="goalMeta">—</div>
+    <div class="strategy-note" id="strategyNote">—</div>
   </div>
   <div class="savings-sim-section">
     <h2 class="savings-sim-head">
@@ -1098,25 +1113,28 @@
     <h3>KI-Vorschau prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Haiku hat aus deinem Screenshot folgende Daten ausgelesen. Bitte prüfen und korrigieren, dann übernehmen.</p>
     <div class="ss-conflicts" id="ssConflicts"></div>
-    <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="sspName"></div>
-    <div class="modal-field"><label>Symbol / Ticker</label><input type="text" class="auth-input" id="sspSymbol"></div>
-    <div class="modal-field"><label>Typ</label>
-      <select id="sspType" class="auth-input">
-        <option value="ETF">ETF</option>
-        <option value="Aktie">Aktie</option>
-        <option value="Crypto">Crypto</option>
-      </select>
-    </div>
-    <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="sspShares"></div>
-    <div class="modal-field"><label>Einstand pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="sspCost"></div>
-    <div class="modal-field"><label>Aktueller Kurs (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="sspPrice"></div>
-    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="sspDate"></div>
-    <div class="modal-field" id="sspExistingWrap" style="display:none;">
-      <label>Existierende Position erkannt — was tun?</label>
-      <select id="sspMergeMode" class="auth-input">
-        <option value="addTx">Als Nachkauf-Transaktion zur bestehenden Position hinzufügen (empfohlen)</option>
-        <option value="newPos">Trotzdem als neue Position anlegen</option>
-      </select>
+    <div class="ss-batch-preview" id="ssBatchPreview"></div>
+    <div id="ssSingleFields">
+      <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="sspName"></div>
+      <div class="modal-field"><label>Symbol / Ticker</label><input type="text" class="auth-input" id="sspSymbol"></div>
+      <div class="modal-field"><label>Typ</label>
+        <select id="sspType" class="auth-input">
+          <option value="ETF">ETF</option>
+          <option value="Aktie">Aktie</option>
+          <option value="Crypto">Crypto</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="sspShares"></div>
+      <div class="modal-field"><label>Einstand pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="sspCost"></div>
+      <div class="modal-field"><label>Aktueller Kurs (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="sspPrice"></div>
+      <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="sspDate"></div>
+      <div class="modal-field" id="sspExistingWrap" style="display:none;">
+        <label>Existierende Position erkannt — was tun?</label>
+        <select id="sspMergeMode" class="auth-input">
+          <option value="addTx">Als Nachkauf-Transaktion zur bestehenden Position hinzufügen (empfohlen)</option>
+          <option value="newPos">Trotzdem als neue Position anlegen</option>
+        </select>
+      </div>
     </div>
     <div class="modal-actions"><button class="auth-btn secondary" id="sspCancel">Abbrechen</button><button class="auth-btn" id="sspSave">Übernehmen</button></div>
   </div>
@@ -1327,6 +1345,8 @@ function buildFactSheet(totals, goal) {
 - Ziel: ${fmt.format(goal.amount)} bis ${goal.year} · Status: ${goalStatus}
 - Benötigte monatliche Sparrate: ${fmt.format(monthlyNeeded)}
 - Aktuelle Sparrate: ${fmt.format(goal.savingsRate || 0)} €/Monat
+- Strategie-Zielweg: ${fmtNum(goal.savingsPct ?? goal.pathSavingsPct ?? 50, 0)} % Sparrate / ${fmtNum(goal.returnPct ?? (100 - (goal.pathSavingsPct ?? 50)), 0)} % Rendite
+- Risikoprofil: ${goal.riskLabel || ((goal.riskPct ?? 50) < 34 ? 'Defensiv' : (goal.riskPct ?? 50) < 67 ? 'Ausgewogen' : 'Offensiv')} (${fmtNum(goal.riskPct ?? 50, 0)} %)
 - Käufe letzte 30 Tage: ${recentBuys.length} Stk${recentBuys.length > 0 ? ', gesamt ' + fmt.format(recentBuys.reduce((s, t) => s + t.value, 0)) : ''}
 - Verletzte Regeln (${violations.length}): ${violations.length > 0 ? violations.map(v => v.label + ' (' + v.value + ')').join(', ') : 'keine'}
 - Watchlist-Kandidaten: ${(appData?.watchlist || []).length}
@@ -1379,6 +1399,11 @@ Zeit bis Jahresende: ~${goal.monthsToGoal} Monate
 Benötigte Gesamt-Rendite: ${goal.requiredReturnPct.toFixed(1)}% in ${goal.monthsToGoal} Monaten
 Bei reinem Sparen ohne Rendite: ${fmt.format(goal.monthlyNeeded)}/Monat
 Aktuelle Sparrate (vom Nutzer gesetzt): ${fmt.format(goal.savingsRate || 0)}/Monat → ergibt ohne Rendite ${fmt.format(totals.totalCur + (goal.savingsRate || 0) * goal.monthsToGoal)} bis Zieldatum
+STRATEGIEVORGABE DES NUTZERS:
+- Zielweg: ${fmtNum(goal.savingsPct, 0)}% Sparrate / ${fmtNum(goal.returnPct, 0)}% Rendite (${goal.pathLabel})
+- Risikobereitschaft: ${goal.riskLabel} (${fmtNum(goal.riskPct, 0)}%)
+- Interpretation: ${goal.pathText} ${goal.riskText}
+- Deine Analyse MUSS diese Vorgabe respektieren: bei Sparrate-dominiert nicht unnötig Rendite erzwingen; bei Rendite-dominiert Chancen analysieren, aber Verlustrisiken konkret benennen.
 
 AKZENT FÜR DIESE ANALYSE (variiert pro Aufruf): ${focus}
 Session-Nonce (für Variabilität, ignorieren): ${nonce}
@@ -3656,14 +3681,14 @@ function buildSpecialCard(kind, totals) {
     const sliderHtml = hasCashTx ? `
       <div class="special-slider-wrap" style="opacity:0.6;">
         <span class="special-slider-min">0 €</span>
-        <input type="range" min="0" max="20000" step="20" value="${cash}" disabled>
+        <input type="range" min="0" max="1000000" step="100" value="${cash}" disabled>
         <span class="special-slider-val">${fmt.format(cash)}</span>
       </div>
       <div class="cash-tx-hint">Wert wird aus Cash-Bewegungen berechnet · Regler deaktiviert</div>
     ` : `
       <div class="special-slider-wrap">
         <span class="special-slider-min">0 €</span>
-        <input type="range" id="cashSlider" min="0" max="20000" step="20" value="${cash}">
+        <input type="range" id="cashSlider" min="0" max="1000000" step="100" value="${cash}">
         <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
       </div>`;
     wrap.innerHTML = `
@@ -3970,13 +3995,44 @@ function renderHistory() {
   }
 }
 
+function clampNumber(value, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, n));
+}
+
+function getGoalStrategy(goalOverride) {
+  const source = goalOverride || appData?.goal || {};
+  const pathEl = document.getElementById('goalPath');
+  const riskEl = document.getElementById('goalRisk');
+  const savingsPct = clampNumber(pathEl ? pathEl.value : source.pathSavingsPct ?? 50, 0, 100);
+  const returnPct = 100 - savingsPct;
+  const riskPct = clampNumber(riskEl ? riskEl.value : source.riskPct ?? 50, 0, 100);
+  const riskLabel = riskPct < 34 ? 'Defensiv' : riskPct < 67 ? 'Ausgewogen' : 'Offensiv';
+  const pathLabel = savingsPct > 66 ? 'Sparrate dominiert' : savingsPct < 34 ? 'Rendite dominiert' : 'Mischweg';
+  const riskText = riskPct < 34
+    ? 'Kapitalerhalt, breite Streuung, Cash/Edelmetalle und planbare Sparrate haben Vorrang.'
+    : riskPct < 67
+      ? 'Wachstum ja, aber mit kontrollierten Klumpenrisiken und nachvollziehbarer Allokation.'
+      : 'Höhere Schwankungen sind akzeptiert, Chancen dürfen stärker gewichtet werden, Risiken müssen klar benannt bleiben.';
+  const pathText = savingsPct > 66
+    ? 'Das Ziel soll überwiegend durch regelmäßige Einzahlungen erreicht werden; Rendite ist Zusatz, nicht Rettungsanker.'
+    : savingsPct < 34
+      ? 'Das Ziel soll stärker über Portfolio-Rendite erreicht werden; Sparrate hilft, aber Wachstum trägt den Hauptteil.'
+      : 'Sparrate und Rendite sollen gemeinsam tragen; Empfehlungen sollen beide Hebel vergleichen.';
+  return { savingsPct, returnPct, riskPct, riskLabel, pathLabel, riskText, pathText };
+}
+
 function renderGoal(totals) {
   const year = parseInt(document.getElementById('goalYear').value, 10);
   const amount = parseInt(document.getElementById('goalAmount').value, 10);
   const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0;
+  const strategy = getGoalStrategy();
   document.getElementById('goalYearVal').textContent = String(year);
   document.getElementById('goalAmountVal').textContent = fmtNoCent.format(amount);
   document.getElementById('goalSavingsVal').textContent = fmtNoCent.format(savingsRate);
+  document.getElementById('goalPathVal').textContent = `${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite`;
+  document.getElementById('goalRiskVal').textContent = `${strategy.riskLabel} · ${fmtNum(strategy.riskPct, 0)}%`;
   document.getElementById('goalTitle').textContent = `Ziel: ${fmtNoCent.format(amount)} bis ${year}`;
   const today = new Date();
   const endDate = new Date(year, 11, 31);
@@ -4019,8 +4075,18 @@ function renderGoal(totals) {
     meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
   }
   document.getElementById('goalMeta').innerHTML = meta;
-  if (appData.goal) { appData.goal.year = year; appData.goal.amount = amount; appData.goal.savingsRate = savingsRate; }
-  return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress, savingsRate };
+  const strategyEl = document.getElementById('strategyNote');
+  if (strategyEl) {
+    strategyEl.innerHTML = `<strong>Strategie:</strong> ${strategy.pathLabel} (${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite) · Risiko <strong>${strategy.riskLabel}</strong> (${fmtNum(strategy.riskPct, 0)}%). ${strategy.pathText}`;
+  }
+  if (appData.goal) {
+    appData.goal.year = year;
+    appData.goal.amount = amount;
+    appData.goal.savingsRate = savingsRate;
+    appData.goal.pathSavingsPct = strategy.savingsPct;
+    appData.goal.riskPct = strategy.riskPct;
+  }
+  return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress, savingsRate, ...strategy };
 }
 
 function renderAnalysisLocal(totals, goal) {
@@ -4056,19 +4122,26 @@ function renderAnalysisLocal(totals, goal) {
   if (largestPos.pct > 40) obs.push(`Größte Position (${largestPos.name}): ${fmtNum(largestPos.pct, 0)}% — überproportionales Klumpenrisiko.`);
   if (obs.length === 0) obs.push('Allokation wirkt ausgewogen.');
   const allocLines = allocations.map(a => `<div>• ${escapeHtml(a.name)} (${a.type}): <strong>${fmtNum(a.pct, 1)}%</strong> · ${fmt.format(a.value)} · ${fmtPct(a.pnlPct)}</div>`).join('');
+  const strategy = getGoalStrategy(goal);
   let goalRealityText;
   if (goal.gap <= 0) goalRealityText = `Ziel bereits übertroffen (<strong>${fmt.format(-goal.gap)}</strong> Puffer). Optionen: Ziel anheben oder Strategie auf Erhalt umstellen.`;
+  else if (strategy.savingsPct >= 67) goalRealityText = `Deine Vorgabe ist sparratenorientiert: Ziel primär über Einzahlungen erreichen. Ohne Rendite wären rechnerisch <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong> nötig; Rendite sollte hier eher Sicherheitsreserve sein.`;
+  else if (strategy.savingsPct <= 33) goalRealityText = `Deine Vorgabe ist renditeorientiert: Die Lücke von <strong>${fmt.format(goal.gap)}</strong> soll stärker durch Kursentwicklung geschlossen werden. Dafür sind Schwankungen bewusst einzuplanen.`;
   else if (goal.monthsToGoal <= 12 && goal.requiredReturnPct > 30) goalRealityText = `Ziel mit reiner Marktentwicklung schwer erreichbar (${fmtNum(goal.requiredReturnPct, 0)}% in ${goal.monthsToGoal} Monaten). Realistisch ist Sparrate von <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong>.`;
   else goalRealityText = `Ziel mit moderater Rendite (~${fmtNum(goal.requiredReturnPct, 0)}% über ${goal.monthsToGoal} Monate) oder Sparrate von <strong>${fmt.format(goal.monthlyNeeded)}/Monat</strong> erreichbar.`;
   const options = [];
+  if (strategy.savingsPct >= 67 && goal.gap > 0) options.push(`Sparrate als Haupthebel prüfen: Ziel-Lücke über <strong>${fmt.format(goal.monthlyNeeded)}/Mo</strong> schließen oder Zielzeitraum verlängern.`);
+  if (strategy.riskPct < 34 && (cryptoShare > 20 || stockShare > 35)) options.push(`Defensives Profil respektieren: Krypto/Einzelaktien-Anteil reduzieren und mehr Gewicht auf ETF, Cash oder Edelmetalle legen.`);
+  if (strategy.savingsPct <= 33 && strategy.riskPct >= 67) options.push(`Renditefokus bewusst testen: Szenario mit -20% Krypto/Aktien prüfen und nur Positionsgrößen wählen, deren Rückschlag du aushältst.`);
   if (etfShare < 30) { const targetEtfAdd = Math.max(500, totals.totalCur * 0.1); options.push(`ETF-Sparplan ~<strong>${fmt.format(targetEtfAdd / 6)}/Monat</strong> auf einen Welt-ETF (z.B. MSCI World) — würde ETF-Anteil über 6 Monate auf ~${fmtNum(etfShare + 10, 0)}% heben.`); }
-  if (cryptoShare > 35) { const reduceAmount = totals.totalCur * (cryptoShare - 30) / 100; options.push(`Krypto-Position um ~<strong>${fmt.format(reduceAmount)}</strong> reduzieren (auf ~30% Allokation) — Volatilität sinkt deutlich.`); }
+  if (cryptoShare > (strategy.riskPct >= 67 ? 45 : 35)) { const reduceAmount = totals.totalCur * (cryptoShare - (strategy.riskPct >= 67 ? 40 : 30)) / 100; options.push(`Krypto-Position um ~<strong>${fmt.format(Math.max(0, reduceAmount))}</strong> reduzieren — Volatilität sinkt deutlich.`); }
   if (largestPos.pct > 40 && largestPos.type === 'Aktie') { const trimAmount = largestPos.value * 0.25; options.push(`Größte Einzelposition <strong>${escapeHtml(largestPos.name)}</strong> teilweise abbauen (~<strong>${fmt.format(trimAmount)}</strong>) und in breiter gestreute Instrumente umschichten.`); }
   if (goal.gap > 0 && goal.monthlyNeeded < 1500) options.push(`Monatlicher Sparplan von <strong>${fmt.format(goal.monthlyNeeded)}</strong> reicht ohne Marktrendite — z.B. ETF-Sparplan bei Flatex/Trade Republic einrichten.`);
   if (options.length === 0) options.push('Bei aktueller Allokation und Zielsetzung: laufender Kurs beibehalten und regelmäßig prüfen.');
   document.getElementById('analysisText').innerHTML = `
     <div class="block"><strong>Lage heute:</strong> Gesamtwert ${fmt.format(totals.totalCur)}, Performance gegenüber Einstand: <span class="${totals.totalPnl >= 0 ? 'positive' : 'negative'}">${totals.totalPnl >= 0 ? '+' : ''}${fmt.format(totals.totalPnl)} (${fmtNum(totals.totalPnlPct, 1)}%)</span>.</div>
     <div class="block"><strong>Allokation:</strong><div style="margin-top:6px;font-size:12px;">${allocLines}</div></div>
+    <div class="block"><strong>Strategie:</strong> ${strategy.pathLabel}: <strong>${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite</strong>. Risiko: <strong>${strategy.riskLabel}</strong> (${fmtNum(strategy.riskPct, 0)}%).</div>
     <div class="block"><strong>Auffälligkeiten:</strong><div style="margin-top:6px;">${obs.map(o => `<div>• ${o}</div>`).join('')}</div></div>
     <div class="block"><strong>Ziel-Realität:</strong> ${goalRealityText}</div>
     <div class="block"><strong>Konkrete Optionen (keine Empfehlung):</strong><div style="margin-top:6px;">${options.map((o, i) => `<div>${i + 1}. ${o}</div>`).join('')}</div></div>`;
@@ -4235,6 +4308,8 @@ async function initApp() {
     document.getElementById('goalYear').value = String(appData.goal.year);
     document.getElementById('goalAmount').value = String(appData.goal.amount);
     document.getElementById('goalSavings').value = String(appData.goal.savingsRate || 0);
+    document.getElementById('goalPath').value = String(appData.goal.pathSavingsPct ?? 50);
+    document.getElementById('goalRisk').value = String(appData.goal.riskPct ?? 50);
   }
   loadManualPrices();
   chatHistory = [];
@@ -4258,16 +4333,20 @@ function wireEvents() {
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
   document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
-  ['goalYear', 'goalAmount', 'goalSavings'].forEach(id => {
+  ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk'].forEach(id => {
     document.getElementById(id).addEventListener('input', async () => {
       if (!appData) return;
       const year = parseInt(document.getElementById('goalYear').value, 10);
       const amount = parseInt(document.getElementById('goalAmount').value, 10);
       const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0;
+      const pathSavingsPct = parseInt(document.getElementById('goalPath').value, 10) || 0;
+      const riskPct = parseInt(document.getElementById('goalRisk').value, 10) || 0;
       if (appData.goal) {
         appData.goal.year = year;
         appData.goal.amount = amount;
         appData.goal.savingsRate = savingsRate;
+        appData.goal.pathSavingsPct = pathSavingsPct;
+        appData.goal.riskPct = riskPct;
       }
       const totals = renderTotals();
       const goal = renderGoal(totals);
@@ -4663,11 +4742,12 @@ function buildChatSystemPrompt() {
     return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${pos.shares} Stk × ${live.price.toFixed(2)} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
   }).join('\n');
   const goal = appData.goal || { year: 2026, amount: 15000 };
+  const strategy = getGoalStrategy(goal);
   // Faktenblatt + abgeleitete Goal-Daten für Tiefe
   const today = new Date();
   const endDate = new Date(goal.year, 11, 31);
   const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
-  const goalEnriched = { ...goal, monthsToGoal, gap: goal.amount - totalCur, monthlyNeeded: (goal.amount - totalCur) / monthsToGoal, requiredReturnPct: totalCur > 0 ? ((goal.amount / totalCur) - 1) * 100 : 0 };
+  const goalEnriched = { ...goal, ...strategy, monthsToGoal, gap: goal.amount - totalCur, monthlyNeeded: (goal.amount - totalCur) / monthsToGoal, requiredReturnPct: totalCur > 0 ? ((goal.amount / totalCur) - 1) * 100 : 0 };
   const factSheet = buildFactSheet({ totalCur, totalCost, totalPnl, totalPnlPct }, goalEnriched);
   return `Du bist ein intelligenter KI-Chat fuer dieses Portfolio und fuer komplexe Fragen des Nutzers. Sprache: Deutsch.
 
@@ -4693,6 +4773,8 @@ P&L: ${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)} € (${totalPnlPct.toFixe
 
 ZIEL des Nutzers: ${goal.amount} € bis Ende ${goal.year}
 SPARRATE des Nutzers: ${goal.savingsRate || 0} €/Monat (regelmäßige Einzahlung)
+STRATEGIE des Nutzers: ${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite (${strategy.pathLabel}); Risiko ${strategy.riskLabel} (${fmtNum(strategy.riskPct, 0)}%).
+Diese Strategie ist wichtig: Antworten sollen dazu passen, ob der Nutzer sein Ziel eher über Sparrate oder Rendite erreichen will.
 
 Beantworte die aktuelle Frage mit Bezug auf Portfolio, Langzeitgedaechtnis und Chatverlauf. Erinnere am Ende NICHT bei jeder Antwort an Disclaimer - nur wenn die Frage konkrete Anlageempfehlungen verlangt.`;
 }
@@ -4996,17 +5078,38 @@ async function analyzeScreenshot() {
   status.classList.remove('error'); status.classList.add('visible');
   status.textContent = 'Haiku liest den Screenshot — kann ~5-10 Sek dauern …';
   btn.disabled = true;
-  const prompt = `Du bekommst einen Screenshot einer Depotposition aus einer Banking-App.
+  const prompt = `Du bekommst einen Screenshot aus einer Banking-/Broker-App.
+Er kann entweder eine einzelne Depotposition ODER eine Tabelle mit vielen Buchungszeilen enthalten.
 Lies die Daten präzise aus.
 
 Gib AUSSCHLIESSLICH ein JSON-Objekt zurück (kein Text drumherum, keine Markdown-Codeblöcke):
+
+Variante A: einzelne Position
 {
   "name": "<vollständiger Name des Wertpapiers>",
-  "symbol": "<Tickersymbol oder WKN, falls sichtbar>",
+  "symbol": "<Tickersymbol, ISIN oder WKN, falls sichtbar>",
   "type": "<ETF | Aktie | Crypto>",
   "shares": <Stückzahl als Zahl>,
   "costPrice": <Einstandspreis pro Stück in EUR als Zahl>,
   "manualPrice": <aktueller Kurs pro Stück in EUR als Zahl, falls sichtbar>
+}
+
+Variante B: Buchungstabelle mit mehreren Titeln
+{
+  "transactions": [
+    {
+      "date": "YYYY-MM-DD",
+      "name": "<Bezeichnung>",
+      "isin": "<ISIN falls sichtbar>",
+      "symbol": "<Ticker/WKN/ISIN falls sichtbar>",
+      "type": "<ETF | Aktie | Crypto>",
+      "quantity": <Nominal/Stück als Zahl, Vorzeichen aus Tabelle übernehmen>,
+      "amount": <Betrag in EUR als Zahl, Vorzeichen aus Tabelle übernehmen>,
+      "price": <Kurs pro Stück in EUR als Zahl>,
+      "txType": "<buy | sell | fusion | distribution | ignore>",
+      "note": "<Buchungsinformation kurz>"
+    }
+  ]
 }
 
 Wichtig:
@@ -5014,13 +5117,17 @@ Wichtig:
 - Bei deutschem Format (Komma als Dezimaltrennzeichen) in Punkt konvertieren
 - Wenn ein Feld nicht erkennbar ist: ganz weglassen (NICHT null oder "")
 - Typ: ETF bei ETF/Fonds, Aktie bei Einzelaktien, Crypto bei Kryptowährungen
+- Tabellenzeilen "Ausführung ORDER Kauf" sind txType "buy"
+- Tabellenzeilen "Ausführung ORDER Verkauf" sind txType "sell"
+- Tabellenzeilen "Fusion" sind txType "fusion" und behalten das Mengen-Vorzeichen
+- Tabellenzeilen "Thesaurierung", Steuer, Gebühren oder reine Buchungs-/Informationszeilen sind txType "ignore" oder "distribution", nicht als normaler Kauf/Verkauf markieren
 
 NUR JSON, sonst nichts.`;
   try {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ image: ssBase64, imageMediaType: ssMime, prompt, maxTokens: 400, temperature: 0 })
+      body: JSON.stringify({ image: ssBase64, imageMediaType: ssMime, prompt, maxTokens: 5000, temperature: 0 })
     });
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
     const result = await res.json();
@@ -5030,10 +5137,11 @@ NUR JSON, sonst nichts.`;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Keine JSON-Daten erkannt — bitte manuell eingeben');
     const data = JSON.parse(jsonMatch[0]);
-    if (!data.name || !data.shares || !data.costPrice) throw new Error('Wichtige Felder fehlen (Name/Stück/Einstand) — bitte manuell ergänzen');
+    const batchRows = normalizeScreenshotTransactions(data);
+    if (batchRows.length === 0 && (!data.name || !data.shares || !data.costPrice)) throw new Error('Wichtige Felder fehlen (Name/Stück/Einstand) — bitte manuell ergänzen');
     closeScreenshotModal();
-    // Neuer Flow: Vorschau-Modal mit Konflikterkennung statt direkt openAddPositionModal
-    openScreenshotPreviewModal(data);
+    if (batchRows.length > 0) openScreenshotBatchPreviewModal(batchRows);
+    else openScreenshotPreviewModal(data);
   } catch (e) {
     status.classList.add('error');
     status.textContent = 'Fehler: ' + e.message;
@@ -5043,6 +5151,96 @@ NUR JSON, sonst nichts.`;
 
 // ===== SCREENSHOT-IMPORT — Vorschau + Konflikterkennung + Übernahme als Transaktion =====
 let ssPreviewMatchedPosId = null;
+let ssBatchRows = null;
+
+function parseImportNumber(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  let cleaned = raw
+    .replace(/\s/g, '')
+    .replace(/St(?:ück|k)?\.?/gi, '')
+    .replace(/EUR|€/gi, '')
+    .replace(/[^\d,.-]/g, '');
+  if (!cleaned) return null;
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+  if (hasComma && hasDot) cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  else if (hasComma) cleaned = cleaned.replace(',', '.');
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : null;
+}
+
+function normalizeImportDate(value) {
+  const raw = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/);
+  if (m) {
+    const year = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+    return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return toIsoDate(new Date());
+}
+
+function inferImportType(row) {
+  const explicit = String(row.type || '').trim();
+  if (/^etf$/i.test(explicit)) return 'ETF';
+  if (/^aktie$/i.test(explicit)) return 'Aktie';
+  if (/^crypto$/i.test(explicit)) return 'Crypto';
+  const name = normalizeText(row.name || row.bezeichnung || '');
+  const isin = String(row.isin || row.symbol || '').toUpperCase();
+  if (/etf|msci|fonds|fund|acc|dist/.test(name) || /^(IE|LU)/.test(isin)) return 'ETF';
+  return 'Aktie';
+}
+
+function inferImportTxType(row, quantity, amount) {
+  const explicit = String(row.txType || row.action || '').toLowerCase();
+  const note = normalizeText(row.note || row.bookingInfo || row.buchungsinformation || '');
+  if (explicit.includes('buy') || explicit.includes('kauf')) return 'buy';
+  if (explicit.includes('sell') || explicit.includes('verkauf')) return 'sell';
+  if (explicit.includes('fusion')) return 'fusion';
+  if (explicit.includes('distribution') || explicit.includes('thesaur')) return 'ignore';
+  if (/thesaur|steuer|gebuhr|gebühr|dividend|ausschutt|ausschütt/.test(note)) return 'ignore';
+  if (/fusion|umtausch/.test(note)) return 'fusion';
+  if (/verkauf/.test(note) || quantity < 0 || amount < 0) return 'sell';
+  if (/kauf/.test(note) || quantity > 0 || amount > 0) return 'buy';
+  return 'ignore';
+}
+
+function normalizeScreenshotTransactions(data) {
+  const rows = Array.isArray(data?.transactions) ? data.transactions : Array.isArray(data?.rows) ? data.rows : Array.isArray(data?.buchungen) ? data.buchungen : [];
+  return rows.map((row, idx) => {
+    const quantity = parseImportNumber(row.quantity ?? row.shares ?? row.nominal ?? row.stueck ?? row.stück);
+    const amount = parseImportNumber(row.amount ?? row.value ?? row.betrag);
+    const price = parseImportNumber(row.price ?? row.kurs ?? row.costPrice);
+    const name = String(row.name || row.bezeichnung || row.title || '').trim();
+    const isin = String(row.isin || '').trim().toUpperCase();
+    const symbol = String(row.symbol || row.ticker || row.wkn || isin || '').trim().toUpperCase();
+    const date = normalizeImportDate(row.date || row.datum);
+    const note = String(row.note || row.bookingInfo || row.buchungsinformation || '').trim();
+    const txType = inferImportTxType(row, quantity || 0, amount || 0);
+    const qtyAbs = Math.abs(quantity || 0);
+    const valueAbs = Math.abs(amount || 0);
+    const px = price && price > 0 ? price : (qtyAbs > 0 && valueAbs > 0 ? valueAbs / qtyAbs : null);
+    const type = inferImportType({ ...row, name, isin, symbol });
+    return {
+      rowIndex: idx + 1,
+      date, name, isin, symbol, type,
+      quantity: qtyAbs,
+      signedQuantity: quantity || 0,
+      amount: valueAbs,
+      signedAmount: amount || 0,
+      price: px,
+      txType,
+      note
+    };
+  }).filter(row => row.name && row.quantity > 0 && row.price > 0);
+}
+
+function importRowKey(row) {
+  return [row.date, row.symbol || row.isin, row.name, row.txType, row.signedQuantity, row.signedAmount, row.price].join('|');
+}
+
 function findMatchingPosition(name, symbol) {
   if (!Array.isArray(appData?.positions)) return null;
   const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
@@ -5060,7 +5258,12 @@ function findMatchingPosition(name, symbol) {
   });
 }
 function openScreenshotPreviewModal(data) {
+  ssBatchRows = null;
   ssPreviewMatchedPosId = null;
+  document.getElementById('ssSingleFields').style.display = '';
+  document.getElementById('ssBatchPreview').style.display = 'none';
+  document.getElementById('ssBatchPreview').innerHTML = '';
+  document.getElementById('sspSave').textContent = 'Übernehmen';
   document.getElementById('sspName').value = data.name || '';
   document.getElementById('sspSymbol').value = data.symbol || '';
   document.getElementById('sspType').value = data.type || 'Aktie';
@@ -5100,11 +5303,50 @@ function openScreenshotPreviewModal(data) {
   conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
   document.getElementById('ssPreviewModal').classList.add('active');
 }
+
+function openScreenshotBatchPreviewModal(rows) {
+  ssPreviewMatchedPosId = null;
+  ssBatchRows = rows;
+  const importable = rows.filter(r => r.txType === 'buy' || r.txType === 'sell' || r.txType === 'fusion');
+  const ignored = rows.length - importable.length;
+  const conflictsEl = document.getElementById('ssConflicts');
+  const batchEl = document.getElementById('ssBatchPreview');
+  document.getElementById('ssSingleFields').style.display = 'none';
+  batchEl.style.display = 'block';
+  document.getElementById('sspSave').textContent = `${importable.length} Buchungen übernehmen`;
+  const items = [
+    { kind: 'info', text: `${importable.length} echte Depotbuchungen erkannt. Käufe/Verkäufe werden als Transaktionen gebucht und Positionen zusammengeführt.` }
+  ];
+  if (ignored > 0) items.push({ kind: 'warn', text: `${ignored} Thesaurierungs-/Steuer-/Infozeilen werden bewusst ignoriert, damit keine künstlichen Käufe oder Verkäufe entstehen.` });
+  const unmatchedSells = importable.filter(r => (r.txType === 'sell' || (r.txType === 'fusion' && r.signedQuantity < 0)) && !findMatchingPosition(r.name, r.symbol || r.isin));
+  if (unmatchedSells.length > 0) items.push({ kind: 'warn', text: `${unmatchedSells.length} Verkauf/Abgang ohne bestehende Position erkannt. Diese Zeilen werden beim Speichern übersprungen.` });
+  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
+  batchEl.innerHTML = rows.map(row => {
+    const action = row.txType === 'ignore' ? 'IGNOR' : row.txType === 'sell' || (row.txType === 'fusion' && row.signedQuantity < 0) ? 'VERK.' : row.txType === 'fusion' ? 'FUSION' : 'KAUF';
+    return `<div class="ss-batch-row ${row.txType === 'ignore' ? 'ignore' : (action === 'VERK.' ? 'sell' : 'buy')}">
+      <div class="date">${formatDateAT(row.date)}</div>
+      <div>
+        <div class="name">${escapeHtml(row.name)}</div>
+        <div class="meta">${escapeHtml(row.symbol || row.isin || '')} · ${fmtNum(row.quantity, row.quantity % 1 ? 6 : 0)} Stk · ${fmtNum(row.price)} € · ${fmt.format(row.amount || row.quantity * row.price)}</div>
+        ${row.note ? `<div class="meta">${escapeHtml(row.note.slice(0, 90))}</div>` : ''}
+      </div>
+      <div class="type">${action}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('ssPreviewModal').classList.add('active');
+}
+
 function closeScreenshotPreviewModal() {
   document.getElementById('ssPreviewModal').classList.remove('active');
   ssPreviewMatchedPosId = null;
+  ssBatchRows = null;
+  document.getElementById('sspSave').textContent = 'Übernehmen';
 }
 async function saveScreenshotPreview() {
+  if (Array.isArray(ssBatchRows) && ssBatchRows.length > 0) {
+    await saveScreenshotBatchPreview();
+    return;
+  }
   const name = document.getElementById('sspName').value.trim();
   const symbol = document.getElementById('sspSymbol').value.trim();
   const type = document.getElementById('sspType').value;
@@ -5151,6 +5393,77 @@ async function saveScreenshotPreview() {
   await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
   await fetchAllWeeklyCharts();
   await refreshUI();
+}
+
+function upsertImportedPosition(row, asBuy) {
+  let pos = findMatchingPosition(row.name, row.symbol || row.isin);
+  if (!pos && asBuy) {
+    pos = {
+      id: 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      name: row.name,
+      symbol: row.symbol || row.isin || '',
+      type: row.type,
+      shares: 0,
+      costPrice: row.price,
+      manualPrice: row.price
+    };
+    if (row.isin) pos.stammdaten = { isin: row.isin };
+    appData.positions.push(pos);
+  }
+  return pos;
+}
+
+async function saveScreenshotBatchPreview() {
+  if (!Array.isArray(ssBatchRows) || ssBatchRows.length === 0) return;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  const existingKeys = new Set(appData.transactions.map(t => t.importKey).filter(Boolean));
+  let booked = 0, skipped = 0;
+  for (const row of ssBatchRows) {
+    if (row.txType === 'ignore') { skipped++; continue; }
+    const isSell = row.txType === 'sell' || (row.txType === 'fusion' && row.signedQuantity < 0);
+    const isBuy = row.txType === 'buy' || (row.txType === 'fusion' && row.signedQuantity > 0);
+    if (!isSell && !isBuy) { skipped++; continue; }
+    const key = importRowKey(row);
+    if (existingKeys.has(key)) { skipped++; continue; }
+    const pos = upsertImportedPosition(row, isBuy);
+    if (!pos) { skipped++; continue; }
+    const value = row.amount || row.quantity * row.price;
+    if (isBuy) {
+      const newShares = pos.shares + row.quantity;
+      const newCostBasis = pos.costPrice * pos.shares + value;
+      pos.shares = newShares;
+      pos.costPrice = newShares > 0 ? newCostBasis / newShares : row.price;
+      if (!pos.cgId) pos.manualPrice = row.price;
+      appData.transactions.push({
+        id: makeTxId(), date: row.date, assetId: pos.id, assetType: assetTypeOf(pos),
+        txType: 'buy', quantity: row.quantity, price: row.price, value, fees: 0,
+        importKey: key,
+        note: `${row.txType === 'fusion' ? 'Fusion/Umtausch' : 'Per Screenshot-Tabellenimport'}${row.note ? ' · ' + row.note : ''}`
+      });
+      booked++;
+    } else if (isSell) {
+      const sellQty = Math.min(row.quantity, pos.shares);
+      if (sellQty <= 0) { skipped++; continue; }
+      pos.shares = Math.max(0, pos.shares - sellQty);
+      if (!pos.cgId) pos.manualPrice = row.price;
+      appData.transactions.push({
+        id: makeTxId(), date: row.date, assetId: pos.id, assetType: assetTypeOf(pos),
+        txType: 'sell', quantity: sellQty, price: row.price, value: sellQty * row.price, fees: 0,
+        importKey: key,
+        note: `${row.txType === 'fusion' ? 'Fusion/Umtausch' : 'Per Screenshot-Tabellenimport'}${row.note ? ' · ' + row.note : ''}`
+      });
+      if (pos.shares <= 1e-9) appData.positions = appData.positions.filter(p => p.id !== pos.id);
+      booked++;
+    }
+    existingKeys.add(key);
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeScreenshotPreviewModal();
+  await savePositionsToKV();
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
+  await fetchAllWeeklyCharts();
+  await refreshUI();
+  alert(`${booked} Buchungen übernommen.${skipped ? ` ${skipped} Zeilen übersprungen/ignoriert.` : ''}`);
 }
 
 function bootstrap() { initTheme(); wireEvents(); showScreen('gateScreen'); }
