@@ -486,24 +486,26 @@
   .card { cursor: pointer; }
   .card.expanded { cursor: default; }
   .card.special { cursor: default; }
-  .card-collapsed-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 34%) auto auto; align-items: center; gap: 10px; }
-  .card-collapsed-left { min-width: 0; flex: 1; }
+  .card-collapsed-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 330px) 26px 18px; align-items: center; gap: 12px; }
+  .card-collapsed-left { min-width: 0; align-self: center; }
   .card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
   .card-name-row .card-name { font-size: 14px; font-weight: 500; margin: 0; }
   .card-meta-line { font-size: 10px; color: var(--text-tertiary); }
   .card-meta-line .pct-portfolio { color: var(--text-secondary); }
   .card-meta-line .pct-portfolio.warn { color: #fca5a5; }
-  .card-pnl-mini { text-align: right; flex-shrink: 0; }
-  .card-pnl-mini .val { font-size: 14px; font-weight: 500; }
-  .card-pnl-mini .pct { font-size: 11px; }
-  .card-collapsed-metrics { background: var(--bg-secondary); border-radius: 8px; padding: 7px 9px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; min-width: 0; }
-  .card-mini-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
-  .card-mini-row.full { grid-column: 1 / -1; }
-  .card-mini-row .lbl { color: var(--text-tertiary); font-size: 10px; white-space: nowrap; }
-  .card-mini-row .val { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
-  .card-mini-row .sub { color: var(--text-secondary); font-size: 11px; text-align: right; }
-  .card-mini-row .val.positive, .card-mini-row .sub.positive { color: var(--positive); }
-  .card-mini-row .val.negative, .card-mini-row .sub.negative { color: var(--negative); }
+  .card-collapsed-metrics { justify-self: end; width: 100%; background: rgba(255,255,255,0.025); border: 1px solid var(--border-light); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; min-width: 0; box-sizing: border-box; }
+  body.light .card-collapsed-metrics { background: rgba(0,0,0,0.025); }
+  .card-mini-main { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--border-light); padding-bottom: 6px; }
+  .card-mini-main .lbl, .card-mini-block .lbl { color: var(--text-tertiary); font-size: 10px; white-space: nowrap; }
+  .card-mini-total { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+  .card-mini-details { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+  .card-mini-block { min-width: 0; }
+  .card-mini-block .val { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-mini-block.today { text-align: right; }
+  .card-mini-block.today .val { font-size: 12px; color: var(--text-primary); }
+  .card-mini-block.today .pct { display: block; margin-top: 1px; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .card-mini-total.positive, .card-mini-block .val.positive, .card-mini-block .pct.positive { color: var(--positive); }
+  .card-mini-total.negative, .card-mini-block .val.negative, .card-mini-block .pct.negative { color: var(--negative); }
   .card-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
   .card-chevron svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
   .card-quick-edit { background: transparent; border: 0; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
@@ -535,8 +537,8 @@
   body.light .lot-row { border-bottom-color: rgba(0,0,0,0.06); }
   .lot-row.head { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; padding-top: 0; }
   .lot-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
-  @media (max-width: 760px) { .card-collapsed-row { grid-template-columns: minmax(0, 1fr) auto auto; } .card-collapsed-metrics { grid-column: 1 / -1; grid-row: 2; } }
-  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } .card-collapsed-metrics { grid-template-columns: 1fr; } .card-mini-row.full { grid-column: auto; } }
+  @media (max-width: 760px) { .card-collapsed-row { grid-template-columns: minmax(0, 1fr) 26px 18px; } .card-collapsed-metrics { grid-column: 1 / -1; grid-row: 2; width: 100%; justify-self: stretch; } }
+  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } .card-mini-details { grid-template-columns: 1fr 1fr; gap: 10px; } .card-mini-total { font-size: 11px; } }
   .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
   body.light .warn-box { background: rgba(245,158,11,0.12); color: #92400e; }
   /* ===== CHART TABS + LADEANIMATION ===== */
@@ -3509,7 +3511,9 @@ function buildCard(pos, totals, alloc) {
   const liveBadge = live.live ? `<span class="risk-badge risk-low">LIVE</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
   const todayMove = getPositionTodayChange(pos, live);
   const todayClass = todayMove && todayMove.eur >= 0 ? 'positive' : 'negative';
-  const todayText = todayMove ? `${todayMove.eur >= 0 ? '+' : ''}${fmt.format(todayMove.eur)} (${todayMove.pct >= 0 ? '+' : ''}${fmtNum(todayMove.pct, 2)} %)` : '—';
+  const todayEurText = todayMove ? `${todayMove.eur >= 0 ? '+' : ''}${fmt.format(todayMove.eur)}` : '—';
+  const todayPctText = todayMove ? `${todayMove.pct >= 0 ? '+' : ''}${fmtNum(todayMove.pct, 2)} %` : '';
+  const todayText = todayMove ? `${todayEurText} (${todayPctText})` : '—';
   const updatedText = `${live.source ? escapeHtml(live.source) + ' · ' : ''}${escapeHtml(formatLiveUpdatedAt(live))}`;
   const collapsedUpdatedText = `${escapeHtml(formatLiveUpdatedShort(live))}${live.venueLabel ? ' · ' + escapeHtml(live.venueLabel) : ''}`;
   const portfolioInfo = isClump ? `<span class="pct-portfolio warn">${fmtNum(pctPortfolio, 0)} % Portfolio · Klumpenrisiko</span>` : `<span class="pct-portfolio">${fmtNum(pctPortfolio, 0)} % Portfolio</span>`;
@@ -3528,9 +3532,21 @@ function buildCard(pos, totals, alloc) {
         <div class="card-meta-line">${escapeHtml(pos.type || '')} · ${escapeHtml(pos.symbol || '')} · ${portfolioInfo}</div>
       </div>
       <div class="card-collapsed-metrics" title="${updatedText}">
-        <div class="card-mini-row full"><span class="lbl">Gesamt</span><span class="val ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)} · ${fmtPct(pnlPct)}</span></div>
-        <div class="card-mini-row"><span class="lbl">Kurs Datum</span><span class="sub">${collapsedUpdatedText}</span></div>
-        <div class="card-mini-row"><span class="lbl">Veränd. heute</span><span class="val ${todayMove ? todayClass : ''}">${todayText}</span></div>
+        <div class="card-mini-main">
+          <span class="lbl">Gesamt</span>
+          <span class="card-mini-total ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)} · ${fmtPct(pnlPct)}</span>
+        </div>
+        <div class="card-mini-details">
+          <div class="card-mini-block">
+            <span class="lbl">Kursdatum</span>
+            <span class="val">${collapsedUpdatedText}</span>
+          </div>
+          <div class="card-mini-block today">
+            <span class="lbl">Heute</span>
+            <span class="val ${todayMove ? todayClass : ''}">${todayEurText}</span>
+            ${todayPctText ? `<span class="pct ${todayClass}">${todayPctText}</span>` : ''}
+          </div>
+        </div>
       </div>
       <button class="card-quick-edit" data-quickedit-id="${pos.id}" title="Bearbeiten" aria-label="Bearbeiten">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
