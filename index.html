@@ -250,6 +250,20 @@
   .pos-action-btn.sell:hover { background: rgba(245,158,11,0.12); }
   .pos-action-btn.buy { color: var(--positive); }
   .pos-action-btn.buy:hover { background: rgba(34,197,94,0.12); }
+  .venue-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 10px; color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .venue-pill:hover { background: var(--bg-track); color: var(--text-primary); }
+  .venue-pill svg { width: 9px; height: 9px; stroke: currentColor; fill: none; flex-shrink: 0; }
+  .venue-pill .name { font-weight: 500; }
+  .venue-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; margin: 8px 0; font-size: 11px; color: var(--text-secondary); }
+  .venue-list { display: flex; flex-direction: column; gap: 2px; max-height: 360px; overflow-y: auto; }
+  .venue-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--bg-secondary); border-radius: 8px; cursor: pointer; transition: background 0.15s; font-size: 14px; }
+  .venue-item:hover { background: var(--bg-track); }
+  .venue-item.selected { border: 1px solid var(--positive); }
+  .venue-item .vname { font-weight: 500; color: var(--text-primary); }
+  .venue-item .vprice { font-variant-numeric: tabular-nums; color: var(--text-secondary); font-size: 13px; }
+  .venue-item .vprice.muted { color: var(--text-muted); font-style: italic; font-size: 11px; }
+  .venue-item .check { color: var(--positive); margin-left: 8px; }
+  .venue-item .check svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
   .mini-nav { position: sticky; top: 0; z-index: 50; background: var(--bg-page); padding: 8px 4px; margin: 0 -4px 8px -4px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--border-light); scrollbar-width: none; }
   .mini-nav::-webkit-scrollbar { display: none; }
   .mini-nav-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
@@ -1174,6 +1188,15 @@
     </div>
     <div class="modal-field"><label>Geplante Positionsgröße (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlSize" placeholder="z.B. 1000"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="wlCancel">Abbrechen</button><button class="auth-btn" id="wlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="venueModal">
+  <div class="modal">
+    <h3 id="venueModalTitle">Handelsplatz auswählen</h3>
+    <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px 0;line-height:1.4;" id="venueModalSubtitle">Wähle den Handelsplatz für die Live-Kursabfrage. „Auto" überlässt der Quelle die Hauptbörse.</p>
+    <div class="venue-list" id="venueListBody"></div>
+    <div class="modal-actions"><button class="auth-btn" id="venueCloseBtn">Schließen</button></div>
   </div>
 </div>
 
@@ -3196,15 +3219,36 @@ function quoteSymbolForPosition(pos) {
   return raw;
 }
 
+// ===== HANDELSPLATZ (Venue) =====
+// Liste der unterstützten Börsenplätze. Code → Anzeige-Name + Yahoo-Suffix (falls Yahoo-Fallback)
+const VENUE_OPTIONS = [
+  { code: 'auto',      label: 'Auto (Hauptbörse)', short: 'AUTO',       yahooSuffix: '' },
+  { code: 'tradegate', label: 'Tradegate',         short: 'Tradegate',  yahooSuffix: '.TG' },
+  { code: 'lus',       label: 'Lang & Schwarz',    short: 'L&S',        yahooSuffix: '.LU' },
+  { code: 'xetra',     label: 'XETRA',             short: 'XETRA',      yahooSuffix: '.DE' },
+  { code: 'frankfurt', label: 'Frankfurt',         short: 'Frankfurt',  yahooSuffix: '.F' },
+  { code: 'muenchen',  label: 'München',           short: 'München',    yahooSuffix: '.MU' },
+  { code: 'stuttgart', label: 'Stuttgart',         short: 'Stuttgart',  yahooSuffix: '.SG' },
+  { code: 'duesseldorf', label: 'Düsseldorf',      short: 'Düsseldorf', yahooSuffix: '.DU' }
+];
+function getVenueByCode(code) {
+  return VENUE_OPTIONS.find(v => v.code === code) || VENUE_OPTIONS[0];
+}
+function venueOf(pos) {
+  return (pos && pos.venue) || 'auto';
+}
+
 async function fetchMarketPrices() {
   const positions = (appData?.positions || [])
     .map(pos => ({
       id: pos.id,
       name: pos.name,
       symbol: quoteSymbolForPosition(pos),
-      type: pos.type
+      type: pos.type,
+      venue: venueOf(pos),
+      isin: pos.stammdaten?.isin || pos.isin || ''
     }))
-    .filter(pos => pos.symbol);
+    .filter(pos => pos.symbol || pos.isin);
   if (positions.length === 0) return false;
   try {
     const res = await fetch(AI_WORKER_URL, {
@@ -3226,6 +3270,8 @@ async function fetchMarketPrices() {
           source: q.source || data.source || 'Marktdaten',
           symbol: q.symbol || quoteSymbolForPosition(pos),
           currency: q.currency || 'EUR',
+          venue: q.venue || venueOf(pos),
+          venueLabel: q.venueLabel || getVenueByCode(q.venue || venueOf(pos)).short,
           updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
         };
       }
@@ -3434,6 +3480,7 @@ function buildCard(pos, totals, alloc) {
         <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
       </div>
+      ${buildVenueRow(pos, live)}
       ${stammdatenBlock}
       <div class="chart-controls-row">
         <div class="chart-label">Kursverlauf</div>
@@ -3468,6 +3515,60 @@ function buildCard(pos, totals, alloc) {
       </div>
     </div>`;
   return wrap;
+}
+
+// Erzeugt die Handelsplatz-Zeile in der ausgeklappten Karte (nur bei Aktien/ETFs, nicht bei Crypto/Special)
+function buildVenueRow(pos, live) {
+  if (!pos || pos.special || pos.cgId) return '';
+  const type = String(pos.type || '').toLowerCase();
+  if (type !== 'aktie' && type !== 'etf') return '';
+  const code = venueOf(pos);
+  const venue = getVenueByCode(code);
+  const liveLabel = live && live.venueLabel ? live.venueLabel : venue.short;
+  return `<div class="venue-row">
+    <span>Handelsplatz</span>
+    <button class="venue-pill" data-venue-pick="${pos.id}" type="button" title="Handelsplatz wechseln">
+      <span class="name">${escapeHtml(liveLabel)}</span>
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>`;
+}
+
+// ===== VENUE-AUSWAHL-MODAL =====
+let venuePickingPosId = null;
+function openVenueModal(posId) {
+  const pos = appData.positions.find(p => p.id === posId);
+  if (!pos) return;
+  venuePickingPosId = posId;
+  document.getElementById('venueModalTitle').textContent = 'Handelsplatz: ' + pos.name;
+  const current = venueOf(pos);
+  const list = document.getElementById('venueListBody');
+  const live = currentPrices[posId];
+  const currentPrice = live && live.price ? fmtNum(live.price) + ' €' : null;
+  list.innerHTML = VENUE_OPTIONS.map(v => {
+    const isSel = v.code === current;
+    const priceLine = isSel && currentPrice ? `<span class="vprice">${currentPrice}</span>` : `<span class="vprice muted">${v.code === 'auto' ? 'Standard-Quelle' : 'Quelle aktivieren'}</span>`;
+    return `<div class="venue-item ${isSel ? 'selected' : ''}" data-venue-code="${v.code}">
+      <div><div class="vname">${escapeHtml(v.label)}</div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        ${priceLine}
+        ${isSel ? '<span class="check"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('venueModal').classList.add('active');
+}
+function closeVenueModal() { document.getElementById('venueModal').classList.remove('active'); venuePickingPosId = null; }
+async function selectVenue(code) {
+  if (!venuePickingPosId) return;
+  const pos = appData.positions.find(p => p.id === venuePickingPosId);
+  if (!pos) return;
+  if (code === 'auto') delete pos.venue; else pos.venue = code;
+  closeVenueModal();
+  await savePositionsToKV();
+  // Sofort neuen Live-Preis vom gewählten Handelsplatz holen
+  try { await fetchMarketPrices(); } catch (e) {}
+  await refreshUI({ skipAI: true });
 }
 
 function buildRealizedSection(pos) {
@@ -4508,6 +4609,8 @@ function wireEvents() {
     if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
     const editBtn = e.target.closest('[data-edit-id]');
     if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.editId); return; }
+    const venueBtn = e.target.closest('[data-venue-pick]');
+    if (venueBtn) { e.stopPropagation(); openVenueModal(venueBtn.dataset.venuePick); return; }
     const buyBtn = e.target.closest('[data-buy-id]');
     if (buyBtn) { e.stopPropagation(); openBuyMoreModal(buyBtn.dataset.buyId); return; }
     const sellBtn = e.target.closest('[data-sell-id]');
@@ -4660,6 +4763,13 @@ function wireEvents() {
   document.getElementById('watchlistList').addEventListener('click', e => {
     const edit = e.target.closest('[data-watch-edit]'); if (edit) { openWatchModal(edit.dataset.watchEdit); return; }
     const del = e.target.closest('[data-watch-del]'); if (del) { deleteWatchEntry(del.dataset.watchDel); return; }
+  });
+  // Venue-Auswahl-Modal
+  document.getElementById('venueCloseBtn').addEventListener('click', closeVenueModal);
+  document.getElementById('venueModal').addEventListener('click', e => {
+    if (e.target.id === 'venueModal') return closeVenueModal();
+    const item = e.target.closest('[data-venue-code]');
+    if (item) selectVenue(item.dataset.venueCode);
   });
   // Nachkauf-Modal
   document.getElementById('bmCancel').addEventListener('click', closeBuyMoreModal);
