@@ -3556,6 +3556,9 @@ const KNOWN_YAHOO_BY_NAME = [
 function cleanQuoteSymbol(symbol) {
   return String(symbol || '').trim().replace(/\s+/g, '').toUpperCase();
 }
+function looksLikeIsin(value) {
+  return /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(cleanQuoteSymbol(value));
+}
 
 function quoteSymbolForPosition(pos) {
   if (!pos || pos.cgId || pos.special) return '';
@@ -3618,7 +3621,7 @@ async function fetchMarketPrices(opts = {}) {
       symbol: quoteSymbolForPosition(pos),
       type: pos.type,
       venue: venueOf(pos),
-      isin: pos.stammdaten?.isin || pos.isin || ''
+      isin: pos.stammdaten?.isin || pos.isin || (looksLikeIsin(pos.symbol) ? cleanQuoteSymbol(pos.symbol) : '')
     }))
     .filter(pos => pos.symbol || pos.isin);
   if (positions.length === 0) return false;
