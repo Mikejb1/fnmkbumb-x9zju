@@ -3521,9 +3521,16 @@ async function fetchCryptoPrices() {
     const updatedAt = new Date().toISOString();
     appData.positions.forEach(pos => {
       if (pos.cgId && data[pos.cgId]) {
+        const price = Number(data[pos.cgId].eur);
+        const pct = Number(data[pos.cgId].eur_24h_change);
+        const previousClose = Number.isFinite(price) && Number.isFinite(pct) && pct > -99.9
+          ? price / (1 + pct / 100)
+          : null;
         currentPrices[pos.id] = {
-          price: data[pos.cgId].eur,
-          changePct: data[pos.cgId].eur_24h_change,
+          price,
+          previousClose,
+          change: previousClose ? price - previousClose : null,
+          changePct: Number.isFinite(pct) ? pct : null,
           live: true,
           source: 'CoinGecko',
           updatedAt
@@ -3628,9 +3635,14 @@ async function fetchMarketPrices(opts = {}) {
       const q = quotes[pos.id];
       const price = Number(q?.price);
       if (price > 0) {
+        const previousClose = Number(q?.previousClose);
+        const change = Number(q?.change);
+        const changePct = Number(q?.changePct);
         currentPrices[pos.id] = {
           price,
-          changePct: Number.isFinite(Number(q.changePct)) ? Number(q.changePct) : 0,
+          previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
+          change: Number.isFinite(change) ? change : null,
+          changePct: Number.isFinite(changePct) ? changePct : null,
           live: true,
           source: q.source || data.source || 'Marktdaten',
           symbol: q.symbol || quoteSymbolForPosition(pos),
@@ -3721,7 +3733,7 @@ async function fetchAllWeeklyCharts() {
 
 function loadManualPrices() {
   appData.positions.forEach(pos => {
-    if (!pos.cgId && !currentPrices[pos.id]?.live) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, changePct: pos.manualChangePct ?? 0, live: false };
+    if (!pos.cgId && !currentPrices[pos.id]?.live) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, previousClose: null, change: null, changePct: null, live: false };
     if (!pos.cgId && pos.weeklyHistory) weeklyData[pos.id] = pos.weeklyHistory;
   });
 }
@@ -3775,12 +3787,30 @@ function reRenderAllCharts() {
 function getPositionTodayChange(pos, live) {
   const pct = Number(live?.changePct);
   const price = Number(live?.price);
+  const previousClose = Number(live?.previousClose);
+  const changePerShare = Number(live?.change);
   const shares = Number(pos?.shares || 0);
-  if (!Number.isFinite(pct) || !Number.isFinite(price) || price <= 0 || shares <= 0 || pct <= -99.9) return null;
+  if (!Number.isFinite(price) || price <= 0 || shares <= 0) return null;
+
+  if (Number.isFinite(previousClose) && previousClose > 0) {
+    const eur = (price - previousClose) * shares;
+    const directPct = ((price - previousClose) / previousClose) * 100;
+    return { eur, pct: directPct, value: price * shares, previousClose, source: 'previousClose' };
+  }
+
+  if (Number.isFinite(changePerShare)) {
+    const prev = price - changePerShare;
+    if (Number.isFinite(prev) && prev > 0) {
+      const directPct = (changePerShare / prev) * 100;
+      return { eur: changePerShare * shares, pct: directPct, value: price * shares, previousClose: prev, source: 'change' };
+    }
+  }
+
+  if (!Number.isFinite(pct) || pct <= -99.9) return null;
   const value = price * shares;
   const prevValue = value / (1 + pct / 100);
   const eur = value - prevValue;
-  return { eur, pct, value };
+  return { eur, pct, value, previousClose: price / (1 + pct / 100), source: 'changePct' };
 }
 
 function formatLiveUpdatedAt(live) {
@@ -3806,7 +3836,7 @@ function buildCard(pos, totals, alloc) {
   wrap.className = 'card';
   wrap.id = `card-${pos.id}`;
   wrap.dataset.posId = pos.id;
-  const live = currentPrices[pos.id] || { price: pos.costPrice, changePct: 0, live: false };
+  const live = currentPrices[pos.id] || { price: pos.costPrice, previousClose: null, change: null, changePct: null, live: false };
   const valueEur = live.price * pos.shares;
   const costValue = pos.costPrice * pos.shares;
   const pnlAbs = valueEur - costValue;
@@ -4323,9 +4353,9 @@ function renderTotals() {
     const value = live.price * pos.shares;
     totalCur += value;
     totalCost += pos.costPrice * pos.shares;
-    if (live.changePct != null && !isNaN(live.changePct)) {
-      const valueYesterday = value / (1 + live.changePct / 100);
-      todayChangeEur += value - valueYesterday;
+    const todayMove = getPositionTodayChange(pos, live);
+    if (todayMove) {
+      todayChangeEur += todayMove.eur;
       hasChangeData = true;
     }
   });
@@ -4808,7 +4838,9 @@ async function saveEditModal() {
   else delete pos.stammdaten;
   currentPrices[editingId] = {
     price: newPrice,
-    changePct: currentPrices[editingId]?.changePct ?? 0,
+    previousClose: currentPrices[editingId]?.previousClose ?? null,
+    change: currentPrices[editingId]?.change ?? null,
+    changePct: currentPrices[editingId]?.changePct ?? null,
     live: !!pos.cgId,
     source: currentPrices[editingId]?.source || (pos.cgId ? 'CoinGecko' : 'manuell'),
     updatedAt: currentPrices[editingId]?.updatedAt || new Date().toISOString()
