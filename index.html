@@ -3818,18 +3818,25 @@ function renderTotals() {
       hasChangeData = true;
     }
   });
-  // Edelmetalle + Cash addieren
+  // Obere Depot-Anzeige ohne Edelmetalle; Edelmetalle werden separat ausgewiesen.
   const metalValueTotal = metalsTotalValue();
+  const metalCostTotal = metalsTotalCost();
   const cashValue = appData.goal?.cash || 0;
+  const depotValueExMetals = totalCur + cashValue;
+  const depotCostExMetals = totalCost + cashValue;
+  const depotPnlExMetals = depotValueExMetals - depotCostExMetals;
+  const depotPnlPctExMetals = depotCostExMetals > 0 ? (depotPnlExMetals / depotCostExMetals) * 100 : 0;
+
+  // Interne Gesamtwerte bleiben inklusive Edelmetalle, damit Simulationen/Allokation weiter vollständig rechnen.
   totalCur += metalValueTotal + cashValue;
-  totalCost += metalsTotalCost() + cashValue;
+  totalCost += metalCostTotal + cashValue;
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = (totalPnl / totalCost) * 100;
-  document.getElementById('totalValue').textContent = fmt.format(totalCur);
+  document.getElementById('totalValue').textContent = fmt.format(depotValueExMetals);
   const pnlEl = document.getElementById('totalPnl');
-  pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}${fmt.format(totalPnl)} (${fmtNum(totalPnlPct)} %)`;
-  pnlEl.className = 'total-pnl ' + (totalPnl >= 0 ? 'positive' : 'negative');
-  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
+  pnlEl.textContent = `${depotPnlExMetals >= 0 ? '+' : ''}${fmt.format(depotPnlExMetals)} (${fmtNum(depotPnlPctExMetals)} %)`;
+  pnlEl.className = 'total-pnl ' + (depotPnlExMetals >= 0 ? 'positive' : 'negative');
+  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(depotCostExMetals)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
   document.getElementById('lastUpdate').textContent = `Stand: ${new Date().toLocaleString('de-AT')}`;
 
   // === Stat-Kacheln: Heute ===
@@ -3837,7 +3844,7 @@ function renderTotals() {
   const todayVal = document.getElementById('statTodayValue');
   const todaySub = document.getElementById('statTodaySub');
   if (hasChangeData) {
-    const todayPct = totalCur > 0 ? (todayChangeEur / (totalCur - todayChangeEur)) * 100 : 0;
+    const todayPct = depotValueExMetals > 0 ? (todayChangeEur / (depotValueExMetals - todayChangeEur)) * 100 : 0;
     const cls = todayChangeEur >= 0 ? 'pos' : 'neg';
     const color = todayChangeEur >= 0 ? 'var(--positive)' : 'var(--negative)';
     todayTile.className = 'stat-tile ' + cls;
@@ -3855,16 +3862,16 @@ function renderTotals() {
 
   // === Stat-Kacheln: Drawdown vom ATH ===
   if (!appData.goal) appData.goal = {};
-  const prevAth = appData.goal.ath || 0;
+  const prevAth = appData.goal.athDepotExMetals || 0;
   let athUpdated = false;
-  if (totalCur > prevAth) {
-    appData.goal.ath = totalCur;
-    appData.goal.athDate = new Date().toISOString().slice(0, 10);
+  if (depotValueExMetals > prevAth) {
+    appData.goal.athDepotExMetals = depotValueExMetals;
+    appData.goal.athDepotExMetalsDate = new Date().toISOString().slice(0, 10);
     athUpdated = true;
   }
-  const ath = appData.goal.ath || totalCur;
-  const athDate = appData.goal.athDate ? new Date(appData.goal.athDate) : new Date();
-  const drawdownPct = ath > 0 ? ((totalCur - ath) / ath) * 100 : 0;
+  const ath = appData.goal.athDepotExMetals || depotValueExMetals;
+  const athDate = appData.goal.athDepotExMetalsDate ? new Date(appData.goal.athDepotExMetalsDate) : new Date();
+  const drawdownPct = ath > 0 ? ((depotValueExMetals - ath) / ath) * 100 : 0;
   const ddTile = document.getElementById('statDrawdown');
   const ddVal = document.getElementById('statDrawdownValue');
   const ddSub = document.getElementById('statDrawdownSub');
