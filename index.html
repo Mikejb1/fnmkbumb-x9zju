@@ -486,7 +486,7 @@
   .card { cursor: pointer; }
   .card.expanded { cursor: default; }
   .card.special { cursor: default; }
-  .card-collapsed-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .card-collapsed-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 34%) auto auto; align-items: center; gap: 10px; }
   .card-collapsed-left { min-width: 0; flex: 1; }
   .card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
   .card-name-row .card-name { font-size: 14px; font-weight: 500; margin: 0; }
@@ -496,6 +496,14 @@
   .card-pnl-mini { text-align: right; flex-shrink: 0; }
   .card-pnl-mini .val { font-size: 14px; font-weight: 500; }
   .card-pnl-mini .pct { font-size: 11px; }
+  .card-collapsed-metrics { background: var(--bg-secondary); border-radius: 8px; padding: 7px 9px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; min-width: 0; }
+  .card-mini-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+  .card-mini-row.full { grid-column: 1 / -1; }
+  .card-mini-row .lbl { color: var(--text-tertiary); font-size: 10px; white-space: nowrap; }
+  .card-mini-row .val { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+  .card-mini-row .sub { color: var(--text-secondary); font-size: 11px; text-align: right; }
+  .card-mini-row .val.positive, .card-mini-row .sub.positive { color: var(--positive); }
+  .card-mini-row .val.negative, .card-mini-row .sub.negative { color: var(--negative); }
   .card-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
   .card-chevron svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
   .card-quick-edit { background: transparent; border: 0; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
@@ -518,11 +526,17 @@
   .stammdaten-row .val.positive { color: var(--positive); }
   .stammdaten-row .val.negative { color: var(--negative); }
   .lot-table { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .lot-details { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .lot-details summary { cursor: pointer; color: var(--text-secondary); font-size: 11px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .lot-details summary::-webkit-details-marker { display: none; }
+  .lot-details summary::after { content: '⌄'; color: var(--text-muted); transition: transform 0.15s; }
+  .lot-details[open] summary::after { transform: rotate(180deg); }
   .lot-row { display: grid; grid-template-columns: 78px 1fr 70px 78px; gap: 8px; align-items: center; font-size: 11px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
   body.light .lot-row { border-bottom-color: rgba(0,0,0,0.06); }
   .lot-row.head { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; padding-top: 0; }
   .lot-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
-  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } }
+  @media (max-width: 760px) { .card-collapsed-row { grid-template-columns: minmax(0, 1fr) auto auto; } .card-collapsed-metrics { grid-column: 1 / -1; grid-row: 2; } }
+  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } .card-collapsed-metrics { grid-template-columns: 1fr; } .card-mini-row.full { grid-column: auto; } }
   .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
   body.light .warn-box { background: rgba(245,158,11,0.12); color: #92400e; }
   /* ===== CHART TABS + LADEANIMATION ===== */
@@ -1768,6 +1782,25 @@ function formatDateAT(iso) {
   const [y, m, d] = String(iso).split('-');
   return y && m && d ? `${d}.${m}.${y}` : String(iso);
 }
+function getPositionLots(pos) {
+  const txLots = (appData?.transactions || [])
+    .filter(t => t.assetId === pos.id && t.txType === 'buy' && Number(t.quantity) > 0)
+    .map(t => ({
+      date: t.date,
+      shares: Number(t.quantity) || 0,
+      costPrice: Number(t.price) || 0,
+      value: Number(t.value) || (Number(t.quantity) || 0) * (Number(t.price) || 0)
+    }));
+  const legacyLots = (pos.purchaseLots || []).map(lot => ({
+    date: lot.date,
+    shares: Number(lot.shares) || 0,
+    costPrice: Number(lot.costPrice) || 0,
+    value: Number(lot.value) || (Number(lot.shares) || 0) * (Number(lot.costPrice) || 0)
+  }));
+  return (txLots.length ? txLots : legacyLots)
+    .filter(lot => lot.date && lot.shares > 0)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
 function sharesAtDate(pos, date) {
   // Wenn Transaktionen vorhanden, primär aus Tx-Modell rechnen (berücksichtigt Käufe + Verkäufe + Adjust in der Vergangenheit)
   if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
@@ -1790,7 +1823,7 @@ function sharesAtDate(pos, date) {
 }
 function buildStammdatenSection(pos, live, totals) {
   const meta = pos.stammdaten;
-  const lots = pos.purchaseLots || [];
+  const lots = getPositionLots(pos);
   if (!meta && !lots.length) return '';
   const valueEur = live.price * pos.shares;
   const costValue = pos.costPrice * pos.shares;
@@ -1812,10 +1845,13 @@ function buildStammdatenSection(pos, live, totals) {
     row('Lagerstelle', meta?.custodian),
     row('Verwahrart', meta?.custodyType)
   ].join('');
-  const lotRows = lots.length ? `<div class="lot-table">
-    <div class="lot-row head"><span>Datum</span><span>Stück</span><span>Einstand</span><span>Wert</span></div>
-    ${lots.map(lot => `<div class="lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)}</span><span>${fmt.format(lot.costPrice)}</span><span>${fmt.format(lot.value)}</span></div>`).join('')}
-  </div>` : '';
+  const lotRows = lots.length ? `<details class="lot-details">
+    <summary><span>Käufe / Buchungen anzeigen</span><span>${lots.length} Eintrag${lots.length === 1 ? '' : 'e'}</span></summary>
+    <div class="lot-table">
+      <div class="lot-row head"><span>Datum</span><span>Stück</span><span>Einstand</span><span>Wert</span></div>
+      ${lots.map(lot => `<div class="lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)}</span><span>${fmt.format(lot.costPrice)}</span><span>${fmt.format(lot.value)}</span></div>`).join('')}
+    </div>
+  </details>` : '';
   return `<div class="stammdaten-box"><div class="stammdaten-title">Depot-Stammdaten</div><div class="stammdaten-grid">${rows}</div>${lotRows}</div>`;
 }
 
@@ -3220,7 +3256,7 @@ function quoteSymbolForPosition(pos) {
 }
 
 // ===== HANDELSPLATZ (Venue) =====
-// Liste der unterstützten Börsenplätze. Code → Anzeige-Name + Yahoo-Suffix (falls Yahoo-Fallback)
+// Aktien/ETFs — Yahoo-Suffix Mapping
 const VENUE_OPTIONS = [
   { code: 'auto',      label: 'Auto (Hauptbörse)', short: 'AUTO',       yahooSuffix: '' },
   { code: 'tradegate', label: 'Tradegate',         short: 'Tradegate',  yahooSuffix: '.TG' },
@@ -3231,14 +3267,33 @@ const VENUE_OPTIONS = [
   { code: 'stuttgart', label: 'Stuttgart',         short: 'Stuttgart',  yahooSuffix: '.SG' },
   { code: 'duesseldorf', label: 'Düsseldorf',      short: 'Düsseldorf', yahooSuffix: '.DU' }
 ];
+// Krypto — Preisquellen / Handelsplätze
+const CRYPTO_VENUE_OPTIONS = [
+  { code: 'coingecko', label: 'CoinGecko (Aggregat aller Börsen)', short: 'CoinGecko' },
+  { code: 'tradias',   label: 'Tradias',  short: 'Tradias' },
+  { code: 'bitpanda',  label: 'Bitpanda', short: 'Bitpanda' },
+  { code: 'binance',   label: 'Binance',  short: 'Binance' },
+  { code: 'coinbase',  label: 'Coinbase', short: 'Coinbase' },
+  { code: 'kraken',    label: 'Kraken',   short: 'Kraken' },
+  { code: 'bitstamp',  label: 'Bitstamp', short: 'Bitstamp' }
+];
+function isCryptoPos(pos) {
+  return String(pos?.type || '').toLowerCase() === 'crypto';
+}
+function venueOptionsFor(pos) {
+  return isCryptoPos(pos) ? CRYPTO_VENUE_OPTIONS : VENUE_OPTIONS;
+}
 function getVenueByCode(code) {
-  return VENUE_OPTIONS.find(v => v.code === code) || VENUE_OPTIONS[0];
+  return VENUE_OPTIONS.find(v => v.code === code)
+      || CRYPTO_VENUE_OPTIONS.find(v => v.code === code)
+      || VENUE_OPTIONS[0];
 }
 function venueOf(pos) {
-  return (pos && pos.venue) || 'auto';
+  if (pos && pos.venue) return pos.venue;
+  return isCryptoPos(pos) ? 'tradias' : 'auto';
 }
 
-async function fetchMarketPrices() {
+async function fetchMarketPrices(opts = {}) {
   const positions = (appData?.positions || [])
     .map(pos => ({
       id: pos.id,
@@ -3254,7 +3309,7 @@ async function fetchMarketPrices() {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'get-market-prices', positions })
+      body: JSON.stringify({ action: 'get-market-prices', positions, forceRefresh: opts.forceRefresh === true })
     });
     if (!res.ok) throw new Error('Market prices HTTP ' + res.status);
     const data = await res.json();
@@ -3426,6 +3481,15 @@ function formatLiveUpdatedAt(live) {
   }
   return 'gerade geladen';
 }
+function formatLiveUpdatedShort(live) {
+  if (!live?.live) return 'manuell';
+  const d = live.updatedAt ? new Date(live.updatedAt) : null;
+  if (!d || isNaN(d.getTime())) return 'gerade geladen';
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? `Heute / ${time}` : `${d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })} / ${time}`;
+}
 
 function buildCard(pos, totals, alloc) {
   const wrap = document.createElement('div');
@@ -3447,6 +3511,7 @@ function buildCard(pos, totals, alloc) {
   const todayClass = todayMove && todayMove.eur >= 0 ? 'positive' : 'negative';
   const todayText = todayMove ? `${todayMove.eur >= 0 ? '+' : ''}${fmt.format(todayMove.eur)} (${todayMove.pct >= 0 ? '+' : ''}${fmtNum(todayMove.pct, 2)} %)` : '—';
   const updatedText = `${live.source ? escapeHtml(live.source) + ' · ' : ''}${escapeHtml(formatLiveUpdatedAt(live))}`;
+  const collapsedUpdatedText = `${escapeHtml(formatLiveUpdatedShort(live))}${live.venueLabel ? ' · ' + escapeHtml(live.venueLabel) : ''}`;
   const portfolioInfo = isClump ? `<span class="pct-portfolio warn">${fmtNum(pctPortfolio, 0)} % Portfolio · Klumpenrisiko</span>` : `<span class="pct-portfolio">${fmtNum(pctPortfolio, 0)} % Portfolio</span>`;
   const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
   const rec = getRecommendation(pos, totals, alloc);
@@ -3462,9 +3527,10 @@ function buildCard(pos, totals, alloc) {
         </div>
         <div class="card-meta-line">${escapeHtml(pos.type || '')} · ${escapeHtml(pos.symbol || '')} · ${portfolioInfo}</div>
       </div>
-      <div class="card-pnl-mini">
-        <div class="val ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}</div>
-        <div class="pct ${pnlClass}">${fmtPct(pnlPct)}</div>
+      <div class="card-collapsed-metrics" title="${updatedText}">
+        <div class="card-mini-row full"><span class="lbl">Gesamt</span><span class="val ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)} · ${fmtPct(pnlPct)}</span></div>
+        <div class="card-mini-row"><span class="lbl">Kurs Datum</span><span class="sub">${collapsedUpdatedText}</span></div>
+        <div class="card-mini-row"><span class="lbl">Veränd. heute</span><span class="val ${todayMove ? todayClass : ''}">${todayText}</span></div>
       </div>
       <button class="card-quick-edit" data-quickedit-id="${pos.id}" title="Bearbeiten" aria-label="Bearbeiten">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -3567,7 +3633,7 @@ async function selectVenue(code) {
   closeVenueModal();
   await savePositionsToKV();
   // Sofort neuen Live-Preis vom gewählten Handelsplatz holen
-  try { await fetchMarketPrices(); } catch (e) {}
+  try { await fetchMarketPrices({ forceRefresh: true }); } catch (e) {}
   await refreshUI({ skipAI: true });
 }
 
@@ -4517,7 +4583,7 @@ async function applyGoalSettingsUpdate() {
   if (status) { status.textContent = 'Aktualisiert alles…'; status.classList.remove('dirty'); }
   try {
     if (status) status.textContent = 'Lädt aktuelle Kurse…';
-    await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
+    await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true }), fetchMetalPrices(), fetchMetalHistory(365)]);
     await fetchAllWeeklyCharts();
     if (status) status.textContent = 'Berechnet Simulationen…';
     await refreshUI({ skipAI: true });
@@ -4562,7 +4628,7 @@ function wireEvents() {
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]); await fetchAllWeeklyCharts(); await refreshUI(); });
+  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]); await fetchAllWeeklyCharts(); await refreshUI(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   document.getElementById('goalApplyBtn').addEventListener('click', applyGoalSettingsUpdate);
   ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk'].forEach(id => {
@@ -4636,7 +4702,7 @@ function wireEvents() {
     const specialCard = e.target.closest('.card.special');
     if (specialCard) return;
     // Slider/Input nicht als Klapp-Trigger werten
-    if (e.target.closest('input, button, a')) return;
+    if (e.target.closest('input, button, a, select, details, summary')) return;
     const card = e.target.closest('.card');
     if (!card) return;
     const wasExpanded = card.classList.contains('expanded');
@@ -5260,7 +5326,7 @@ async function saveNewPosition() {
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeAddPositionModal();
   await savePositionsToKV();
-  await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -5624,7 +5690,7 @@ async function saveScreenshotPreview() {
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeScreenshotPreviewModal();
   await savePositionsToKV();
-  await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -5694,7 +5760,7 @@ async function saveScreenshotBatchPreview() {
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeScreenshotPreviewModal();
   await savePositionsToKV();
-  await Promise.all([fetchCryptoPrices(), fetchMarketPrices()]);
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]);
   await fetchAllWeeklyCharts();
   await refreshUI();
   alert(`${booked} Buchungen übernommen.${skipped ? ` ${skipped} Zeilen übersprungen/ignoriert.` : ''}`);
