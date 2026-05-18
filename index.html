@@ -394,6 +394,8 @@
   .ai-source-badge { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 3px; margin-left: 6px; vertical-align: 1px; }
   .ai-source-live { background: var(--badge-live-bg); color: var(--badge-live-text); }
   .ai-source-local { background: var(--badge-stale-bg); color: var(--badge-stale-text); }
+  .quote-alert { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #fbbf24; font-size: 11px; line-height: 1.4; }
+  .quote-alert strong { color: #fde68a; }
   .analysis-text { font-size: 13px; line-height: 1.6; }
   .analysis-text strong { color: var(--text-primary); font-weight: 600; }
   .analysis-text .block { margin-bottom: 12px; }
@@ -1848,7 +1850,7 @@ const ENC = {
   _toB64(buf) { let s = ''; const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
-let appData = null, appPassword = null, currentPrices = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
+let appData = null, appPassword = null, currentPrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
 let historyVisibleSeries = { value: true, invested: true, pnl: false, goal: false };
 let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
@@ -3533,7 +3535,7 @@ async function handleGate() {
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
-function handleLogout() { appData = null; appPassword = null; currentPrices = {}; weeklyData = {}; chartRegistry = {}; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
+function handleLogout() { appData = null; appPassword = null; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
   const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
@@ -3648,7 +3650,7 @@ async function fetchMarketPrices(opts = {}) {
       isin: pos.stammdaten?.isin || pos.isin || (looksLikeIsin(pos.symbol) ? cleanQuoteSymbol(pos.symbol) : ''),
       wkn: pos.stammdaten?.wkn || pos.wkn || ''
     }))
-    .filter(pos => pos.symbol || pos.isin);
+    .filter(pos => pos.symbol || pos.isin || pos.wkn);
   if (positions.length === 0) return false;
   try {
     const res = await fetch(AI_WORKER_URL, {
@@ -3659,10 +3661,20 @@ async function fetchMarketPrices(opts = {}) {
     if (!res.ok) throw new Error('Market prices HTTP ' + res.status);
     const data = await res.json();
     const quotes = data?.quotes || {};
+    quoteIssues = {};
+    (Array.isArray(data?.missing) ? data.missing : []).forEach(item => {
+      if (!item?.id) return;
+      quoteIssues[item.id] = {
+        message: item.reason || 'Keine passende Kursquelle gefunden',
+        symbol: item.symbol || '',
+        suggestion: item.suggestion || ''
+      };
+    });
     (appData.positions || []).forEach(pos => {
       const q = quotes[pos.id];
       const price = Number(q?.price);
       if (price > 0) {
+        delete quoteIssues[pos.id];
         const previousClose = Number(q?.previousClose);
         const change = Number(q?.change);
         const changePct = Number(q?.changePct);
@@ -3678,6 +3690,22 @@ async function fetchMarketPrices(opts = {}) {
           venue: q.venue || venueOf(pos),
           venueLabel: q.venueLabel || getVenueByCode(q.venue || venueOf(pos)).short,
           updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
+        };
+      } else if (quoteIssues[pos.id]) {
+        const fallbackPrice = Number(pos.manualPrice ?? currentPrices[pos.id]?.price ?? pos.costPrice);
+        currentPrices[pos.id] = {
+          price: Number.isFinite(fallbackPrice) && fallbackPrice > 0 ? fallbackPrice : pos.costPrice,
+          previousClose: null,
+          change: null,
+          changePct: null,
+          live: false,
+          source: 'Kursquelle fehlt',
+          symbol: quoteSymbolForPosition(pos),
+          currency: 'EUR',
+          venue: venueOf(pos),
+          venueLabel: getVenueByCode(venueOf(pos)).short,
+          quoteIssue: quoteIssues[pos.id],
+          updatedAt: data.updatedAt || new Date().toISOString()
         };
       }
     });
@@ -3761,7 +3789,23 @@ async function fetchAllWeeklyCharts() {
 
 function loadManualPrices() {
   appData.positions.forEach(pos => {
-    if (!pos.cgId && !currentPrices[pos.id]?.live) currentPrices[pos.id] = { price: pos.manualPrice ?? pos.costPrice, previousClose: null, change: null, changePct: null, live: false };
+    if (!pos.cgId && !currentPrices[pos.id]?.live) {
+      const existing = currentPrices[pos.id] || {};
+      currentPrices[pos.id] = {
+        price: existing.price ?? pos.manualPrice ?? pos.costPrice,
+        previousClose: existing.previousClose ?? null,
+        change: existing.change ?? null,
+        changePct: existing.changePct ?? null,
+        live: false,
+        source: existing.source || 'manuell',
+        symbol: existing.symbol || quoteSymbolForPosition(pos),
+        currency: existing.currency || 'EUR',
+        venue: existing.venue || venueOf(pos),
+        venueLabel: existing.venueLabel || getVenueByCode(venueOf(pos)).short,
+        quoteIssue: existing.quoteIssue || quoteIssues[pos.id] || null,
+        updatedAt: existing.updatedAt || null
+      };
+    }
     if (!pos.cgId && pos.weeklyHistory) weeklyData[pos.id] = pos.weeklyHistory;
   });
 }
@@ -3874,7 +3918,8 @@ function buildCard(pos, totals, alloc) {
   const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
   const isClump = pctPortfolio > 30;
   const risk = deriveRisk(pos);
-  const liveBadge = live.live ? `<span class="risk-badge risk-low">LIVE</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
+  const quoteIssue = live.quoteIssue || quoteIssues[pos.id] || null;
+  const liveBadge = live.live ? `<span class="risk-badge risk-low">LIVE</span>` : quoteIssue ? `<span class="risk-badge risk-medium">KURS PRÜFEN</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
   const todayMove = getPositionTodayChange(pos, live);
   const todayClass = todayMove && todayMove.eur >= 0 ? 'positive' : 'negative';
   const todayEurText = todayMove ? `${todayMove.eur >= 0 ? '+' : ''}${fmt.format(todayMove.eur)}` : '—';
@@ -3887,6 +3932,7 @@ function buildCard(pos, totals, alloc) {
   const rec = getRecommendation(pos, totals, alloc);
   const recBlock = rec ? `<div class="rec-card rec-${rec.kind}"><div class="rec-icon">${recIcon(rec.kind)}</div><div class="rec-body"><div class="rec-label">KI-Empfehlung</div><div class="rec-action">${escapeHtml(rec.action)}</div><div class="rec-reason">${escapeHtml(rec.reason)}</div></div></div>` : '';
   const stammdatenBlock = buildStammdatenSection(pos, live, totals);
+  const quoteIssueBlock = quoteIssue ? `<div class="quote-alert"><strong>Kursquelle prüfen:</strong> ${escapeHtml(quoteIssue.message || 'Kein Livekurs gefunden')}${quoteIssue.symbol ? ` · Symbol: ${escapeHtml(quoteIssue.symbol)}` : ''}${quoteIssue.suggestion ? ` · Vorschlag: ${escapeHtml(quoteIssue.suggestion)}` : ''}</div>` : '';
   wrap.innerHTML = `
     <div class="card-collapsed-row">
       <div class="card-collapsed-left">
@@ -3925,6 +3971,7 @@ function buildCard(pos, totals, alloc) {
         <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
       </div>
+      ${quoteIssueBlock}
       ${buildVenueRow(pos, live)}
       ${stammdatenBlock}
       <div class="chart-controls-row">
