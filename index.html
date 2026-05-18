@@ -81,9 +81,20 @@
   .stat-edit-hint { display: inline-flex; align-items: center; gap: 3px; color: var(--positive); }
   .stat-edit-hint svg { width: 9px; height: 9px; stroke: currentColor; fill: none; }
   .total-label { font-size: 12px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
+  .total-value-group { display: flex; align-items: flex-end; justify-content: flex-end; gap: 18px; text-align: right; }
   .total-value-line { display: flex; flex-direction: column; align-items: flex-end; }
+  .market-value-line { display: flex; flex-direction: column; align-items: flex-end; padding-right: 18px; border-right: 1px solid var(--border-light); }
+  .total-mini-label { font-size: 9px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+  .market-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .market-pnl { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.25; }
   .total-value { font-size: 22px; font-weight: 600; }
   .total-pnl { font-size: 13px; font-weight: 500; }
+  @media (max-width: 640px) {
+    .total-bar-head { align-items: flex-start; }
+    .total-value-group { flex-direction: column; gap: 8px; }
+    .market-value-line { padding-right: 0; border-right: 0; }
+    .market-value { font-size: 13px; }
+  }
   .positive { color: var(--positive); } .negative { color: var(--negative); }
   .positions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
   .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
@@ -703,7 +714,18 @@
   <div class="total-bar" id="anchor-top">
     <div class="total-bar-head">
       <div><div class="total-label">Depot Stand</div><div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div></div>
-      <div class="total-value-line"><div class="total-value" id="totalValue">—</div><div class="total-pnl" id="totalPnl">—</div></div>
+      <div class="total-value-group">
+        <div class="market-value-line" title="Aktien, ETF und Krypto ohne Edelmetalle">
+          <div class="total-mini-label">Geld an der Börse</div>
+          <div class="market-value" id="marketValue">—</div>
+          <div class="market-pnl" id="marketPnl">—</div>
+        </div>
+        <div class="total-value-line" title="Gesamtwert inklusive Edelmetalle und Cash">
+          <div class="total-mini-label">Gesamt</div>
+          <div class="total-value" id="totalValue">—</div>
+          <div class="total-pnl" id="totalPnl">—</div>
+        </div>
+      </div>
     </div>
     <div class="total-stats">
       <div class="stat-tile neutral" id="statToday" title="Tagesveränderung: Wertänderung gegenüber gestern. Bei Crypto live aus CoinGecko 24h-Daten. Bei manuellen Positionen ggf. nicht verfügbar.">
@@ -4017,25 +4039,33 @@ function renderTotals() {
       hasChangeData = true;
     }
   });
-  // Obere Depot-Anzeige ohne Edelmetalle; Edelmetalle werden separat ausgewiesen.
+  // Börsenwert separat ausweisen; Gesamtwert bleibt inklusive Edelmetalle und Cash.
+  const marketValue = totalCur;
+  const marketCost = totalCost;
+  const marketPnl = marketValue - marketCost;
+  const marketPnlPct = marketCost > 0 ? (marketPnl / marketCost) * 100 : 0;
   const metalValueTotal = metalsTotalValue();
   const metalCostTotal = metalsTotalCost();
   const cashValue = appData.goal?.cash || 0;
-  const depotValueExMetals = totalCur + cashValue;
-  const depotCostExMetals = totalCost + cashValue;
-  const depotPnlExMetals = depotValueExMetals - depotCostExMetals;
-  const depotPnlPctExMetals = depotCostExMetals > 0 ? (depotPnlExMetals / depotCostExMetals) * 100 : 0;
 
-  // Interne Gesamtwerte bleiben inklusive Edelmetalle, damit Simulationen/Allokation weiter vollständig rechnen.
   totalCur += metalValueTotal + cashValue;
   totalCost += metalCostTotal + cashValue;
   const totalPnl = totalCur - totalCost;
-  const totalPnlPct = (totalPnl / totalCost) * 100;
-  document.getElementById('totalValue').textContent = fmt.format(depotValueExMetals);
+  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+
+  const marketValueEl = document.getElementById('marketValue');
+  const marketPnlEl = document.getElementById('marketPnl');
+  if (marketValueEl) marketValueEl.textContent = fmt.format(marketValue);
+  if (marketPnlEl) {
+    marketPnlEl.textContent = `${marketPnl >= 0 ? '+' : ''}${fmt.format(marketPnl)} (${fmtNum(marketPnlPct)} %)`;
+    marketPnlEl.className = 'market-pnl ' + (marketPnl >= 0 ? 'positive' : 'negative');
+  }
+
+  document.getElementById('totalValue').textContent = fmt.format(totalCur);
   const pnlEl = document.getElementById('totalPnl');
-  pnlEl.textContent = `${depotPnlExMetals >= 0 ? '+' : ''}${fmt.format(depotPnlExMetals)} (${fmtNum(depotPnlPctExMetals)} %)`;
-  pnlEl.className = 'total-pnl ' + (depotPnlExMetals >= 0 ? 'positive' : 'negative');
-  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(depotCostExMetals)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
+  pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}${fmt.format(totalPnl)} (${fmtNum(totalPnlPct)} %)`;
+  pnlEl.className = 'total-pnl ' + (totalPnl >= 0 ? 'positive' : 'negative');
+  document.getElementById('costSummary').textContent = `Einstand: ${fmt.format(totalCost)} · Edelmetalle: ${fmt.format(metalValueTotal)}`;
   document.getElementById('lastUpdate').textContent = `Stand: ${new Date().toLocaleString('de-AT')}`;
 
   // === Stat-Kacheln: Heute ===
@@ -4043,7 +4073,7 @@ function renderTotals() {
   const todayVal = document.getElementById('statTodayValue');
   const todaySub = document.getElementById('statTodaySub');
   if (hasChangeData) {
-    const todayPct = depotValueExMetals > 0 ? (todayChangeEur / (depotValueExMetals - todayChangeEur)) * 100 : 0;
+    const todayPct = marketValue > 0 ? (todayChangeEur / (marketValue - todayChangeEur)) * 100 : 0;
     const cls = todayChangeEur >= 0 ? 'pos' : 'neg';
     const color = todayChangeEur >= 0 ? 'var(--positive)' : 'var(--negative)';
     todayTile.className = 'stat-tile ' + cls;
@@ -4061,16 +4091,16 @@ function renderTotals() {
 
   // === Stat-Kacheln: Drawdown vom ATH ===
   if (!appData.goal) appData.goal = {};
-  const prevAth = appData.goal.athDepotExMetals || 0;
+  const prevAth = appData.goal.athTotal || 0;
   let athUpdated = false;
-  if (depotValueExMetals > prevAth) {
-    appData.goal.athDepotExMetals = depotValueExMetals;
-    appData.goal.athDepotExMetalsDate = new Date().toISOString().slice(0, 10);
+  if (totalCur > prevAth) {
+    appData.goal.athTotal = totalCur;
+    appData.goal.athTotalDate = new Date().toISOString().slice(0, 10);
     athUpdated = true;
   }
-  const ath = appData.goal.athDepotExMetals || depotValueExMetals;
-  const athDate = appData.goal.athDepotExMetalsDate ? new Date(appData.goal.athDepotExMetalsDate) : new Date();
-  const drawdownPct = ath > 0 ? ((depotValueExMetals - ath) / ath) * 100 : 0;
+  const ath = appData.goal.athTotal || totalCur;
+  const athDate = appData.goal.athTotalDate ? new Date(appData.goal.athTotalDate) : new Date();
+  const drawdownPct = ath > 0 ? ((totalCur - ath) / ath) * 100 : 0;
   const ddTile = document.getElementById('statDrawdown');
   const ddVal = document.getElementById('statDrawdownValue');
   const ddSub = document.getElementById('statDrawdownSub');
@@ -4094,7 +4124,22 @@ function renderTotals() {
   const savingsEl = document.getElementById('statSavingsValue');
   if (savingsEl) savingsEl.textContent = savingsRate > 0 ? fmtNoCent.format(savingsRate) : '0 €';
 
-  return { totalCur, totalCost, totalPnl, totalPnlPct, todayChangeEur, hasChangeData, ath, drawdownPct, savingsRate };
+  return { totalCur, totalCost, totalPnl, totalPnlPct, marketValue, marketCost, marketPnl, marketPnlPct, todayChangeEur, hasChangeData, ath, drawdownPct, savingsRate };
+}
+
+async function refreshLiveValuesOnly() {
+  if (!appData) return;
+  await Promise.all([
+    fetchCryptoPrices(),
+    fetchMarketPrices({ forceRefresh: true }),
+    fetchMetalPrices({ showProgress: true }),
+    fetchMetalHistory(365)
+  ]);
+  await fetchAllWeeklyCharts();
+  const totals = renderTotals();
+  renderPositions(totals);
+  renderHistory();
+  await savePositionsToKV(800);
 }
 
 function toIsoDate(d) {
@@ -4637,7 +4682,7 @@ function wireEvents() {
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-  document.getElementById('refreshBtn').addEventListener('click', async () => { if (!appData) return; await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]); await fetchAllWeeklyCharts(); await refreshUI(); });
+  document.getElementById('refreshBtn').addEventListener('click', refreshLiveValuesOnly);
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   document.getElementById('goalApplyBtn').addEventListener('click', applyGoalSettingsUpdate);
   ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk'].forEach(id => {
