@@ -1120,6 +1120,18 @@
     <h3 id="editTitle">Position bearbeiten</h3>
     <div class="modal-field"><label>Aktueller Kurs (EUR)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
     <div class="modal-field"><label>Live-Symbol / Handelsplatz</label><input type="text" class="auth-input" id="editQuoteSymbol" placeholder="z.B. 4S0.DE, NVD.DE, P911.DE"></div>
+    <div class="modal-field"><label>Handelsplatz für Live-Kurs</label>
+      <select id="editVenue" class="auth-input">
+        <option value="auto">Auto (Hauptbörse)</option>
+        <option value="tradegate">Tradegate</option>
+        <option value="lus">Lang & Schwarz</option>
+        <option value="xetra">XETRA</option>
+        <option value="frankfurt">Frankfurt</option>
+        <option value="muenchen">München</option>
+        <option value="stuttgart">Stuttgart</option>
+        <option value="duesseldorf">Düsseldorf</option>
+      </select>
+    </div>
     <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
     <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
     <div class="modal-field"><label>Risiko-Level</label>
@@ -1149,6 +1161,18 @@
     <h3 id="addPosTitle">Position hinzufügen</h3>
     <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="apName" placeholder="z.B. Apple Inc"></div>
     <div class="modal-field"><label>Symbol / Ticker (optional)</label><input type="text" class="auth-input" id="apSymbol" placeholder="z.B. AAPL"></div>
+    <div class="modal-field"><label>Handelsplatz für Live-Kurs</label>
+      <select id="apVenue" class="auth-input">
+        <option value="auto">Auto (Hauptbörse)</option>
+        <option value="tradegate">Tradegate</option>
+        <option value="lus">Lang & Schwarz</option>
+        <option value="xetra">XETRA</option>
+        <option value="frankfurt">Frankfurt</option>
+        <option value="muenchen">München</option>
+        <option value="stuttgart">Stuttgart</option>
+        <option value="duesseldorf">Düsseldorf</option>
+      </select>
+    </div>
     <div class="modal-field"><label>Typ</label>
       <select id="apType" class="auth-input">
         <option value="ETF">ETF</option>
@@ -1297,7 +1321,7 @@
     <h3 id="venueModalTitle">Handelsplatz auswählen</h3>
     <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px 0;line-height:1.4;" id="venueModalSubtitle">Wähle den Handelsplatz für die Live-Kursabfrage. „Auto" überlässt der Quelle die Hauptbörse.</p>
     <div class="venue-list" id="venueListBody"></div>
-    <div class="modal-actions"><button class="auth-btn" id="venueCloseBtn">Schließen</button></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="venueCloseBtn">Abbrechen</button><button class="auth-btn" id="venueSaveBtn">Speichern</button></div>
   </div>
 </div>
 
@@ -3621,7 +3645,8 @@ async function fetchMarketPrices(opts = {}) {
       symbol: quoteSymbolForPosition(pos),
       type: pos.type,
       venue: venueOf(pos),
-      isin: pos.stammdaten?.isin || pos.isin || (looksLikeIsin(pos.symbol) ? cleanQuoteSymbol(pos.symbol) : '')
+      isin: pos.stammdaten?.isin || pos.isin || (looksLikeIsin(pos.symbol) ? cleanQuoteSymbol(pos.symbol) : ''),
+      wkn: pos.stammdaten?.wkn || pos.wkn || ''
     }))
     .filter(pos => pos.symbol || pos.isin);
   if (positions.length === 0) return false;
@@ -3956,17 +3981,22 @@ function buildVenueRow(pos, live) {
 
 // ===== VENUE-AUSWAHL-MODAL =====
 let venuePickingPosId = null;
+let venuePendingCode = 'auto';
 function openVenueModal(posId) {
   const pos = appData.positions.find(p => p.id === posId);
   if (!pos) return;
   venuePickingPosId = posId;
+  venuePendingCode = venueOf(pos);
   document.getElementById('venueModalTitle').textContent = 'Handelsplatz: ' + pos.name;
-  const current = venueOf(pos);
+  renderVenueList(pos);
+  document.getElementById('venueModal').classList.add('active');
+}
+function renderVenueList(pos) {
   const list = document.getElementById('venueListBody');
-  const live = currentPrices[posId];
+  const live = currentPrices[pos.id];
   const currentPrice = live && live.price ? fmtNum(live.price) + ' €' : null;
   list.innerHTML = VENUE_OPTIONS.map(v => {
-    const isSel = v.code === current;
+    const isSel = v.code === venuePendingCode;
     const priceLine = isSel && currentPrice ? `<span class="vprice">${currentPrice}</span>` : `<span class="vprice muted">${v.code === 'auto' ? 'Standard-Quelle' : 'Quelle aktivieren'}</span>`;
     return `<div class="venue-item ${isSel ? 'selected' : ''}" data-venue-code="${v.code}">
       <div><div class="vname">${escapeHtml(v.label)}</div></div>
@@ -3976,17 +4006,24 @@ function openVenueModal(posId) {
       </div>
     </div>`;
   }).join('');
-  document.getElementById('venueModal').classList.add('active');
 }
-function closeVenueModal() { document.getElementById('venueModal').classList.remove('active'); venuePickingPosId = null; }
-async function selectVenue(code) {
+function closeVenueModal() { document.getElementById('venueModal').classList.remove('active'); venuePickingPosId = null; venuePendingCode = 'auto'; }
+function selectVenue(code) {
   if (!venuePickingPosId) return;
   const pos = appData.positions.find(p => p.id === venuePickingPosId);
   if (!pos) return;
+  venuePendingCode = code || 'auto';
+  renderVenueList(pos);
+}
+async function saveVenueSelection() {
+  if (!venuePickingPosId) return;
+  const pos = appData.positions.find(p => p.id === venuePickingPosId);
+  if (!pos) return;
+  const code = venuePendingCode || 'auto';
   if (code === 'auto') delete pos.venue; else pos.venue = code;
+  delete currentPrices[pos.id];
   closeVenueModal();
   await savePositionsToKV();
-  // Sofort neuen Live-Preis vom gewählten Handelsplatz holen
   try { await fetchMarketPrices({ forceRefresh: true }); } catch (e) {}
   await refreshUI({ skipAI: true });
 }
@@ -4785,6 +4822,8 @@ function openEditModal(posId) {
   const live = currentPrices[posId] || { price: pos.costPrice };
   document.getElementById('editPrice').value = live.price.toFixed(2);
   document.getElementById('editQuoteSymbol').value = pos.quoteSymbol || quoteSymbolForPosition(pos) || '';
+  const venueField = document.getElementById('editVenue');
+  if (venueField) venueField.value = venueOf(pos);
   document.getElementById('editShares').value = pos.shares;
   document.getElementById('editCost').value = pos.costPrice;
   const riskSel = document.getElementById('editRisk');
@@ -4806,6 +4845,7 @@ async function saveEditModal() {
   if (!pos) return;
   const newPrice = parseFloat(document.getElementById('editPrice').value);
   const newQuoteSymbol = cleanQuoteSymbol(document.getElementById('editQuoteSymbol')?.value || '');
+  const newVenue = document.getElementById('editVenue')?.value || 'auto';
   const newShares = parseFloat(document.getElementById('editShares').value);
   const newCost = parseFloat(document.getElementById('editCost').value);
   const newRisk = document.getElementById('editRisk')?.value || '';
@@ -4827,6 +4867,7 @@ async function saveEditModal() {
   pos.shares = newShares;
   pos.costPrice = newCost;
   if (newQuoteSymbol) pos.quoteSymbol = newQuoteSymbol; else delete pos.quoteSymbol;
+  if (newVenue === 'auto') delete pos.venue; else pos.venue = newVenue;
   if (!pos.cgId) pos.manualPrice = newPrice;
   if (newRisk) pos.risk = newRisk; else delete pos.risk;
   // Stammdaten übernehmen
@@ -4839,17 +4880,25 @@ async function saveEditModal() {
   });
   if (Object.keys(stammdaten).length > 0) pos.stammdaten = stammdaten;
   else delete pos.stammdaten;
-  currentPrices[editingId] = {
-    price: newPrice,
-    previousClose: currentPrices[editingId]?.previousClose ?? null,
-    change: currentPrices[editingId]?.change ?? null,
-    changePct: currentPrices[editingId]?.changePct ?? null,
-    live: !!pos.cgId,
-    source: currentPrices[editingId]?.source || (pos.cgId ? 'CoinGecko' : 'manuell'),
-    updatedAt: currentPrices[editingId]?.updatedAt || new Date().toISOString()
-  };
+  const needsMarketQuote = !pos.cgId && !pos.special && ['aktie', 'etf'].includes(String(pos.type || '').toLowerCase());
+  if (needsMarketQuote && (quoteSymbolForPosition(pos) || pos.stammdaten?.isin || pos.stammdaten?.wkn)) {
+    delete currentPrices[editingId];
+  } else {
+    currentPrices[editingId] = {
+      price: newPrice,
+      previousClose: currentPrices[editingId]?.previousClose ?? null,
+      change: currentPrices[editingId]?.change ?? null,
+      changePct: currentPrices[editingId]?.changePct ?? null,
+      live: !!pos.cgId,
+      source: currentPrices[editingId]?.source || (pos.cgId ? 'CoinGecko' : 'manuell'),
+      updatedAt: currentPrices[editingId]?.updatedAt || new Date().toISOString()
+    };
+  }
   closeEditModal();
   await savePositionsToKV();
+  if (needsMarketQuote) {
+    try { await fetchMarketPrices({ forceRefresh: true }); } catch (e) {}
+  }
   await refreshUI();
 }
 function closeEditModal() { editingId = null; document.getElementById('editModal').classList.remove('active'); }
@@ -5218,6 +5267,7 @@ function wireEvents() {
   });
   // Venue-Auswahl-Modal
   document.getElementById('venueCloseBtn').addEventListener('click', closeVenueModal);
+  document.getElementById('venueSaveBtn').addEventListener('click', saveVenueSelection);
   document.getElementById('venueModal').addEventListener('click', e => {
     if (e.target.id === 'venueModal') return closeVenueModal();
     const item = e.target.closest('[data-venue-code]');
@@ -5667,6 +5717,8 @@ function openAddPositionModal(prefill) {
   prefill = prefill || {};
   document.getElementById('apName').value = prefill.name || '';
   document.getElementById('apSymbol').value = prefill.symbol || '';
+  const venueField = document.getElementById('apVenue');
+  if (venueField) venueField.value = prefill.venue || 'auto';
   document.getElementById('apType').value = prefill.type || 'ETF';
   document.getElementById('apShares').value = prefill.shares != null ? prefill.shares : '';
   document.getElementById('apCost').value = prefill.costPrice != null ? prefill.costPrice : '';
@@ -5685,6 +5737,7 @@ function updateAddPosTypeFields() {
 async function saveNewPosition() {
   const name = document.getElementById('apName').value.trim();
   const symbol = document.getElementById('apSymbol').value.trim();
+  const venue = document.getElementById('apVenue')?.value || 'auto';
   const type = document.getElementById('apType').value;
   const shares = parseFloat(document.getElementById('apShares').value);
   const costPrice = parseFloat(document.getElementById('apCost').value);
@@ -5699,6 +5752,7 @@ async function saveNewPosition() {
   }
   const id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
   const newPos = { id, name, symbol, type, shares, costPrice };
+  if (venue !== 'auto' && (type === 'Aktie' || type === 'ETF')) newPos.venue = venue;
   if (type === 'Crypto' && cgId) newPos.cgId = cgId;
   else newPos.manualPrice = manualPrice;
   appData.positions.push(newPos);
