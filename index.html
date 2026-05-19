@@ -889,7 +889,7 @@
     <div class="goal-bar"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
     <div class="goal-sliders">
       <div class="slider-row"><label for="goalYear">Zieljahr</label><input type="range" id="goalYear" min="2026" max="2040" step="1" value="2026"><span class="slider-value" id="goalYearVal">2026</span></div>
-      <div class="slider-row"><label for="goalAmount">Zielbetrag</label><input type="range" id="goalAmount" min="5000" max="100000" step="500" value="15000"><span class="slider-value" id="goalAmountVal">15.000 €</span></div>
+      <div class="slider-row"><label for="goalAmount">Zielbetrag</label><input type="range" id="goalAmount" min="5000" max="500000" step="500" value="15000"><span class="slider-value" id="goalAmountVal">15.000 €</span></div>
       <div class="slider-row"><label for="goalSavings">Sparrate</label><input type="range" id="goalSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalSavingsVal">0 €</span></div>
       <div class="slider-row"><label for="goalPath">Zielweg</label><input type="range" id="goalPath" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalPathVal">50% / 50%</span></div>
       <div class="slider-row"><label for="goalRisk">Risiko</label><input type="range" id="goalRisk" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalRiskVal">Ausgewogen</span></div>
@@ -1534,7 +1534,7 @@ function layoutRowHtml({ key, label, meta }, visible, draggable = true) {
 
 function positionLayoutRowHtml(pos) {
   const live = currentPrices[pos.id] || { price: pos.costPrice };
-  const value = (Number(live.price) || 0) * (Number(pos.shares) || 0);
+  const value = getPositionValuation(pos, live).currentValue;
   const meta = `${pos.type || 'Position'} · ${pos.symbol || '—'} · ${fmt.format(value)}`;
   return `
     <div class="layout-row" draggable="true" data-pos-key="${escapeHtml(pos.id)}">
@@ -1696,10 +1696,8 @@ function buildFactSheet(totals, goal) {
   // Größte Position
   let largest = null, largestPct = 0;
   getAllPositions().forEach(pos => {
-    let value = 0;
-    if (pos.special === 'cash') value = appData.goal?.cash || 0;
-    else if (pos.special === 'metals') value = metalsTotalValue();
-    else { const live = currentPrices[pos.id] || { price: pos.costPrice }; value = live.price * (pos.shares || 0); }
+    const live = currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
+    const value = getPositionValuation(pos, live).currentValue;
     const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
     if (pct > largestPct) { largestPct = pct; largest = pos; }
   });
@@ -1746,9 +1744,10 @@ function buildFactSheet(totals, goal) {
 function buildAIPrompt(totals, goal) {
   const positions = getAllPositions().map(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = live.price * pos.shares;
+    const valuation = getPositionValuation(pos, live);
+    const value = valuation.currentValue;
     const pct = (value / totals.totalCur) * 100;
-    const pnlPct = ((live.price - pos.costPrice) / pos.costPrice) * 100;
+    const pnlPct = valuation.pnlPct;
     return `- ${pos.name} (${pos.type}): ${fmt.format(value)} = ${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%`;
   }).join('\n');
   const today = new Date().toLocaleDateString('de-AT');
@@ -2004,6 +2003,28 @@ function getComputedPosition(positionId) {
     txCount: txs.length
   };
 }
+
+function getPositionValuation(pos, liveOverride) {
+  const live = liveOverride || currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
+  const price = Number(live.price) || 0;
+
+  if (pos.special === 'cash') {
+    const value = Number(appData?.goal?.cash || pos.manualPrice || pos.costPrice || 0);
+    return { shares: 1, price: value, costPrice: value, costValue: value, currentValue: value, pnlAbs: 0, pnlPct: 0 };
+  }
+
+  const computed = !pos.special ? getComputedPosition(pos.id) : null;
+  const useComputed = computed && computed.txCount > 0;
+  const shares = useComputed ? Math.max(0, Number(computed.shares) || 0) : (Number(pos.shares) || 0);
+  const costValue = useComputed ? Math.max(0, Number(computed.costBasis) || 0) : (Number(pos.costPrice) || 0) * shares;
+  const costPrice = shares > 0 ? costValue / shares : (Number(pos.costPrice) || 0);
+  const currentValue = price * shares;
+  const pnlAbs = currentValue - costValue;
+  const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
+
+  return { shares, price, costPrice, costValue, currentValue, pnlAbs, pnlPct };
+}
+
 // Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
 function getCashBalance(asOfDate) {
   if (!Array.isArray(appData?.transactions)) return Number(appData?.goal?.cash || 0);
@@ -2158,18 +2179,19 @@ function buildStammdatenSection(pos, live, totals) {
   const meta = pos.stammdaten;
   const lots = getPositionLots(pos);
   if (!meta && !lots.length) return '';
-  const valueEur = live.price * pos.shares;
-  const costValue = pos.costPrice * pos.shares;
-  const pnlAbs = valueEur - costValue;
-  const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
+  const valuation = getPositionValuation(pos, live);
+  const valueEur = valuation.currentValue;
+  const costValue = valuation.costValue;
+  const pnlAbs = valuation.pnlAbs;
+  const pnlPct = valuation.pnlPct;
   const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
   const row = (label, value, cls = '') => value == null || value === '' ? '' : `<div class="stammdaten-row"><span class="lbl">${label}</span><span class="val ${cls}">${value}</span></div>`;
   const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
   const rows = [
-    row('Stück', fmtNum(pos.shares, pos.shares % 1 ? 6 : 0)),
+    row('Stück', fmtNum(valuation.shares, valuation.shares % 1 ? 6 : 0)),
     row('Kurs', fmt.format(live.price)),
     row('Gesamtwert', fmt.format(valueEur)),
-    row('Einstandskurs', fmt.format(pos.costPrice)),
+    row('Einstandskurs', fmt.format(valuation.costPrice)),
     row('Einstandswert', fmt.format(costValue)),
     row('Entwicklung', `${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}`, pnlClass),
     row('Entwicklung %', fmtPct(pnlPct), pnlClass),
@@ -2419,7 +2441,7 @@ function getCategoryAllocation(totalCur) {
   const cats = { etf: 0, aktie: 0, crypto: 0, gold: 0, cash: 0 };
   getAllPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : live.price * pos.shares;
+    const value = getPositionValuation(pos, live).currentValue;
     cats[categoryOf(pos)] += value;
   });
   const result = {};
@@ -2430,7 +2452,7 @@ function getCryptoBreakdown(totalCur) {
   const arr = [];
   (appData?.positions || []).filter(p => categoryOf(p) === 'crypto').forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = live.price * pos.shares;
+    const value = getPositionValuation(pos, live).currentValue;
     arr.push({ name: pos.name, pct: totalCur > 0 ? (value / totalCur) * 100 : 0 });
   });
   return arr.sort((a, b) => b.pct - a.pct);
@@ -2445,7 +2467,7 @@ function computeDiversificationScore(alloc, totalCur) {
   let maxPct = 0;
   getAllPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = (pos.special === 'cash') ? (appData.goal?.cash || 0) : live.price * pos.shares;
+    const value = getPositionValuation(pos, live).currentValue;
     const pct = (value / totalCur) * 100;
     if (pct > maxPct) maxPct = pct;
   });
@@ -2639,10 +2661,8 @@ function evaluateRiskRules(totals, alloc) {
   // Größte Einzelposition
   let largest = null, largestPct = 0;
   getAllPositions().forEach(pos => {
-    let value = 0;
-    if (pos.special === 'cash') value = appData.goal?.cash || 0;
-    else if (pos.special === 'metals') value = metalsTotalValue();
-    else { const live = currentPrices[pos.id] || { price: pos.costPrice }; value = live.price * (pos.shares || 0); }
+    const live = currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
+    const value = getPositionValuation(pos, live).currentValue;
     const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
     if (pct > largestPct) { largestPct = pct; largest = pos; }
   });
@@ -3407,9 +3427,10 @@ function renderRiskRules(totals, alloc) {
 function getRecommendation(pos, totals, alloc) {
   if (pos.special === 'cash' || pos.special === 'gold' || pos.special === 'metal') return null;
   const live = currentPrices[pos.id] || { price: pos.costPrice };
-  const value = live.price * pos.shares;
+  const valuation = getPositionValuation(pos, live);
+  const value = valuation.currentValue;
   const pct = totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0;
-  const pnlPct = ((live.price - pos.costPrice) / pos.costPrice) * 100;
+  const pnlPct = valuation.pnlPct;
   const risk = deriveRisk(pos);
   // Regeln (Reihenfolge ist wichtig)
   if (pct > 35 && (risk === 'high' || risk === 'very-high')) return { action: 'Teilverkauf', reason: `Klumpenrisiko bei volatilem Asset — ca. 25 % der Position (~${fmt.format(value * 0.25)}) reduzieren.`, kind: 'trim' };
@@ -3861,7 +3882,7 @@ function getPositionTodayChange(pos, live) {
   const price = Number(live?.price);
   const previousClose = Number(live?.previousClose);
   const changePerShare = Number(live?.change);
-  const shares = Number(pos?.shares || 0);
+  const shares = Number(getPositionValuation(pos, live).shares || 0);
   if (!Number.isFinite(price) || price <= 0 || shares <= 0) return null;
 
   if (Number.isFinite(previousClose) && previousClose > 0) {
@@ -3909,11 +3930,12 @@ function buildCard(pos, totals, alloc) {
   wrap.id = `card-${pos.id}`;
   wrap.dataset.posId = pos.id;
   const live = currentPrices[pos.id] || { price: pos.costPrice, previousClose: null, change: null, changePct: null, live: false };
-  const valueEur = live.price * pos.shares;
-  const costValue = pos.costPrice * pos.shares;
-  const pnlAbs = valueEur - costValue;
-  const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
-  const priceDistance = live.price - pos.costPrice;
+  const valuation = getPositionValuation(pos, live);
+  const valueEur = valuation.currentValue;
+  const costValue = valuation.costValue;
+  const pnlAbs = valuation.pnlAbs;
+  const pnlPct = valuation.pnlPct;
+  const priceDistance = live.price - valuation.costPrice;
   const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
   const pctPortfolio = totals && totals.totalCur > 0 ? (valueEur / totals.totalCur) * 100 : 0;
   const isClump = pctPortfolio > 30;
@@ -3945,8 +3967,8 @@ function buildCard(pos, totals, alloc) {
       </div>
       <div class="card-collapsed-metrics" title="${updatedText}">
         <div class="card-metric total">
-          <span class="lbl">Gesamt</span>
-          <span class="val ${pnlClass}">${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)} · ${fmtPct(pnlPct)}</span>
+          <span class="lbl">Gesamtwert</span>
+          <span class="val">${fmt.format(valueEur)}</span>
         </div>
         <div class="card-metric">
           <span class="lbl">Kursdatum</span>
@@ -3964,10 +3986,10 @@ function buildCard(pos, totals, alloc) {
     </div>
     <div class="card-expanded-content">
       <div class="price-grid">
-        <div class="price-grid-cell"><div class="lbl">Ø Einstieg</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Ø Einstieg</div><div class="val">${fmtNum(valuation.costPrice)} €</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktuell</div><div class="val">${fmtNum(live.price)} €</div></div>
         <div class="price-grid-cell"><div class="lbl">Abstand Ø</div><div class="val ${pnlClass}">${priceDistance >= 0 ? '+' : ''}${fmtNum(priceDistance, 2)} € · ${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 2)} %</div></div>
-        <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(pos.costPrice)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(valuation.costPrice)} €</div></div>
         <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
       </div>
@@ -4407,9 +4429,8 @@ function renderPositions(totals) {
   if (!totals) {
     let totalCur = 0;
     getAllPositions().forEach(pos => {
-      if (pos.special === 'cash') totalCur += appData.goal?.cash || 0;
-      else if (pos.special === 'metal') totalCur += pos.costPrice * pos.shares;
-      else { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; }
+      const live = currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
+      totalCur += getPositionValuation(pos, live).currentValue;
     });
     totals = { totalCur };
   }
@@ -4437,9 +4458,9 @@ function renderTotals() {
   let totalCur = 0, totalCost = 0, todayChangeEur = 0, hasChangeData = false;
   appData.positions.forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = live.price * pos.shares;
-    totalCur += value;
-    totalCost += pos.costPrice * pos.shares;
+    const valuation = getPositionValuation(pos, live);
+    totalCur += valuation.currentValue;
+    totalCost += valuation.costValue;
     const todayMove = getPositionTodayChange(pos, live);
     if (todayMove) {
       todayChangeEur += todayMove.eur;
@@ -4615,7 +4636,14 @@ function buildPortfolioHistory(period) {
   const start = historyStartDate(period, today);
   const cashValue = appData.goal?.cash || 0;
   const extraToday = metalsTotalValue() + cashValue;
-  const currentTotals = (() => { let t = 0; appData.positions.forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; t += live.price * pos.shares; }); return t + extraToday; })();
+  const currentTotals = (() => {
+    let t = 0;
+    appData.positions.forEach(pos => {
+      const live = currentPrices[pos.id] || { price: pos.costPrice };
+      t += getPositionValuation(pos, live).currentValue;
+    });
+    return t + extraToday;
+  })();
   const points = [];
   for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
     const isToday = toIsoDate(d) === toIsoDate(today);
@@ -4806,18 +4834,9 @@ function renderAnalysisLocal(totals, goal) {
   // Nutze getAllPositions() — bezieht Edelmetalle und Cash mit ein
   const allocations = getAllPositions().map(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    let value, pnlPct;
-    if (pos.special === 'cash') {
-      value = appData.goal?.cash || 0;
-      pnlPct = 0;
-    } else if (pos.special === 'metals' || pos.type === 'Edelmetall') {
-      // Edelmetalle: Wert aus metalsTotalValue/metalValue, kein direkter pnlPct
-      value = (typeof metalsTotalValue === 'function' && pos.special === 'metals') ? metalsTotalValue() : (live.price * (pos.shares || 0));
-      pnlPct = 0;
-    } else {
-      value = live.price * pos.shares;
-      pnlPct = pos.costPrice > 0 ? ((live.price - pos.costPrice) / pos.costPrice) * 100 : 0;
-    }
+    const valuation = getPositionValuation(pos, live);
+    const value = valuation.currentValue;
+    const pnlPct = pos.special || pos.type === 'Edelmetall' ? 0 : valuation.pnlPct;
     return { name: pos.name, type: pos.type || '?', special: pos.special, value, pct: totals.totalCur > 0 ? (value / totals.totalCur) * 100 : 0, pnlPct };
   }).sort((a, b) => b.pct - a.pct);
   const cryptoShare = allocations.filter(a => a.type === 'Crypto').reduce((s, a) => s + a.pct, 0);
@@ -5514,15 +5533,21 @@ function chatRemoveTyping() {
 function buildChatSystemPrompt() {
   if (!appData) return 'Du bist ein intelligenter, hilfreicher KI-Chat fuer komplexe Fragen. Antworte auf Deutsch, klar, tiefgehend und praktisch. Nutze vorhandenes Gedaechtnis, wenn es relevant ist.';
   let totalCur = 0, totalCost = 0;
-  getAllPositions().forEach(pos => { const live = currentPrices[pos.id] || { price: pos.costPrice }; totalCur += live.price * pos.shares; totalCost += pos.costPrice * pos.shares; });
+  getAllPositions().forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
+    const valuation = getPositionValuation(pos, live);
+    totalCur += valuation.currentValue;
+    totalCost += valuation.costValue;
+  });
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
   const positions = getAllPositions().map(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const value = live.price * pos.shares;
+    const valuation = getPositionValuation(pos, live);
+    const value = valuation.currentValue;
     const pct = totalCur > 0 ? (value / totalCur) * 100 : 0;
-    const pnlPct = ((live.price - pos.costPrice) / pos.costPrice) * 100;
-    return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${pos.shares} Stk × ${live.price.toFixed(2)} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
+    const pnlPct = valuation.pnlPct;
+    return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${valuation.shares} Stk × ${live.price.toFixed(2)} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
   }).join('\n');
   const goal = appData.goal || { year: 2026, amount: 15000 };
   const strategy = getGoalStrategy(goal);
