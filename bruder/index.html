@@ -4265,7 +4265,9 @@ function quoteFreshnessInfo(pos, live) {
   const ageMs = Math.max(0, now.getTime() - d.getTime());
   const ageMin = Math.floor(ageMs / 60000);
   const cadence = quoteCadenceMinutes(pos, live);
-  const nextMs = Math.max(0, d.getTime() + cadence * 60000 - now.getTime());
+  const cadenceMs = cadence * 60000;
+  const elapsedCycles = Math.floor(ageMs / cadenceMs) + 1;
+  const nextMs = Math.max(0, d.getTime() + elapsedCycles * cadenceMs - now.getTime());
   const nextMin = Math.ceil(nextMs / 60000);
   const time = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
   const delayedText = ageMin <= 0 ? 'unter 1 min' : `ca. ${ageMin} min`;
