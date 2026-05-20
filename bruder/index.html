@@ -770,7 +770,7 @@
       </div>
     </div>
     <div class="total-stats">
-      <div class="stat-tile neutral" id="statToday" title="Tagesveränderung: Wertänderung gegenüber gestern. Bei Crypto live aus CoinGecko 24h-Daten. Bei manuellen Positionen ggf. nicht verfügbar.">
+      <div class="stat-tile neutral" id="statToday" title="Tagesveränderung: Wertänderung gegenüber gestern. Bei Krypto brokerähnliche EUR-Tagesbasis über den Worker. Bei manuellen Positionen ggf. nicht verfügbar.">
         <div class="stat-label">
           <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           <span>Heute</span>
@@ -1071,7 +1071,7 @@
       <li>Master-Code wird niemals übertragen — Entschlüsselung passiert nur im Browser</li>
       <li>KI-Anfragen senden aggregierten Portfolio-Kontext an Anthropic API (über Cloudflare Worker)</li>
       <li>Chat-Gedächtnis wird als Klartext-Zusammenfassung in deinem KV-Slot gespeichert — nur du mit deinem Master-Code kannst es entschlüsseln</li>
-      <li>Krypto-Preise via CoinGecko (öffentlich, keine Auth), Edelmetalle via Worker-Proxy</li>
+      <li>Krypto-Preise via Worker auf EUR-Tagesbasis, Edelmetalle via Worker-Proxy</li>
       <li>Lokales API-Usage-Tracking nur in localStorage — keine Server-Speicherung</li>
     </ul>
   </div>
@@ -1117,7 +1117,7 @@
     <div class="chat-hint">Antworten kosten ~0,002 € via Anthropic API · keine Anlageberatung</div>
   </div>
 
-  <div class="footer">Portfolio-Tracker · Daten verschlüsselt lokal · Krypto-Preise via CoinGecko</div>
+  <div class="footer">Portfolio-Tracker · Daten verschlüsselt lokal · Krypto-Preise via Worker</div>
 </div>
 
 <div class="modal-backdrop" id="editModal">
@@ -1188,7 +1188,7 @@
     <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="apShares" placeholder="z.B. 25"></div>
     <div class="modal-field"><label>Einstandspreis € pro Stück</label><input type="number" step="0.01" class="auth-input" id="apCost" placeholder="z.B. 145.50"></div>
     <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
-    <div class="modal-field" id="apCgIdField" style="display:none;"><label>CoinGecko-ID (für Live-Krypto)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
+    <div class="modal-field" id="apCgIdField" style="display:none;"><label>Krypto-ID (optional für Charts)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
     <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="apDate"><span style="font-size:10px;color:var(--text-muted);">Für Käufe in der Vergangenheit ein älteres Datum wählen.</span></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
   </div>
@@ -3600,32 +3600,63 @@ async function handleGate() {
 function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = AI_APP_TOKEN; kvLegacyMigrationDone = false; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
-  const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
-  if (!cryptoIds) return;
+  const cryptoPositions = (appData?.positions || [])
+    .filter(p => isCryptoPos(p))
+    .map(pos => ({
+      id: pos.id,
+      name: pos.name,
+      symbol: cleanQuoteSymbol(pos.symbol || pos.name || ''),
+      type: pos.type,
+      venue: venueOf(pos),
+      isin: '',
+      wkn: ''
+    }))
+    .filter(pos => pos.symbol || pos.name);
+
+  if (cryptoPositions.length === 0) return false;
+
   try {
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=eur&include_24hr_change=true`);
-    if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        action: 'get-market-prices',
+        positions: cryptoPositions,
+        forceRefresh: true
+      })
+    });
+    if (!res.ok) throw new Error('Crypto market HTTP ' + res.status);
     const data = await res.json();
-    const updatedAt = new Date().toISOString();
-    appData.positions.forEach(pos => {
-      if (pos.cgId && data[pos.cgId]) {
-        const price = Number(data[pos.cgId].eur);
-        const pct = Number(data[pos.cgId].eur_24h_change);
-        const previousClose = Number.isFinite(price) && Number.isFinite(pct) && pct > -99.9
-          ? price / (1 + pct / 100)
-          : null;
+    const quotes = data?.quotes || {};
+
+    (appData.positions || []).forEach(pos => {
+      if (!isCryptoPos(pos)) return;
+      const q = quotes[pos.id];
+      const price = Number(q?.price);
+      if (price > 0) {
+        const previousClose = Number(q?.previousClose);
+        const change = Number(q?.change);
+        const changePct = Number(q?.changePct);
         currentPrices[pos.id] = {
           price,
-          previousClose,
-          change: previousClose ? price - previousClose : null,
-          changePct: Number.isFinite(pct) ? pct : null,
+          previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
+          change: Number.isFinite(change) ? change : null,
+          changePct: Number.isFinite(changePct) ? changePct : null,
           live: true,
-          source: 'CoinGecko',
-          updatedAt
+          source: q.source || 'Krypto EUR Tageskurs',
+          symbol: q.symbol || pos.symbol,
+          currency: 'EUR',
+          venue: q.venue || venueOf(pos),
+          venueLabel: q.venueLabel || getVenueByCode(venueOf(pos)).short,
+          updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
         };
       }
     });
-  } catch (e) { console.warn('Crypto fetch failed:', e); }
+    return true;
+  } catch (e) {
+    console.warn('Crypto fetch failed:', e);
+    return false;
+  }
 }
 
 const KNOWN_YAHOO_BY_ISIN = {
