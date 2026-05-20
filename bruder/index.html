@@ -1460,17 +1460,18 @@
 'use strict';
 // ===== AI-Worker (Cloudflare + Anthropic) =====
 const AI_WORKER_URL = 'https://morning-tree-9bb.michael-bummer.workers.dev';
-const AI_APP_TOKEN = 'pmtj-7Xq2-mB9k-Aw3L-vN4f-portfolio-2026';
+const AI_APP_TOKEN = '';
 const USER_KEY = 'bruder';  // KV-Trennung pro Person
-const AI_DURATION_KEY = 'ai_avg_duration_ms';
+const STORAGE_PREFIX = `portfolio_${USER_KEY}_`;
+const AI_DURATION_KEY = STORAGE_PREFIX + 'ai_avg_duration_ms';
 const AI_DEFAULT_DURATION = 10000;
-const REFRESH_DURATION_KEY = `refresh_avg_duration_ms_${USER_KEY}`;
+const REFRESH_DURATION_KEY = STORAGE_PREFIX + 'refresh_avg_duration_ms';
 const REFRESH_DEFAULT_DURATION = 14000;
 const REFRESH_MIN_VISIBLE_MS = 1200;
 const MANUAL_QUOTE_OVERRIDE_MS = 30 * 60 * 1000;
 let aiProgressState = null, aiRegenTimer = null, refreshProgressState = null;
 
-const LAYOUT_STORAGE_KEY = `portfolio_layout_${USER_KEY}`;
+const LAYOUT_STORAGE_KEY = STORAGE_PREFIX + 'layout_v1';
 const LAYOUT_SECTIONS = [
   { key: 'overview', label: 'Depot Stand', meta: 'Gesamtwert, Tageswert, Drawdown, Sparrate', selectors: ['#anchor-top'], nav: 'anchor-top' },
   { key: 'addPosition', label: 'Position hinzufügen', meta: 'Manuell oder per Screenshot & KI', selectors: ['.add-position-section'] },
@@ -1792,7 +1793,7 @@ function completeAIProgress(success) {
 
 async function callAIWorker(prompt) {
   try {
-    const res = await fetch(AI_WORKER_URL, { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ prompt }) });
+    const res = await fetch(AI_WORKER_URL, { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ prompt, userKey: kvKeyActive() }) });
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -1962,12 +1963,12 @@ const ENC = {
   _fromB64(str) { const s = atob(str); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; },
   _toB64(buf) { let s = ''; const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
 };
-const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
+const STORE = { THEME_KEY: STORAGE_PREFIX + 'theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
 let appData = null, appPassword = null, currentPrices = {}, baseLivePrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
 let manualQuoteTimer = null;
 // Sicherheit: KV-Schlüssel wird aus dem Master-Code abgeleitet (unerratbar) statt fest 'michael'/'bruder'.
 let appUserKey = null;          // wird beim Login gesetzt
-let appAuthToken = AI_APP_TOKEN; // Legacy-Fallback, bis der Login-Token abgeleitet ist
+let appAuthToken = null; // wird beim Login aus dem Master-Code abgeleitet
 let kvLegacyMigrationDone = false;
 async function deriveUserKey(masterCode) {
   try {
@@ -1990,7 +1991,7 @@ async function deriveWorkerAuthToken(masterCode) {
 function apiHeaders(extra = {}) {
   return {
     'Content-Type': 'application/json',
-    'X-App-Token': appAuthToken || AI_APP_TOKEN,
+    'X-App-Token': appAuthToken || '',
     ...extra
   };
 }
@@ -3814,7 +3815,7 @@ async function handleGate() {
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
-function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = AI_APP_TOKEN; kvLegacyMigrationDone = false; currentPrices = {}; baseLivePrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (manualQuoteTimer) { clearInterval(manualQuoteTimer); manualQuoteTimer = null; } if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
+function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = null; kvLegacyMigrationDone = false; currentPrices = {}; baseLivePrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (manualQuoteTimer) { clearInterval(manualQuoteTimer); manualQuoteTimer = null; } if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
   const cryptoPositions = (appData?.positions || [])
@@ -3839,7 +3840,8 @@ async function fetchCryptoPrices() {
       body: JSON.stringify({
         action: 'get-market-prices',
         positions: cryptoPositions,
-        forceRefresh: true
+        forceRefresh: true,
+        userKey: kvKeyActive()
       })
     });
     if (!res.ok) throw new Error('Crypto market HTTP ' + res.status);
@@ -3968,7 +3970,7 @@ async function fetchMarketPrices(opts = {}) {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: apiHeaders(),
-      body: JSON.stringify({ action: 'get-market-prices', positions, forceRefresh: opts.forceRefresh === true })
+      body: JSON.stringify({ action: 'get-market-prices', positions, forceRefresh: opts.forceRefresh === true, userKey: kvKeyActive() })
     });
     if (!res.ok) throw new Error('Market prices HTTP ' + res.status);
     const data = await res.json();
@@ -4038,7 +4040,7 @@ async function fetchMetalPrices(opts = {}) {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: apiHeaders(),
-      body: JSON.stringify({ action: 'get-metal-prices', forceRefresh: opts.showProgress === true })
+      body: JSON.stringify({ action: 'get-metal-prices', forceRefresh: opts.showProgress === true, userKey: kvKeyActive() })
     });
     if (!res.ok) throw new Error('Metal prices HTTP ' + res.status);
     const data = await res.json();
@@ -5747,7 +5749,7 @@ function wireEvents() {
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
   document.getElementById('chatWipeBtn').addEventListener('click', chatWipeMemory);
   // Positionen-Ansichts-Toggle (Details / Kompakt)
-  const POSVIEW_KEY = 'portfolio_positions_view';
+  const POSVIEW_KEY = STORAGE_PREFIX + 'positions_view';
   const applyPosView = view => {
     const container = document.getElementById('positions');
     if (!container) return;
@@ -6011,7 +6013,7 @@ Erstelle eine kompakte, robuste Zusammenfassung auf Deutsch. Behalte Fakten, Zah
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: apiHeaders(),
-      body: JSON.stringify({ prompt, maxTokens: 1200, temperature: 0.2 })
+      body: JSON.stringify({ prompt, maxTokens: 1200, temperature: 0.2, userKey: kvKeyActive() })
     });
     if (!res.ok) throw new Error('Memory summary HTTP ' + res.status);
     const data = await res.json();
@@ -6124,7 +6126,7 @@ async function chatSend() {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: apiHeaders(),
-      body: JSON.stringify({ messages, system, maxTokens: 4000 })
+      body: JSON.stringify({ messages, system, maxTokens: 4000, userKey: kvKeyActive() })
     });
     chatRemoveTyping();
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
@@ -6249,7 +6251,7 @@ async function savePositionsToKV(debounceMs = 0) {
 }
 
 // ===== USAGE-TRACKING (lokaler Zähler) =====
-const USAGE_KEY = 'portfolio_usage_v1';
+const USAGE_KEY = STORAGE_PREFIX + 'usage_v1';
 const USAGE_BUDGET = 5.00;
 const HAIKU_INPUT_COST = 0.80 / 1000000;
 const HAIKU_OUTPUT_COST = 4.00 / 1000000;
@@ -6472,7 +6474,7 @@ NUR JSON, sonst nichts.`;
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: apiHeaders(),
-      body: JSON.stringify({ image: ssBase64, imageMediaType: ssMime, prompt, maxTokens: 5000, temperature: 0 })
+      body: JSON.stringify({ image: ssBase64, imageMediaType: ssMime, prompt, maxTokens: 5000, temperature: 0, userKey: kvKeyActive() })
     });
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
     const result = await res.json();
