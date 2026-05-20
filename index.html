@@ -412,7 +412,10 @@
   .chat-clear.chat-wipe { color: var(--negative); border-color: var(--negative); }
   .chat-clear.chat-wipe:hover { background: var(--error-bg); }
   .chat-memory-status { font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; padding: 4px 8px; background: var(--bg-secondary); border-radius: 6px; font-style: italic; }
-  .chat-messages { background: var(--bg-page); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; min-height: 220px; overflow-y: visible; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+  .chat-messages { background: var(--bg-page); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; min-height: 220px; max-height: clamp(320px, 58vh, 620px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .chat-messages::-webkit-scrollbar { width: 6px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
   .chat-msg { max-width: 82%; display: flex; flex-direction: column; }
   .chat-msg-ai { align-self: flex-start; }
   .chat-msg-user { align-self: flex-end; align-items: flex-end; }
@@ -5425,6 +5428,16 @@ let chatBusy = false;
 let chatMemorySummary = '';
 let memorySummaryBusy = false;
 
+async function decryptChatMemoryBlob(raw) {
+  if (!raw || !appPassword) return null;
+  try {
+    return await ENC.decrypt(JSON.parse(raw), appPassword);
+  } catch (e) {
+    console.warn('Encrypted memory decrypt failed:', e);
+    return null;
+  }
+}
+
 async function loadChatMemory() {
   try {
     const res = await fetch(AI_WORKER_URL, {
@@ -5434,19 +5447,37 @@ async function loadChatMemory() {
     });
     if (!res.ok) throw new Error('Memory get HTTP ' + res.status);
     const data = await res.json();
-    if (Array.isArray(data.memory)) chatHistory = data.memory;
-    if (typeof data.summary === 'string') chatMemorySummary = data.summary;
+    const encryptedMemory = await decryptChatMemoryBlob(data.memoryData);
+    const encryptedSummary = await decryptChatMemoryBlob(data.summaryData);
+
+    if (Array.isArray(encryptedMemory)) {
+      chatHistory = encryptedMemory;
+    } else if (encryptedMemory?.messages && Array.isArray(encryptedMemory.messages)) {
+      chatHistory = encryptedMemory.messages;
+    } else if (Array.isArray(data.memory)) {
+      chatHistory = data.memory;
+    }
+
+    if (typeof encryptedSummary === 'string') {
+      chatMemorySummary = encryptedSummary;
+    } else if (encryptedSummary?.summary && typeof encryptedSummary.summary === 'string') {
+      chatMemorySummary = encryptedSummary.summary;
+    } else if (typeof data.summary === 'string') {
+      chatMemorySummary = data.summary;
+    }
   } catch (e) {
     console.warn('Memory load failed:', e);
   }
 }
 
 async function saveChatMemory() {
+  if (!appPassword) return;
   try {
+    const blob = await ENC.encrypt(chatHistory.slice(-500), appPassword);
     await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-memory', userKey: USER_KEY, messages: chatHistory.slice(-500) })
+      body: JSON.stringify({ action: 'put-memory', userKey: USER_KEY, data: JSON.stringify(blob), encrypted: true })
     });
   } catch (e) {
     console.warn('Memory save failed:', e);
@@ -5454,11 +5485,13 @@ async function saveChatMemory() {
 }
 
 async function saveChatMemorySummary() {
+  if (!appPassword) return;
   try {
+    const blob = await ENC.encrypt(chatMemorySummary, appPassword);
     await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-memory-summary', userKey: USER_KEY, summary: chatMemorySummary })
+      body: JSON.stringify({ action: 'put-memory-summary', userKey: USER_KEY, data: JSON.stringify(blob), encrypted: true })
     });
   } catch (e) {
     console.warn('Memory summary save failed:', e);
