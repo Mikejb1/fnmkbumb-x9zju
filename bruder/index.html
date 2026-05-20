@@ -63,7 +63,17 @@
   .icon-btn { background: transparent; border: 1px solid var(--border); border-radius: 999px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); padding: 0; transition: background 0.2s, transform 0.1s; }
   .icon-btn.active { border-color: var(--positive); color: var(--positive); background: rgba(34,197,94,0.1); }
   .icon-btn:active { transform: scale(0.93); }
+  .icon-btn:disabled { opacity: 0.6; cursor: wait; }
+  .icon-btn.refreshing svg { animation: spin 0.8s linear infinite; }
   .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+  .refresh-progress { display: none; margin: -8px 0 14px 0; padding: 9px 11px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+  .refresh-progress.active { display: block; }
+  .refresh-progress.done .refresh-progress-fill { background: var(--positive); }
+  .refresh-progress.failed .refresh-progress-fill { background: var(--negative); }
+  .refresh-progress-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .refresh-progress-eta { flex-shrink: 0; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .refresh-progress-bar { width: 100%; height: 6px; background: var(--bg-track); border-radius: 3px; overflow: hidden; }
+  .refresh-progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--positive-strong), var(--positive)); border-radius: 3px; }
   .layout-hidden { display: none !important; }
   .layout-modal { max-width: 520px; }
   .layout-modal p { margin: 0; }
@@ -740,6 +750,13 @@
       </button>
       <button class="icon-btn" id="logoutBtn" title="Abmelden"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
+  </div>
+  <div class="refresh-progress" id="refreshProgress" aria-live="polite">
+    <div class="refresh-progress-row">
+      <span id="refreshProgressText">Live-Werte werden aktualisiert…</span>
+      <span class="refresh-progress-eta" id="refreshProgressEta">—</span>
+    </div>
+    <div class="refresh-progress-bar"><div class="refresh-progress-fill" id="refreshProgressFill"></div></div>
   </div>
   <nav class="mini-nav">
     <button class="mini-nav-btn" data-jump="anchor-top">Übersicht</button>
@@ -1428,7 +1445,9 @@ const AI_APP_TOKEN = 'pmtj-7Xq2-mB9k-Aw3L-vN4f-portfolio-2026';
 const USER_KEY = 'bruder';  // KV-Trennung pro Person
 const AI_DURATION_KEY = 'ai_avg_duration_ms';
 const AI_DEFAULT_DURATION = 10000;
-let aiProgressState = null, aiRegenTimer = null;
+const REFRESH_DURATION_KEY = `refresh_avg_duration_ms_${USER_KEY}`;
+const REFRESH_DEFAULT_DURATION = 14000;
+let aiProgressState = null, aiRegenTimer = null, refreshProgressState = null;
 
 const LAYOUT_STORAGE_KEY = `portfolio_layout_${USER_KEY}`;
 const LAYOUT_SECTIONS = [
@@ -1652,6 +1671,65 @@ function resetLayoutModal() {
 
 function getEstimatedAIDuration() { try { const v = parseInt(localStorage.getItem(AI_DURATION_KEY), 10); if (v > 1000 && v < 60000) return v; } catch (e) {} return AI_DEFAULT_DURATION; }
 function saveEstimatedAIDuration(ms) { try { const prev = getEstimatedAIDuration(); localStorage.setItem(AI_DURATION_KEY, String(Math.round(prev * 0.6 + ms * 0.4))); } catch (e) {} }
+
+function getEstimatedRefreshDuration() {
+  try {
+    const v = parseInt(localStorage.getItem(REFRESH_DURATION_KEY), 10);
+    if (v >= 3000 && v <= 90000) return v;
+  } catch (e) {}
+  return REFRESH_DEFAULT_DURATION;
+}
+function saveEstimatedRefreshDuration(ms) {
+  try {
+    const clean = Math.max(3000, Math.min(90000, Number(ms) || REFRESH_DEFAULT_DURATION));
+    const prev = getEstimatedRefreshDuration();
+    localStorage.setItem(REFRESH_DURATION_KEY, String(Math.round(prev * 0.65 + clean * 0.35)));
+  } catch (e) {}
+}
+function startRefreshProgress() {
+  const p = document.getElementById('refreshProgress'), f = document.getElementById('refreshProgressFill'), eta = document.getElementById('refreshProgressEta'), tx = document.getElementById('refreshProgressText'), btn = document.getElementById('refreshBtn');
+  if (!p || !f || !eta || !tx) return;
+  if (refreshProgressState?.etaInterval) clearInterval(refreshProgressState.etaInterval);
+  const duration = getEstimatedRefreshDuration(), startTime = Date.now();
+  p.classList.add('active'); p.classList.remove('done', 'failed');
+  f.style.transition = 'none'; f.style.width = '0%';
+  tx.textContent = 'Live-Kurse und Edelmetalle werden aktualisiert…';
+  if (btn) { btn.disabled = true; btn.classList.add('refreshing'); }
+  f.offsetWidth;
+  requestAnimationFrame(() => { f.style.transition = `width ${duration}ms linear`; f.style.width = '92%'; });
+  const update = () => {
+    const elapsed = Date.now() - startTime;
+    const remain = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+    eta.textContent = remain > 0 ? `Noch ca. ${remain} Sek` : 'Fast fertig…';
+  };
+  update();
+  const etaInterval = setInterval(update, 500);
+  refreshProgressState = { startTime, etaInterval, duration };
+}
+function completeRefreshProgress(success) {
+  const p = document.getElementById('refreshProgress'), f = document.getElementById('refreshProgressFill'), eta = document.getElementById('refreshProgressEta'), tx = document.getElementById('refreshProgressText'), btn = document.getElementById('refreshBtn');
+  if (!p || !f || !eta || !tx || !refreshProgressState) return;
+  clearInterval(refreshProgressState.etaInterval);
+  const ms = Date.now() - refreshProgressState.startTime;
+  f.style.transition = 'width 0.35s ease'; f.style.width = '100%';
+  if (success) {
+    saveEstimatedRefreshDuration(ms);
+    p.classList.add('done');
+    tx.textContent = 'Alle Live-Werte sind aktualisiert.';
+    eta.textContent = `Fertig in ${(ms / 1000).toFixed(1)} Sek`;
+  } else {
+    p.classList.add('failed');
+    tx.textContent = 'Aktualisierung konnte nicht vollständig abgeschlossen werden.';
+    eta.textContent = 'Bitte erneut versuchen';
+  }
+  if (btn) { btn.disabled = false; btn.classList.remove('refreshing'); }
+  setTimeout(() => {
+    p.classList.remove('active', 'done', 'failed');
+    f.style.transition = 'none';
+    f.style.width = '0%';
+  }, success ? 1400 : 2400);
+  refreshProgressState = null;
+}
 
 function startAIProgress() {
   const p = document.getElementById('aiProgress'), f = document.getElementById('aiProgressFill'), eta = document.getElementById('aiProgressEta'), tx = document.getElementById('aiProgressText'), summary = document.getElementById('analysisText');
@@ -4638,19 +4716,26 @@ function renderTotals() {
 }
 
 async function refreshLiveValuesOnly() {
-  if (!appData) return;
-  await Promise.all([
-    fetchCryptoPrices(),
-    fetchMarketPrices({ forceRefresh: true }),
-    fetchMetalPrices({ showProgress: true }),
-    fetchMetalHistory(365)
-  ]);
-  await fetchAllWeeklyCharts();
-  const totals = renderTotals();
-  renderPositions(totals);
-  renderHistory();
-  applyLayoutSettings();
-  await savePositionsToKV(800);
+  if (!appData || refreshProgressState) return;
+  startRefreshProgress();
+  try {
+    await Promise.all([
+      fetchCryptoPrices(),
+      fetchMarketPrices({ forceRefresh: true }),
+      fetchMetalPrices({ showProgress: true }),
+      fetchMetalHistory(365)
+    ]);
+    await fetchAllWeeklyCharts();
+    const totals = renderTotals();
+    renderPositions(totals);
+    renderHistory();
+    applyLayoutSettings();
+    await savePositionsToKV(800);
+    completeRefreshProgress(true);
+  } catch (e) {
+    console.warn('Live refresh failed:', e);
+    completeRefreshProgress(false);
+  }
 }
 
 function toIsoDate(d) {
