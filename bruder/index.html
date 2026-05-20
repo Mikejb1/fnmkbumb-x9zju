@@ -1681,7 +1681,7 @@ function completeAIProgress(success) {
 
 async function callAIWorker(prompt) {
   try {
-    const res = await fetch(AI_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN }, body: JSON.stringify({ prompt }) });
+    const res = await fetch(AI_WORKER_URL, { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ prompt }) });
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -1855,6 +1855,7 @@ const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localSto
 let appData = null, appPassword = null, currentPrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
 // Sicherheit: KV-Schlüssel wird aus dem Master-Code abgeleitet (unerratbar) statt fest 'michael'/'bruder'.
 let appUserKey = null;          // wird beim Login gesetzt
+let appAuthToken = AI_APP_TOKEN; // Legacy-Fallback, bis der Login-Token abgeleitet ist
 let kvLegacyMigrationDone = false;
 async function deriveUserKey(masterCode) {
   try {
@@ -1869,6 +1870,18 @@ async function deriveUserKey(masterCode) {
   }
 }
 function kvKeyActive() { return appUserKey || USER_KEY; }
+async function deriveWorkerAuthToken(masterCode) {
+  const enc = new TextEncoder().encode('pmt-auth-v2-' + USER_KEY + '-' + masterCode);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function apiHeaders(extra = {}) {
+  return {
+    'Content-Type': 'application/json',
+    'X-App-Token': appAuthToken || AI_APP_TOKEN,
+    ...extra
+  };
+}
 let historyVisibleSeries = { value: true, invested: true, pnl: false, goal: false };
 let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
@@ -3550,6 +3563,7 @@ async function handleGate() {
     appData = await ENC.decrypt(BAKED_BLOB, code);
     appPassword = code;
     appUserKey = await deriveUserKey(code);   // unerratbarer KV-Schlüssel aus Master-Code
+    appAuthToken = await deriveWorkerAuthToken(code); // Worker-Auth ohne statisches Frontend-Geheimnis
     kvLegacyMigrationDone = false;
     resetAutoLogout();                         // Inaktivitäts-Timer starten
     if (!Array.isArray(appData.transactions)) appData.transactions = [];
@@ -3583,7 +3597,7 @@ async function handleGate() {
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
-function handleLogout() { appData = null; appPassword = null; appUserKey = null; kvLegacyMigrationDone = false; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
+function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = AI_APP_TOKEN; kvLegacyMigrationDone = false; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
   const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
@@ -3703,7 +3717,7 @@ async function fetchMarketPrices(opts = {}) {
   try {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ action: 'get-market-prices', positions, forceRefresh: opts.forceRefresh === true })
     });
     if (!res.ok) throw new Error('Market prices HTTP ' + res.status);
@@ -3770,7 +3784,7 @@ async function fetchMetalPrices(opts = {}) {
   try {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ action: 'get-metal-prices', forceRefresh: opts.showProgress === true })
     });
     if (!res.ok) throw new Error('Metal prices HTTP ' + res.status);
@@ -5475,7 +5489,7 @@ async function loadChatMemory() {
   try {
     let res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ action: 'get-memory', userKey: kvKeyActive() })
     });
     if (!res.ok) throw new Error('Memory get HTTP ' + res.status);
@@ -5484,7 +5498,7 @@ async function loadChatMemory() {
     if (!hasRemoteMemoryPayload(data) && appUserKey && appUserKey !== USER_KEY) {
       const legacyRes = await fetch(AI_WORKER_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+        headers: apiHeaders(),
         body: JSON.stringify({ action: 'get-memory', userKey: USER_KEY })
       });
       if (legacyRes.ok) data = await legacyRes.json();
@@ -5518,7 +5532,7 @@ async function saveChatMemory() {
     const blob = await ENC.encrypt(chatHistory.slice(-500), appPassword);
     await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ action: 'put-memory', userKey: kvKeyActive(), data: JSON.stringify(blob), encrypted: true })
     });
   } catch (e) {
@@ -5532,7 +5546,7 @@ async function saveChatMemorySummary() {
     const blob = await ENC.encrypt(chatMemorySummary, appPassword);
     await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ action: 'put-memory-summary', userKey: kvKeyActive(), data: JSON.stringify(blob), encrypted: true })
     });
   } catch (e) {
@@ -5575,7 +5589,7 @@ Erstelle eine kompakte, robuste Zusammenfassung auf Deutsch. Behalte Fakten, Zah
 
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ prompt, maxTokens: 1200, temperature: 0.2 })
     });
     if (!res.ok) throw new Error('Memory summary HTTP ' + res.status);
@@ -5688,7 +5702,7 @@ async function chatSend() {
     const messages = chatHistory.slice(-500);
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ messages, system, maxTokens: 4000 })
     });
     chatRemoveTyping();
@@ -5757,7 +5771,7 @@ function chatShowWelcome() {
 async function kvGetPositions(userKey) {
   const res = await fetch(AI_WORKER_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+    headers: apiHeaders(),
     body: JSON.stringify({ action: 'get-positions', userKey })
   });
   if (!res.ok) throw new Error('KV get HTTP ' + res.status);
@@ -5805,7 +5819,7 @@ async function savePositionsToKV(debounceMs = 0) {
     const blob = await ENC.encrypt(dataToStore, appPassword);
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ action: 'put-positions', data: JSON.stringify(blob), userKey: kvKeyActive() })
     });
     kvLegacyMigrationDone = true; // Daten liegen jetzt unter dem sicheren Key
@@ -6036,7 +6050,7 @@ NUR JSON, sonst nichts.`;
   try {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+      headers: apiHeaders(),
       body: JSON.stringify({ image: ssBase64, imageMediaType: ssMime, prompt, maxTokens: 5000, temperature: 0 })
     });
     if (!res.ok) throw new Error('Worker HTTP ' + res.status);
