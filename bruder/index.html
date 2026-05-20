@@ -1853,6 +1853,22 @@ const ENC = {
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
 let appData = null, appPassword = null, currentPrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
+// Sicherheit: KV-Schlüssel wird aus dem Master-Code abgeleitet (unerratbar) statt fest 'michael'/'bruder'.
+let appUserKey = null;          // wird beim Login gesetzt
+let kvLegacyMigrationDone = false;
+async function deriveUserKey(masterCode) {
+  try {
+    const enc = new TextEncoder().encode('pmtuk-v1-' + USER_KEY + '-' + masterCode);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    const bytes = new Uint8Array(buf);
+    let hex = '';
+    for (let i = 0; i < 8; i++) hex += bytes[i].toString(16).padStart(2, '0');
+    return USER_KEY + '-' + hex;  // z.B. "michael-a3f9b2c1d4e5f6a7" — zuordenbar, aber ohne Code nicht erratbar
+  } catch (e) {
+    return USER_KEY; // Fallback (sollte nie passieren)
+  }
+}
+function kvKeyActive() { return appUserKey || USER_KEY; }
 let historyVisibleSeries = { value: true, invested: true, pnl: false, goal: false };
 let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
@@ -3533,6 +3549,9 @@ async function handleGate() {
   try {
     appData = await ENC.decrypt(BAKED_BLOB, code);
     appPassword = code;
+    appUserKey = await deriveUserKey(code);   // unerratbarer KV-Schlüssel aus Master-Code
+    kvLegacyMigrationDone = false;
+    resetAutoLogout();                         // Inaktivitäts-Timer starten
     if (!Array.isArray(appData.transactions)) appData.transactions = [];
     if (!appData.schemaVersion) appData.schemaVersion = 1;
     document.getElementById('gatePw').value = '';
@@ -3555,11 +3574,16 @@ async function handleGate() {
     // Schema-Migration (v1 -> v2: Transaktionsmodell)
     const wasMigrated = !(Number(appData.schemaVersion) >= 2);
     migrateSchemaIfNeeded();
-    if (wasMigrated) { try { await savePositionsToKV(); console.log('Schema migriert auf v' + appData.schemaVersion); } catch (e) { console.warn('Migration-Save fehlgeschlagen:', e); } }
+    // KV-Key-Migration: wenn Daten noch unter Legacy-Key liegen, einmal auf sicheren Key speichern
+    const needsKeyMigration = !kvLegacyMigrationDone && appUserKey && appUserKey !== USER_KEY && appData.positions && appData.positions.length > 0;
+    if (wasMigrated || needsKeyMigration) {
+      try { await savePositionsToKV(); console.log('KV/Schema migriert (v' + appData.schemaVersion + ', Key: ' + kvKeyActive() + ')'); }
+      catch (e) { console.warn('Migration-Save fehlgeschlagen:', e); }
+    }
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
-function handleLogout() { appData = null; appPassword = null; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
+function handleLogout() { appData = null; appPassword = null; appUserKey = null; kvLegacyMigrationDone = false; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
   const cryptoIds = appData.positions.filter(p => p.cgId).map(p => p.cgId).join(',');
@@ -5438,15 +5462,33 @@ async function decryptChatMemoryBlob(raw) {
   }
 }
 
+function hasRemoteMemoryPayload(data) {
+  return !!(
+    data?.memoryData ||
+    data?.summaryData ||
+    (Array.isArray(data?.memory) && data.memory.length > 0) ||
+    (typeof data?.summary === 'string' && data.summary.trim().length > 0)
+  );
+}
+
 async function loadChatMemory() {
   try {
-    const res = await fetch(AI_WORKER_URL, {
+    let res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'get-memory', userKey: USER_KEY })
+      body: JSON.stringify({ action: 'get-memory', userKey: kvKeyActive() })
     });
     if (!res.ok) throw new Error('Memory get HTTP ' + res.status);
-    const data = await res.json();
+    let data = await res.json();
+    // Legacy-Fallback: wenn unter sicherem Key nichts da ist, alten Key probieren
+    if (!hasRemoteMemoryPayload(data) && appUserKey && appUserKey !== USER_KEY) {
+      const legacyRes = await fetch(AI_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+        body: JSON.stringify({ action: 'get-memory', userKey: USER_KEY })
+      });
+      if (legacyRes.ok) data = await legacyRes.json();
+    }
     const encryptedMemory = await decryptChatMemoryBlob(data.memoryData);
     const encryptedSummary = await decryptChatMemoryBlob(data.summaryData);
 
@@ -5477,7 +5519,7 @@ async function saveChatMemory() {
     await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-memory', userKey: USER_KEY, data: JSON.stringify(blob), encrypted: true })
+      body: JSON.stringify({ action: 'put-memory', userKey: kvKeyActive(), data: JSON.stringify(blob), encrypted: true })
     });
   } catch (e) {
     console.warn('Memory save failed:', e);
@@ -5491,7 +5533,7 @@ async function saveChatMemorySummary() {
     await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-memory-summary', userKey: USER_KEY, data: JSON.stringify(blob), encrypted: true })
+      body: JSON.stringify({ action: 'put-memory-summary', userKey: kvKeyActive(), data: JSON.stringify(blob), encrypted: true })
     });
   } catch (e) {
     console.warn('Memory summary save failed:', e);
@@ -5712,19 +5754,30 @@ function chatShowWelcome() {
 }
 
 // ===== KV-SYNC (Cloudflare KV via Worker) =====
+async function kvGetPositions(userKey) {
+  const res = await fetch(AI_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
+    body: JSON.stringify({ action: 'get-positions', userKey })
+  });
+  if (!res.ok) throw new Error('KV get HTTP ' + res.status);
+  const result = await res.json();
+  return result.data || null;
+}
 async function loadPositionsFromKV() {
   if (!appPassword) return null;
   try {
-    const res = await fetch(AI_WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'get-positions', userKey: USER_KEY })
-    });
-    if (!res.ok) throw new Error('KV get HTTP ' + res.status);
-    const result = await res.json();
-    if (!result.data) return null;
-    const blob = JSON.parse(result.data);
-    return await ENC.decrypt(blob, appPassword);
+    // 1) Versuch mit abgeleitetem (sicherem) Key
+    let raw = await kvGetPositions(kvKeyActive());
+    // 2) Fallback: Legacy-Key ('michael'/'bruder') — alte Daten migrieren
+    if (!raw && appUserKey && appUserKey !== USER_KEY) {
+      raw = await kvGetPositions(USER_KEY);
+      if (raw) kvLegacyMigrationDone = false; // markiert: nach Decrypt sofort auf neuen Key speichern
+    }
+    if (!raw) return null;
+    const blob = JSON.parse(raw);
+    const decrypted = await ENC.decrypt(blob, appPassword);
+    return decrypted;
   } catch (e) { console.warn('KV load failed:', e); return null; }
 }
 
@@ -5753,8 +5806,9 @@ async function savePositionsToKV(debounceMs = 0) {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Token': AI_APP_TOKEN },
-      body: JSON.stringify({ action: 'put-positions', data: JSON.stringify(blob), userKey: USER_KEY })
+      body: JSON.stringify({ action: 'put-positions', data: JSON.stringify(blob), userKey: kvKeyActive() })
     });
+    kvLegacyMigrationDone = true; // Daten liegen jetzt unter dem sicheren Key
     return res.ok;
   } catch (e) { console.warn('KV save failed:', e); return false; }
 }
@@ -6322,7 +6376,28 @@ async function saveScreenshotBatchPreview() {
   alert(`${booked} Buchungen übernommen.${skipped ? ` ${skipped} Zeilen übersprungen/ignoriert.` : ''}`);
 }
 
-function bootstrap() { initTheme(); wireEvents(); showScreen('gateScreen'); }
+// ===== AUTO-LOGOUT bei Inaktivität (Sicherheit) =====
+const AUTO_LOGOUT_MS = 15 * 60 * 1000; // 15 Minuten
+let autoLogoutTimer = null;
+function resetAutoLogout() {
+  if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+  // Nur aktiv wenn eingeloggt
+  if (!appPassword) return;
+  autoLogoutTimer = setTimeout(() => {
+    if (appPassword) {
+      handleLogout();
+      const errEl = document.getElementById('gateError');
+      if (errEl) { errEl.textContent = 'Automatisch abgemeldet (15 Min Inaktivität). Bitte erneut anmelden.'; errEl.classList.add('visible'); }
+    }
+  }, AUTO_LOGOUT_MS);
+}
+function initAutoLogout() {
+  ['click', 'keydown', 'touchstart', 'scroll', 'input'].forEach(evt => {
+    document.addEventListener(evt, resetAutoLogout, { passive: true });
+  });
+}
+
+function bootstrap() { initTheme(); wireEvents(); initAutoLogout(); showScreen('gateScreen'); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
 else bootstrap();
 </script>
