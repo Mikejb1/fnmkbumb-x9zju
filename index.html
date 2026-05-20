@@ -562,6 +562,9 @@
   .card-metric.today .val { font-size: 11px; font-weight: 700; }
   .card-metric .val.positive { color: var(--positive); }
   .card-metric .val.negative { color: var(--negative); }
+  .quote-freshness-line { grid-column: 1 / -1; padding-top: 7px; margin-top: 2px; border-top: 1px solid var(--border-light); color: var(--text-tertiary); font-size: 10px; line-height: 1.35; white-space: normal; text-align: right; }
+  .quote-freshness-line.stale { color: #fbbf24; }
+  .quote-freshness-line.manual { color: var(--text-muted); }
   .card-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
   .card-chevron svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
   .card-quick-edit { background: transparent; border: 0; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
@@ -575,6 +578,22 @@
   .price-grid-cell .val { font-weight: 500; font-variant-numeric: tabular-nums; }
   .price-grid-cell .val.positive { color: var(--positive); }
   .price-grid-cell .val.negative { color: var(--negative); }
+  .quote-freshness-box { margin: -2px 0 10px 0; padding: 8px 10px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px; color: var(--text-tertiary); font-size: 11px; line-height: 1.45; }
+  .quote-freshness-box.stale { border-color: rgba(245,158,11,0.35); color: #fbbf24; }
+  .quote-freshness-box.manual { color: var(--text-muted); }
+  .manual-quote-panel { margin: 8px 0 10px; padding: 10px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px; }
+  .manual-quote-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .manual-quote-title { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+  .manual-quote-state { font-size: 10px; color: var(--text-tertiary); text-align: right; line-height: 1.35; }
+  .manual-quote-state.active { color: #fbbf24; }
+  .manual-quote-form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+  .manual-quote-input { min-width: 0; background: var(--bg-input); border: 1px solid var(--border); border-radius: 7px; color: var(--text-primary); padding: 8px 9px; font-size: 12px; font-family: inherit; font-variant-numeric: tabular-nums; }
+  .manual-quote-btn { border: 1px solid var(--border); border-radius: 7px; background: var(--bg-input); color: var(--text-secondary); padding: 8px 10px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; }
+  .manual-quote-btn.save { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.45); color: var(--positive); font-weight: 600; }
+  .manual-quote-btn.clear { color: #fca5a5; }
+  .manual-quote-btn:hover { background: var(--bg-track); color: var(--text-primary); }
+  .manual-quote-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .manual-quote-note { margin-top: 7px; font-size: 10px; color: var(--text-muted); line-height: 1.35; }
   .stammdaten-box { background: var(--bg-secondary); border-radius: 8px; padding: 10px; margin: 10px 0; }
   .stammdaten-title { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; }
   .stammdaten-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; font-size: 12px; }
@@ -1140,7 +1159,7 @@
 <div class="modal-backdrop" id="editModal">
   <div class="modal">
     <h3 id="editTitle">Position bearbeiten</h3>
-    <div class="modal-field"><label>Aktueller Kurs (EUR)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
+    <div class="modal-field"><label>Fallback-Kurs (EUR, dauerhaft)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
     <div class="modal-field"><label>Live-Symbol / Handelsplatz</label><input type="text" class="auth-input" id="editQuoteSymbol" placeholder="z.B. 4S0.DE, NVD.DE, P911.DE"></div>
     <div class="modal-field"><label>Handelsplatz für Live-Kurs</label>
       <select id="editVenue" class="auth-input">
@@ -1447,6 +1466,8 @@ const AI_DURATION_KEY = 'ai_avg_duration_ms';
 const AI_DEFAULT_DURATION = 10000;
 const REFRESH_DURATION_KEY = `refresh_avg_duration_ms_${USER_KEY}`;
 const REFRESH_DEFAULT_DURATION = 14000;
+const REFRESH_MIN_VISIBLE_MS = 1200;
+const MANUAL_QUOTE_OVERRIDE_MS = 30 * 60 * 1000;
 let aiProgressState = null, aiRegenTimer = null, refreshProgressState = null;
 
 const LAYOUT_STORAGE_KEY = `portfolio_layout_${USER_KEY}`;
@@ -1690,20 +1711,22 @@ function startRefreshProgress() {
   const p = document.getElementById('refreshProgress'), f = document.getElementById('refreshProgressFill'), eta = document.getElementById('refreshProgressEta'), tx = document.getElementById('refreshProgressText'), btn = document.getElementById('refreshBtn');
   if (!p || !f || !eta || !tx) return;
   if (refreshProgressState?.etaInterval) clearInterval(refreshProgressState.etaInterval);
+  if (refreshProgressState?.finishTimer) clearTimeout(refreshProgressState.finishTimer);
   const duration = getEstimatedRefreshDuration(), startTime = Date.now();
   p.classList.add('active'); p.classList.remove('done', 'failed');
-  f.style.transition = 'none'; f.style.width = '0%';
+  f.style.transition = 'width 0.18s ease'; f.style.width = '3%';
   tx.textContent = 'Live-Kurse und Edelmetalle werden aktualisiert…';
   if (btn) { btn.disabled = true; btn.classList.add('refreshing'); }
-  f.offsetWidth;
-  requestAnimationFrame(() => { f.style.transition = `width ${duration}ms linear`; f.style.width = '92%'; });
   const update = () => {
     const elapsed = Date.now() - startTime;
     const remain = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+    const ratio = Math.min(0.92, elapsed / duration);
+    const pct = Math.round((3 + ratio * 89) * 10) / 10;
+    f.style.width = `${pct}%`;
     eta.textContent = remain > 0 ? `Noch ca. ${remain} Sek` : 'Fast fertig…';
   };
   update();
-  const etaInterval = setInterval(update, 500);
+  const etaInterval = setInterval(update, 180);
   refreshProgressState = { startTime, etaInterval, duration };
 }
 function completeRefreshProgress(success) {
@@ -1711,24 +1734,34 @@ function completeRefreshProgress(success) {
   if (!p || !f || !eta || !tx || !refreshProgressState) return;
   clearInterval(refreshProgressState.etaInterval);
   const ms = Date.now() - refreshProgressState.startTime;
-  f.style.transition = 'width 0.35s ease'; f.style.width = '100%';
-  if (success) {
-    saveEstimatedRefreshDuration(ms);
-    p.classList.add('done');
-    tx.textContent = 'Alle Live-Werte sind aktualisiert.';
-    eta.textContent = `Fertig in ${(ms / 1000).toFixed(1)} Sek`;
+  const finish = () => {
+    f.style.transition = 'width 0.3s ease'; f.style.width = '100%';
+    if (success) {
+      saveEstimatedRefreshDuration(ms);
+      p.classList.add('done');
+      tx.textContent = 'Alle Live-Werte sind aktualisiert.';
+      eta.textContent = `Fertig in ${(ms / 1000).toFixed(1)} Sek`;
+    } else {
+      p.classList.add('failed');
+      tx.textContent = 'Aktualisierung konnte nicht vollständig abgeschlossen werden.';
+      eta.textContent = 'Bitte erneut versuchen';
+    }
+    if (btn) { btn.disabled = false; btn.classList.remove('refreshing'); }
+    refreshProgressState.finishTimer = setTimeout(() => {
+      p.classList.remove('active', 'done', 'failed');
+      f.style.transition = 'none';
+      f.style.width = '0%';
+      refreshProgressState = null;
+    }, success ? 1600 : 2800);
+  };
+  const waitMs = Math.max(0, REFRESH_MIN_VISIBLE_MS - ms);
+  if (waitMs > 0) {
+    f.style.width = '78%';
+    eta.textContent = 'Fast fertig…';
+    refreshProgressState.finishTimer = setTimeout(finish, waitMs);
   } else {
-    p.classList.add('failed');
-    tx.textContent = 'Aktualisierung konnte nicht vollständig abgeschlossen werden.';
-    eta.textContent = 'Bitte erneut versuchen';
+    finish();
   }
-  if (btn) { btn.disabled = false; btn.classList.remove('refreshing'); }
-  setTimeout(() => {
-    p.classList.remove('active', 'done', 'failed');
-    f.style.transition = 'none';
-    f.style.width = '0%';
-  }, success ? 1400 : 2400);
-  refreshProgressState = null;
 }
 
 function startAIProgress() {
@@ -1930,7 +1963,8 @@ const ENC = {
   _toB64(buf) { let s = ''; const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
 };
 const STORE = { THEME_KEY: 'portfolio_theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
-let appData = null, appPassword = null, currentPrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
+let appData = null, appPassword = null, currentPrices = {}, baseLivePrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
+let manualQuoteTimer = null;
 // Sicherheit: KV-Schlüssel wird aus dem Master-Code abgeleitet (unerratbar) statt fest 'michael'/'bruder'.
 let appUserKey = null;          // wird beim Login gesetzt
 let appAuthToken = AI_APP_TOKEN; // Legacy-Fallback, bis der Login-Token abgeleitet ist
@@ -2133,6 +2167,111 @@ function getPositionValuation(pos, liveOverride) {
   const pnlPct = costValue > 0 ? (pnlAbs / costValue) * 100 : 0;
 
   return { shares, price, costPrice, costValue, currentValue, pnlAbs, pnlPct };
+}
+
+function getManualQuoteOverride(pos) {
+  const override = pos?.manualQuoteOverride;
+  if (!override) return null;
+  const price = Number(override.price);
+  const expiresAt = override.expiresAt ? new Date(override.expiresAt) : null;
+  if (!Number.isFinite(price) || price <= 0 || !expiresAt || isNaN(expiresAt.getTime())) return null;
+  if (Date.now() >= expiresAt.getTime()) return null;
+  return { ...override, price };
+}
+
+function isManualQuoteOverrideActive(pos) {
+  return !!getManualQuoteOverride(pos);
+}
+
+function fallbackQuoteForPosition(pos) {
+  return {
+    price: pos.manualPrice ?? pos.costPrice,
+    live: false,
+    source: 'manuell',
+    venue: venueOf(pos),
+    venueLabel: getVenueByCode(venueOf(pos)).short,
+    updatedAt: null,
+  };
+}
+
+function baseQuoteForPosition(pos) {
+  if (baseLivePrices[pos.id]) return baseLivePrices[pos.id];
+  const current = currentPrices[pos.id];
+  if (current && !current.manualOverride) return current;
+  const stored = pos.manualQuoteOverride?.baseQuote;
+  if (stored && Number(stored.price) > 0) return stored;
+  return fallbackQuoteForPosition(pos);
+}
+
+function effectiveQuoteForPosition(pos, baseQuote) {
+  const fallback = baseQuote || baseQuoteForPosition(pos);
+  const override = getManualQuoteOverride(pos);
+  if (!override) return fallback;
+  const price = Number(override.price);
+  const previousClose = Number(fallback?.previousClose);
+  const change = Number.isFinite(previousClose) && previousClose > 0 ? price - previousClose : null;
+  const changePct = Number.isFinite(previousClose) && previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : null;
+  return {
+    ...fallback,
+    price,
+    previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
+    change: Number.isFinite(change) ? change : null,
+    changePct: Number.isFinite(changePct) ? changePct : null,
+    live: false,
+    manualOverride: true,
+    source: 'Manueller Kurs',
+    updatedAt: override.createdAt || new Date().toISOString(),
+    overrideExpiresAt: override.expiresAt,
+    baseSource: fallback?.source || '',
+    baseUpdatedAt: fallback?.updatedAt || null,
+    venue: fallback?.venue || venueOf(pos),
+    venueLabel: fallback?.venueLabel || getVenueByCode(venueOf(pos)).short,
+  };
+}
+
+function applyManualQuoteOverrides() {
+  if (!appData?.positions) return;
+  appData.positions.forEach(pos => {
+    const base = baseQuoteForPosition(pos);
+    currentPrices[pos.id] = effectiveQuoteForPosition(pos, base);
+  });
+}
+
+function pruneExpiredManualQuoteOverrides() {
+  if (!appData?.positions) return false;
+  let changed = false;
+  const now = Date.now();
+  appData.positions.forEach(pos => {
+    const expiresAt = pos.manualQuoteOverride?.expiresAt ? new Date(pos.manualQuoteOverride.expiresAt).getTime() : 0;
+    if (expiresAt && now >= expiresAt) {
+      const base = baseQuoteForPosition(pos);
+      delete pos.manualQuoteOverride;
+      currentPrices[pos.id] = base;
+      changed = true;
+    }
+  });
+  if (changed) applyManualQuoteOverrides();
+  return changed;
+}
+
+function manualQuoteRemainingText(pos) {
+  const override = getManualQuoteOverride(pos);
+  if (!override) return '';
+  const ms = Math.max(0, new Date(override.expiresAt).getTime() - Date.now());
+  const min = Math.ceil(ms / 60000);
+  const time = new Date(override.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+  return `aktiv bis ${time} · noch ca. ${min} min`;
+}
+
+function startManualQuoteExpiryTimer() {
+  if (manualQuoteTimer) clearInterval(manualQuoteTimer);
+  manualQuoteTimer = setInterval(async () => {
+    if (!appData) return;
+    if (pruneExpiredManualQuoteOverrides()) {
+      await savePositionsToKV(0);
+      await refreshUI({ skipAI: true });
+    }
+  }, 30000);
 }
 
 // Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
@@ -3675,7 +3814,7 @@ async function handleGate() {
     await initApp();
   } catch (e) { showErr(errEl, 'Falscher Code.'); }
 }
-function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = AI_APP_TOKEN; kvLegacyMigrationDone = false; currentPrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
+function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = AI_APP_TOKEN; kvLegacyMigrationDone = false; currentPrices = {}; baseLivePrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (manualQuoteTimer) { clearInterval(manualQuoteTimer); manualQuoteTimer = null; } if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
 async function fetchCryptoPrices() {
   const cryptoPositions = (appData?.positions || [])
@@ -3715,7 +3854,7 @@ async function fetchCryptoPrices() {
         const previousClose = Number(q?.previousClose);
         const change = Number(q?.change);
         const changePct = Number(q?.changePct);
-        currentPrices[pos.id] = {
+        const liveQuote = {
           price,
           previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
           change: Number.isFinite(change) ? change : null,
@@ -3728,6 +3867,8 @@ async function fetchCryptoPrices() {
           venueLabel: q.venueLabel || getVenueByCode(venueOf(pos)).short,
           updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
         };
+        baseLivePrices[pos.id] = liveQuote;
+        currentPrices[pos.id] = effectiveQuoteForPosition(pos, liveQuote);
       }
     });
     return true;
@@ -3849,7 +3990,7 @@ async function fetchMarketPrices(opts = {}) {
         const previousClose = Number(q?.previousClose);
         const change = Number(q?.change);
         const changePct = Number(q?.changePct);
-        currentPrices[pos.id] = {
+        const liveQuote = {
           price,
           previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
           change: Number.isFinite(change) ? change : null,
@@ -3862,9 +4003,11 @@ async function fetchMarketPrices(opts = {}) {
           venueLabel: q.venueLabel || getVenueByCode(q.venue || venueOf(pos)).short,
           updatedAt: q.updatedAt || data.updatedAt || new Date().toISOString()
         };
+        baseLivePrices[pos.id] = liveQuote;
+        currentPrices[pos.id] = effectiveQuoteForPosition(pos, liveQuote);
       } else if (quoteIssues[pos.id]) {
         const fallbackPrice = Number(pos.manualPrice ?? currentPrices[pos.id]?.price ?? pos.costPrice);
-        currentPrices[pos.id] = {
+        const fallbackQuote = {
           price: Number.isFinite(fallbackPrice) && fallbackPrice > 0 ? fallbackPrice : pos.costPrice,
           previousClose: null,
           change: null,
@@ -3878,6 +4021,7 @@ async function fetchMarketPrices(opts = {}) {
           quoteIssue: quoteIssues[pos.id],
           updatedAt: data.updatedAt || new Date().toISOString()
         };
+        currentPrices[pos.id] = effectiveQuoteForPosition(pos, fallbackQuote);
       }
     });
     return true;
@@ -3962,7 +4106,7 @@ function loadManualPrices() {
   appData.positions.forEach(pos => {
     if (!pos.cgId && !currentPrices[pos.id]?.live) {
       const existing = currentPrices[pos.id] || {};
-      currentPrices[pos.id] = {
+      const baseQuote = baseQuoteForPosition(pos) || {
         price: existing.price ?? pos.manualPrice ?? pos.costPrice,
         previousClose: existing.previousClose ?? null,
         change: existing.change ?? null,
@@ -3976,6 +4120,9 @@ function loadManualPrices() {
         quoteIssue: existing.quoteIssue || quoteIssues[pos.id] || null,
         updatedAt: existing.updatedAt || null
       };
+      currentPrices[pos.id] = effectiveQuoteForPosition(pos, baseQuote);
+    } else if (pos.cgId && baseLivePrices[pos.id]) {
+      currentPrices[pos.id] = effectiveQuoteForPosition(pos, baseLivePrices[pos.id]);
     }
     if (!pos.cgId && pos.weeklyHistory) weeklyData[pos.id] = pos.weeklyHistory;
   });
@@ -4057,6 +4204,11 @@ function getPositionTodayChange(pos, live) {
 }
 
 function formatLiveUpdatedAt(live) {
+  if (live?.manualOverride) {
+    const expiresAt = live.overrideExpiresAt ? new Date(live.overrideExpiresAt) : null;
+    const time = expiresAt && !isNaN(expiresAt.getTime()) ? expiresAt.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) : '';
+    return time ? `manuell bis ${time}` : 'manuell aktiv';
+  }
   if (!live?.live) return 'manuell';
   const d = live.updatedAt ? new Date(live.updatedAt) : null;
   if (d && !isNaN(d.getTime())) {
@@ -4065,6 +4217,11 @@ function formatLiveUpdatedAt(live) {
   return 'gerade geladen';
 }
 function formatLiveUpdatedShort(live) {
+  if (live?.manualOverride) {
+    const expiresAt = live.overrideExpiresAt ? new Date(live.overrideExpiresAt) : null;
+    const time = expiresAt && !isNaN(expiresAt.getTime()) ? expiresAt.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) : '';
+    return time ? `Manuell bis ${time}` : 'Manuell aktiv';
+  }
   if (!live?.live) return 'manuell';
   const d = live.updatedAt ? new Date(live.updatedAt) : null;
   if (!d || isNaN(d.getTime())) return 'gerade geladen';
@@ -4072,6 +4229,50 @@ function formatLiveUpdatedShort(live) {
   const sameDay = d.toDateString() === today.toDateString();
   const time = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
   return sameDay ? `Heute / ${time}` : `${d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })} / ${time}`;
+}
+function quoteCadenceMinutes(pos, live) {
+  const type = String(pos?.type || '').toLowerCase();
+  const source = String(live?.source || '').toLowerCase();
+  const venue = String(live?.venue || '').toLowerCase();
+  if (type === 'crypto' || venue.includes('crypto') || source.includes('crypto')) return 1;
+  return 15;
+}
+function quoteFreshnessInfo(pos, live) {
+  if (live?.manualOverride) {
+    const remaining = manualQuoteRemainingText(pos);
+    const base = live.baseSource ? ` · Live-Basis: ${live.baseSource}` : '';
+    const text = `Quelle: Manueller Kurs · ${remaining || 'aktiv'} · Rückfall auf Livekurs nach 30 min${base}`;
+    return { className: 'stale', shortText: text, detailText: `${text}. Berechnungen verwenden bis dahin den gespeicherten manuellen Kurs.` };
+  }
+  const source = live?.source || (live?.live ? 'Marktdaten' : 'manuell');
+  const venue = live?.venueLabel || getVenueByCode(venueOf(pos)).short;
+  if (!live?.live) {
+    return {
+      className: 'manual',
+      shortText: `Quelle: ${source} · kein Live-Zeitstempel`,
+      detailText: `Quelle: ${source} · kein Live-Zeitstempel · Wert wird erst durch eine erfolgreiche Kursquelle automatisch aktualisiert.`
+    };
+  }
+  const d = live.updatedAt ? new Date(live.updatedAt) : null;
+  if (!d || isNaN(d.getTime())) {
+    return {
+      className: '',
+      shortText: `Quelle: ${source} · ${venue} · Kurszeit: gerade geladen`,
+      detailText: `Quelle: ${source} · ${venue} · Kurszeit: gerade geladen`
+    };
+  }
+  const now = new Date();
+  const ageMs = Math.max(0, now.getTime() - d.getTime());
+  const ageMin = Math.floor(ageMs / 60000);
+  const cadence = quoteCadenceMinutes(pos, live);
+  const nextMs = Math.max(0, d.getTime() + cadence * 60000 - now.getTime());
+  const nextMin = Math.ceil(nextMs / 60000);
+  const time = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+  const delayedText = ageMin <= 0 ? 'unter 1 min' : `ca. ${ageMin} min`;
+  const nextText = nextMin <= 0 ? 'ca. 0 min' : `ca. ${nextMin} min`;
+  const className = ageMin >= cadence ? 'stale' : '';
+  const base = `Quelle: ${source} · ${venue} · Kurszeit: ${time} · verzögert ${delayedText} · nächster Wert in ${nextText}`;
+  return { className, shortText: base, detailText: `${base} · angenommener Quellentakt: ${cadence} min` };
 }
 
 function buildCard(pos, totals, alloc) {
@@ -4091,7 +4292,7 @@ function buildCard(pos, totals, alloc) {
   const isClump = pctPortfolio > 30;
   const risk = deriveRisk(pos);
   const quoteIssue = live.quoteIssue || quoteIssues[pos.id] || null;
-  const liveBadge = live.live ? `<span class="risk-badge risk-low">LIVE</span>` : quoteIssue ? `<span class="risk-badge risk-medium">KURS PRÜFEN</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
+  const liveBadge = live.manualOverride ? `<span class="risk-badge risk-medium">MANUELL 30 MIN</span>` : live.live ? `<span class="risk-badge risk-low">LIVE</span>` : quoteIssue ? `<span class="risk-badge risk-medium">KURS PRÜFEN</span>` : `<span class="risk-badge risk-medium">MANUELL</span>`;
   const todayMove = getPositionTodayChange(pos, live);
   const todayClass = todayMove && todayMove.eur >= 0 ? 'positive' : 'negative';
   const todayEurText = todayMove ? `${todayMove.eur >= 0 ? '+' : ''}${fmt.format(todayMove.eur)}` : '—';
@@ -4099,6 +4300,7 @@ function buildCard(pos, totals, alloc) {
   const todayText = todayMove ? `${todayEurText} (${todayPctText})` : '—';
   const updatedText = `${live.source ? escapeHtml(live.source) + ' · ' : ''}${escapeHtml(formatLiveUpdatedAt(live))}`;
   const collapsedUpdatedText = `${escapeHtml(formatLiveUpdatedShort(live))}${live.venueLabel ? ' · ' + escapeHtml(live.venueLabel) : ''}`;
+  const freshness = quoteFreshnessInfo(pos, live);
   const portfolioInfo = isClump ? `<span class="pct-portfolio warn">${fmtNum(pctPortfolio, 0)} % Portfolio · Klumpenrisiko</span>` : `<span class="pct-portfolio">${fmtNum(pctPortfolio, 0)} % Portfolio</span>`;
   const warning = isClump ? `<div class="warn-box"><strong>Hinweis:</strong> ${fmtNum(pctPortfolio, 0)} % deines Depots in dieser Position — Klumpenrisiko reduzieren.</div>` : '';
   const rec = getRecommendation(pos, totals, alloc);
@@ -4128,6 +4330,7 @@ function buildCard(pos, totals, alloc) {
           <span class="lbl">Veränderung heute</span>
           <span class="val ${todayMove ? todayClass : ''}">${todayMove ? `${todayEurText} (${todayPctText})` : '—'}</span>
         </div>
+        <div class="quote-freshness-line ${freshness.className}">${escapeHtml(freshness.shortText)}</div>
       </div>
       <button class="card-quick-edit" data-quickedit-id="${pos.id}" title="Bearbeiten" aria-label="Bearbeiten">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -4143,6 +4346,8 @@ function buildCard(pos, totals, alloc) {
         <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
       </div>
+      <div class="quote-freshness-box ${freshness.className}">${escapeHtml(freshness.detailText)}</div>
+      ${buildManualQuotePanel(pos, live)}
       ${quoteIssueBlock}
       ${buildVenueRow(pos, live)}
       ${stammdatenBlock}
@@ -4179,6 +4384,85 @@ function buildCard(pos, totals, alloc) {
       </div>
     </div>`;
   return wrap;
+}
+
+function buildManualQuotePanel(pos, live) {
+  if (!pos || pos.special) return '';
+  const type = String(pos.type || '').toLowerCase();
+  if (!['aktie', 'etf', 'crypto'].includes(type)) return '';
+  const active = getManualQuoteOverride(pos);
+  const remaining = active ? manualQuoteRemainingText(pos) : '';
+  const basePrice = baseQuoteForPosition(pos)?.price || (live?.manualOverride ? null : live?.price);
+  const placeholder = basePrice ? fmtNum(basePrice, basePrice < 10 ? 4 : 2) : fmtNum(live?.price || pos.manualPrice || pos.costPrice || 0, 2);
+  return `<div class="manual-quote-panel" data-manual-quote-panel="${pos.id}">
+    <div class="manual-quote-head">
+      <div class="manual-quote-title">Kurs manuell überschreiben</div>
+      <div class="manual-quote-state ${active ? 'active' : ''}" id="manualQuoteState-${pos.id}">
+        ${active ? `Manueller Kurs ${fmtNum(active.price, active.price < 10 ? 4 : 2)} € · ${escapeHtml(remaining)}` : 'Inaktiv · Berechnung nutzt Live/Quelle'}
+      </div>
+    </div>
+    <div class="manual-quote-form">
+      <input type="text" inputmode="decimal" class="manual-quote-input" id="manualQuoteInput-${pos.id}" data-manual-quote-input="${pos.id}" placeholder="${escapeHtml(placeholder)}" value="">
+      <button class="manual-quote-btn save" data-manual-quote-save="${pos.id}" type="button">Speichern</button>
+      <button class="manual-quote-btn clear" data-manual-quote-clear="${pos.id}" type="button" ${active ? '' : 'disabled'}>Entfernen</button>
+    </div>
+    <div class="manual-quote-note">Erst nach „Speichern“ wird neu berechnet. Der manuelle Kurs läuft automatisch nach 30 Minuten ab.</div>
+  </div>`;
+}
+
+function parseQuoteInput(value) {
+  const raw = String(value || '').trim();
+  const normalized = raw.includes(',')
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw;
+  const num = Number(normalized);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+async function saveManualQuoteOverride(posId) {
+  const pos = appData?.positions?.find(p => p.id === posId);
+  if (!pos) return;
+  const input = document.getElementById(`manualQuoteInput-${posId}`);
+  const price = parseQuoteInput(input?.value);
+  if (!price) {
+    alert('Bitte einen gültigen Kurs eingeben.');
+    return;
+  }
+  const now = new Date();
+  const base = baseQuoteForPosition(pos);
+  pos.manualQuoteOverride = {
+    price,
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + MANUAL_QUOTE_OVERRIDE_MS).toISOString(),
+    baseQuote: {
+      price: Number(base.price) || price,
+      previousClose: base.previousClose ?? null,
+      change: base.change ?? null,
+      changePct: base.changePct ?? null,
+      live: !!base.live,
+      source: base.source || 'manuell',
+      symbol: base.symbol || quoteSymbolForPosition(pos),
+      currency: 'EUR',
+      venue: base.venue || venueOf(pos),
+      venueLabel: base.venueLabel || getVenueByCode(venueOf(pos)).short,
+      updatedAt: base.updatedAt || null,
+    },
+  };
+  currentPrices[pos.id] = effectiveQuoteForPosition(pos, base);
+  renderExpandedRestore.add(pos.id);
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+}
+
+async function clearManualQuoteOverride(posId) {
+  const pos = appData?.positions?.find(p => p.id === posId);
+  if (!pos || !pos.manualQuoteOverride) return;
+  const base = baseQuoteForPosition(pos);
+  delete pos.manualQuoteOverride;
+  currentPrices[pos.id] = effectiveQuoteForPosition(pos, base);
+  renderExpandedRestore.add(pos.id);
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
 }
 
 // Erzeugt die Handelsplatz-Zeile in der ausgeklappten Karte (nur bei Aktien/ETFs, nicht bei Crypto/Special)
@@ -4615,6 +4899,7 @@ function renderPositions(totals) {
 }
 
 function renderTotals() {
+  pruneExpiredManualQuoteOverrides();
   let totalCur = 0, totalCost = 0, todayChangeEur = 0, hasChangeData = false;
   appData.positions.forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
@@ -5194,7 +5479,10 @@ function renderSavingsSim(totals, goal) {
 }
 
 async function refreshUI(opts = {}) {
+  const hadExpiredManualQuote = pruneExpiredManualQuoteOverrides();
+  if (hadExpiredManualQuote) savePositionsToKV(1000);
   loadManualPrices();
+  applyManualQuoteOverrides();
   const totals = renderTotals();
   renderPositions(totals);
   const alloc = renderAllocation(totals);
@@ -5280,6 +5568,7 @@ async function initApp() {
   renderUsage();
   if (usageRefreshTimer) clearInterval(usageRefreshTimer);
   usageRefreshTimer = setInterval(renderUsage, 60000);
+  startManualQuoteExpiryTimer();
   await refreshUI({ skipAI: true });
   await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
@@ -5341,6 +5630,11 @@ function wireEvents() {
     if (metalDel) { e.preventDefault(); e.stopPropagation(); deleteMetalLot(metalDel.dataset.metalDel, parseInt(metalDel.dataset.lotIndex, 10)); return; }
     const quickEdit = e.target.closest('[data-quickedit-id]');
     if (quickEdit) { e.stopPropagation(); openEditModal(quickEdit.dataset.quickeditId); return; }
+    const manualQuoteSave = e.target.closest('[data-manual-quote-save]');
+    if (manualQuoteSave) { e.preventDefault(); e.stopPropagation(); saveManualQuoteOverride(manualQuoteSave.dataset.manualQuoteSave); return; }
+    const manualQuoteClear = e.target.closest('[data-manual-quote-clear]');
+    if (manualQuoteClear) { e.preventDefault(); e.stopPropagation(); clearManualQuoteOverride(manualQuoteClear.dataset.manualQuoteClear); return; }
+    if (e.target.closest('[data-manual-quote-input]')) { e.stopPropagation(); return; }
     const editBtn = e.target.closest('[data-edit-id]');
     if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.editId); return; }
     const venueBtn = e.target.closest('[data-venue-pick]');
@@ -5380,6 +5674,15 @@ function wireEvents() {
       const posId = card.dataset.posId;
       const pos = appData.positions.find(p => p.id === posId);
       if (pos) loadChartForPosition(pos, chartTabState[posId] || 'week');
+    }
+  });
+  document.getElementById('positions').addEventListener('keydown', e => {
+    const input = e.target.closest?.('[data-manual-quote-input]');
+    if (!input) return;
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveManualQuoteOverride(input.dataset.manualQuoteInput);
     }
   });
   // Cash + Edelmetall Slider via Delegation auf positions Container
