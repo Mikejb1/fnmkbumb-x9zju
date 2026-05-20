@@ -3976,6 +3976,7 @@ async function fetchMarketPrices(opts = {}) {
     const data = await res.json();
     const quotes = data?.quotes || {};
     quoteIssues = {};
+    let quoteMetadataChanged = false;
     (Array.isArray(data?.missing) ? data.missing : []).forEach(item => {
       if (!item?.id) return;
       quoteIssues[item.id] = {
@@ -3989,6 +3990,12 @@ async function fetchMarketPrices(opts = {}) {
       const price = Number(q?.price);
       if (price > 0) {
         delete quoteIssues[pos.id];
+        const resolvedSymbol = cleanQuoteSymbol(q?.resolvedSymbol || '');
+        const marketType = String(pos.type || '').toLowerCase();
+        if (resolvedSymbol && (marketType === 'aktie' || marketType === 'etf') && pos.quoteSymbol !== resolvedSymbol) {
+          pos.quoteSymbol = resolvedSymbol;
+          quoteMetadataChanged = true;
+        }
         const previousClose = Number(q?.previousClose);
         const change = Number(q?.change);
         const changePct = Number(q?.changePct);
@@ -4026,6 +4033,7 @@ async function fetchMarketPrices(opts = {}) {
         currentPrices[pos.id] = effectiveQuoteForPosition(pos, fallbackQuote);
       }
     });
+    if (quoteMetadataChanged) await savePositionsToKV();
     return true;
   } catch (e) {
     console.warn('Market price fetch failed:', e);
