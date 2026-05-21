@@ -875,8 +875,13 @@
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span>Per Screenshot &amp; KI</span>
       </button>
+      <button class="add-pos-btn" id="addPosFlatexCsvBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        <span>Flatex CSV importieren</span>
+      </button>
+      <input type="file" id="flatexCsvFileInput" accept=".csv,text/csv" style="display:none;">
     </div>
-    <div class="add-pos-hint">Screenshot einer Depotposition oder Buchungstabelle hochladen — Haiku liest Stück, Einstand, Kurs und Käufe/Verkäufe automatisch aus</div>
+    <div class="add-pos-hint">Screenshot oder Flatex-Depotumsatz-CSV importieren — die CSV kann Käufe, Verkäufe, Splits, Fusionen und historische Nullbestände sauberer rekonstruieren.</div>
   </div>
   <div class="alloc-section">
     <div class="alloc-head">
@@ -1380,6 +1385,16 @@
       </div>
     </div>
     <div class="modal-actions"><button class="auth-btn secondary" id="sspCancel">Abbrechen</button><button class="auth-btn" id="sspSave">Übernehmen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="flatexCsvModal">
+  <div class="modal">
+    <h3>Flatex CSV prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Die Vorschau rechnet die Endbestände aus der Depotumsatzliste nach. Aktuelle Positionen entstehen nur bei positivem Endbestand; verkaufte Titel bleiben für die Depot-Entwicklung historisch erhalten.</p>
+    <div class="ss-conflicts" id="flatexCsvSummary"></div>
+    <div class="ss-batch-preview" id="flatexCsvPreview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Historie neu aufbauen</button></div>
   </div>
 </div>
 
@@ -2390,8 +2405,8 @@ function getCashBalance(asOfDate) {
       else if (isCashDebitType(t.txType)) bal -= t.value;
     } else {
       // Käufe ziehen Cash ab, Verkäufe schreiben Cash gut (Gegenbuchung)
-      if (t.txType === 'buy') bal -= (t.value + (t.fees || 0));
-      else if (t.txType === 'sell') bal += (t.value - (t.fees || 0));
+      if (!t.cashNeutral && t.txType === 'buy') bal -= (t.value + (t.fees || 0));
+      else if (!t.cashNeutral && t.txType === 'sell') bal += (t.value - (t.fees || 0));
     }
   });
   // Wenn keine Cash-Transaktionen vorhanden, fällt der Slider-Wert zurück
@@ -2405,7 +2420,7 @@ function getInvestedCapital(asOfDate) {
   let invested = 0;
   appData.transactions.forEach(t => {
     if (cutoff && (t.date || '') > cutoff) return;
-    if (t.assetType === 'cash') return;
+    if (t.assetType === 'cash' || t.cashNeutral) return;
     if (t.txType === 'buy') invested += t.value + (t.fees || 0);
     else if (t.txType === 'sell') invested -= t.value;
   });
@@ -2828,8 +2843,15 @@ function buildAllSpecialPositions() {
   if (cash > 0) list.push({ id: '__cash', special: 'cash', name: 'Cash', type: 'Bargeld', symbol: 'Verrechnungskonto', shares: 1, costPrice: cash, manualPrice: cash });
   return list;
 }
+function currentPortfolioPositions() {
+  return (appData?.positions || []).filter(pos => {
+    if (pos.archived) return false;
+    const valuation = getPositionValuation(pos);
+    return valuation.shares > 1e-9;
+  });
+}
 function getAllPositions() {
-  return [...(appData?.positions || []), ...buildAllSpecialPositions()];
+  return [...currentPortfolioPositions(), ...buildAllSpecialPositions()];
 }
 function getCategoryAllocation(totalCur) {
   const cats = { etf: 0, aktie: 0, crypto: 0, gold: 0, cash: 0 };
@@ -4693,6 +4715,37 @@ async function fetchAllWeeklyCharts() {
   await Promise.all(appData.positions.filter(p => p.cgId).map(async pos => { const data = await fetchCryptoWeekly(pos.cgId); if (data.length > 1) weeklyData[pos.id] = data; }));
 }
 
+async function fetchCryptoDailyHistory(pos, days = 370, forceRefresh = false) {
+  const cg = cgIdForCrypto(pos);
+  if (!cg) return false;
+  const ts = pos.dailyHistoryUpdatedAt ? new Date(pos.dailyHistoryUpdatedAt).getTime() : 0;
+  if (!forceRefresh && Array.isArray(pos.dailyHistory) && pos.dailyHistory.length > 20 && Date.now() - ts < 6 * 60 * 60 * 1000) return false;
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/${encodeURIComponent(cg)}/market_chart?vs_currency=eur&days=${Math.min(370, days)}`);
+    if (!res.ok) return false;
+    const pts = (await res.json())?.prices || [];
+    const byDate = new Map();
+    pts.forEach(([stamp, price]) => {
+      const iso = new Date(stamp).toISOString().slice(0, 10);
+      if (Number(price) > 0) byDate.set(iso, { date: iso, price: Number(price) });
+    });
+    const history = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    if (history.length < 2) return false;
+    pos.dailyHistory = history.slice(-370);
+    pos.dailyHistoryUpdatedAt = new Date().toISOString();
+    pos.dailyHistorySource = `CoinGecko Tageshistorie (${cg})`;
+    pos.dailyHistoryFxApproximate = false;
+    return true;
+  } catch (e) {
+    console.warn('Crypto daily history failed:', cg, e);
+    return false;
+  }
+}
+async function fetchAllCryptoHistories(days = 370, forceRefresh = false) {
+  const changed = await Promise.all((appData.positions || []).filter(pos => isCryptoPos(pos)).map(pos => fetchCryptoDailyHistory(pos, days, forceRefresh)));
+  if (changed.some(Boolean)) await savePositionsToKV(1200);
+}
+
 function loadManualPrices() {
   appData.positions.forEach(pos => {
     if (!pos.cgId && !currentPrices[pos.id]?.live) {
@@ -5463,7 +5516,7 @@ function renderPositions(totals) {
     totals = { totalCur };
   }
   const alloc = getCategoryAllocation(totals.totalCur);
-  appData.positions.forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
+  currentPortfolioPositions().forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
   // Edelmetalle + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
   container.appendChild(buildSpecialCard('metals', totals));
   container.appendChild(buildSpecialCard('cash', totals));
@@ -5590,6 +5643,7 @@ async function refreshLiveValuesOnly() {
   try {
     await Promise.all([
       fetchCryptoPrices(),
+      fetchAllCryptoHistories(370),
       fetchMarketPrices({ forceRefresh: true }),
       fetchMarketHistory(370),
       fetchMetalPrices({ showProgress: true }),
@@ -6163,7 +6217,7 @@ async function applyGoalSettingsUpdate() {
   if (status) { status.textContent = 'Aktualisiert alles…'; status.classList.remove('dirty'); }
   try {
     if (status) status.textContent = 'Lädt aktuelle Kurse…';
-    await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
+    await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
     await fetchAllWeeklyCharts();
     if (status) status.textContent = 'Berechnet Simulationen…';
     await refreshUI({ skipAI: true });
@@ -6199,7 +6253,7 @@ async function initApp() {
   usageRefreshTimer = setInterval(renderUsage, 60000);
   startManualQuoteExpiryTimer();
   await refreshUI({ skipAI: true });
-  await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
+  await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370), fetchMarketPrices(), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -6488,6 +6542,11 @@ function wireEvents() {
   // Position-Management
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
   document.getElementById('addPosScreenshotBtn').addEventListener('click', openScreenshotModal);
+  document.getElementById('addPosFlatexCsvBtn').addEventListener('click', () => document.getElementById('flatexCsvFileInput').click());
+  document.getElementById('flatexCsvFileInput').addEventListener('change', e => handleFlatexCsvFile(e.target.files && e.target.files[0]));
+  document.getElementById('flatexCsvCancel').addEventListener('click', closeFlatexCsvModal);
+  document.getElementById('flatexCsvImport').addEventListener('click', importFlatexCsvAnalysis);
+  document.getElementById('flatexCsvModal').addEventListener('click', e => { if (e.target.id === 'flatexCsvModal') closeFlatexCsvModal(); });
   document.getElementById('apType').addEventListener('change', updateAddPosTypeFields);
   document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
   document.getElementById('apSave').addEventListener('click', saveNewPosition);
@@ -7228,6 +7287,263 @@ NUR JSON, sonst nichts.`;
 // ===== SCREENSHOT-IMPORT — Vorschau + Konflikterkennung + Übernahme als Transaktion =====
 let ssPreviewMatchedPosId = null;
 let ssBatchRows = null;
+let flatexCsvAnalysis = null;
+const FLATEX_QTY_EPSILON = 1e-6;
+
+function parseSemicolonCsv(text) {
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  const src = String(text || '').replace(/^\uFEFF/, '');
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i], next = src[i + 1];
+    if (quoted) {
+      if (ch === '"' && next === '"') { field += '"'; i++; }
+      else if (ch === '"') quoted = false;
+      else field += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ';') { row.push(field.trim()); field = ''; }
+    else if (ch === '\n') {
+      row.push(field.trim());
+      if (row.some(cell => cell !== '')) rows.push(row);
+      row = []; field = '';
+    } else if (ch !== '\r') field += ch;
+  }
+  row.push(field.trim());
+  if (row.some(cell => cell !== '')) rows.push(row);
+  return rows;
+}
+function flatexHeaderKey(value) {
+  return normalizeText(value).replace(/[^\w]+/g, '');
+}
+function flatexRowValue(row, columns, aliases) {
+  for (const alias of aliases) {
+    const index = columns[flatexHeaderKey(alias)];
+    if (index != null) return row[index] || '';
+  }
+  return '';
+}
+function flatexBookingKind(info) {
+  const note = normalizeText(info).replace(/�/g, '');
+  // Flatex exports may mix encodings for "Ausfuehrung"; "ORDER Kauf/Verkauf" is stable.
+  if (note.includes('order kauf')) return 'order-buy';
+  if (note.includes('order verkauf')) return 'order-sell';
+  if (note.includes('split')) return 'split';
+  if (note.includes('storno')) return 'storno';
+  if (note.includes('fusion')) return 'fusion';
+  if (note.includes('thesaur')) return 'thesaurierung';
+  return 'ignore';
+}
+function inferFlatexType(name, isin) {
+  const cleanName = normalizeText(name);
+  const cleanIsin = String(isin || '').toUpperCase();
+  if (/^XFC/.test(cleanIsin) || /(^|\s)(ripple|solana|bitcoin)(\s|$)/.test(cleanName)) return 'Crypto';
+  return inferImportType({ name, isin: cleanIsin, symbol: cleanIsin });
+}
+function flatexCryptoSymbol(name) {
+  const n = normalizeText(name);
+  if (n.includes('ripple')) return 'XRP';
+  if (n.includes('solana')) return 'SOL';
+  if (n.includes('bitcoin')) return 'BTC';
+  return '';
+}
+function flatexPositionKey(isin, name) {
+  return String(isin || normalizeText(name).replace(/[^\w]+/g, '_') || 'unknown').toUpperCase();
+}
+function cleanFlatexQty(value) {
+  const num = Number(value) || 0;
+  return Math.abs(num) < FLATEX_QTY_EPSILON ? 0 : num;
+}
+function positionQuantityForCompare(pos) {
+  return pos ? Number(getPositionValuation(pos).shares) || 0 : null;
+}
+function findFlatexExistingPosition(group) {
+  const targetIsin = String(group.isin || '').toUpperCase();
+  const byIsin = (appData?.positions || []).find(pos => String(metaValueForQuality(pos, 'isin') || '').toUpperCase() === targetIsin);
+  return byIsin || findMatchingPosition(group.name, group.symbol || group.isin);
+}
+function analyzeFlatexCsvText(text) {
+  const parsed = parseSemicolonCsv(text);
+  if (parsed.length < 2) throw new Error('CSV enthält keine Buchungszeilen.');
+  const columns = {};
+  parsed[0].forEach((header, index) => { columns[flatexHeaderKey(header)] = index; });
+  if (columns.buchungstag == null || columns.isin == null || columns.buchungsinformation == null) {
+    throw new Error('Flatex-Spalten nicht erkannt. Erwartet werden Buchungstag, ISIN und Buchungsinformation.');
+  }
+  const groups = new Map();
+  const entries = [];
+  const ignored = [];
+  parsed.slice(1).forEach((row, rowOffset) => {
+    const name = flatexRowValue(row, columns, ['Bezeichnung']).trim();
+    const isin = flatexRowValue(row, columns, ['ISIN']).trim().toUpperCase();
+    const info = flatexRowValue(row, columns, ['Buchungsinformation']).trim();
+    const bookingKind = flatexBookingKind(info);
+    const signedQuantity = parseImportNumber(flatexRowValue(row, columns, ['Nominal (Stk.)', 'Nominal']));
+    const amount = parseImportNumber(flatexRowValue(row, columns, ['Betrag']));
+    const price = parseImportNumber(flatexRowValue(row, columns, ['Kurs']));
+    const taNumber = flatexRowValue(row, columns, ['TA.-Nr.', 'TA Nr', 'TANr']).trim();
+    const date = normalizeImportDate(flatexRowValue(row, columns, ['Buchungstag']));
+    const valuta = normalizeImportDate(flatexRowValue(row, columns, ['Valuta']));
+    if (!name || !isin || !signedQuantity || !price || bookingKind === 'ignore') {
+      ignored.push({ rowIndex: rowOffset + 2, name, info, reason: bookingKind === 'ignore' ? 'Buchungsart nicht importiert' : 'Pflichtwert fehlt' });
+      return;
+    }
+    const txType = signedQuantity < 0 || bookingKind === 'order-sell' ? 'sell' : 'buy';
+    const groupKey = flatexPositionKey(isin, name);
+    const type = inferFlatexType(name, isin);
+    const entry = {
+      rowIndex: rowOffset + 2,
+      groupKey, date, valuta, name, isin, type,
+      symbol: type === 'Crypto' ? flatexCryptoSymbol(name) : isin,
+      quantity: Math.abs(signedQuantity),
+      signedQuantity,
+      price: Math.abs(price),
+      value: Math.abs(amount || signedQuantity * price),
+      txType,
+      bookingKind,
+      cashNeutral: !bookingKind.startsWith('order-'),
+      taNumber,
+      importKey: `flatex:${taNumber || [date, isin, signedQuantity, price, rowOffset + 2].join('|')}`,
+      note: info
+    };
+    entries.push(entry);
+    if (!groups.has(groupKey)) groups.set(groupKey, { key: groupKey, isin, name, type, symbol: entry.symbol, entries: [], netQuantity: 0 });
+    const group = groups.get(groupKey);
+    group.entries.push(entry);
+    group.netQuantity += txType === 'buy' ? entry.quantity : -entry.quantity;
+    group.name = name || group.name;
+    if (!group.symbol && entry.symbol) group.symbol = entry.symbol;
+  });
+  if (entries.length === 0) throw new Error('Keine importierbaren Flatex-Buchungen erkannt.');
+  const groupList = [...groups.values()].map(group => {
+    group.entries.sort((a, b) => a.date.localeCompare(b.date) || a.rowIndex - b.rowIndex);
+    group.netQuantity = cleanFlatexQty(group.netQuantity);
+    group.open = group.netQuantity > FLATEX_QTY_EPSILON;
+    group.existing = findFlatexExistingPosition(group);
+    group.currentQuantity = positionQuantityForCompare(group.existing);
+    group.matchesCurrent = group.currentQuantity != null && Math.abs(group.currentQuantity - group.netQuantity) <= FLATEX_QTY_EPSILON * 10;
+    group.lastPrice = group.entries[group.entries.length - 1]?.price || 0;
+    return group;
+  }).sort((a, b) => Number(b.open) - Number(a.open) || a.name.localeCompare(b.name));
+  const counts = entries.reduce((acc, entry) => {
+    acc[entry.bookingKind] = (acc[entry.bookingKind] || 0) + 1;
+    return acc;
+  }, {});
+  return { entries, ignored, groups: groupList, counts };
+}
+async function readFlatexCsvFile(file) {
+  const bytes = await file.arrayBuffer();
+  return new TextDecoder('windows-1252').decode(bytes);
+}
+function renderFlatexCsvAnalysis(analysis) {
+  flatexCsvAnalysis = analysis;
+  const open = analysis.groups.filter(group => group.open);
+  const archived = analysis.groups.filter(group => !group.open);
+  const matches = open.filter(group => group.matchesCurrent).length;
+  const mismatches = open.filter(group => group.currentQuantity != null && !group.matchesCurrent);
+  const items = [
+    { kind: 'info', text: `${analysis.entries.length} Flatex-Buchungen erkannt · ${open.length} heutige Position${open.length === 1 ? '' : 'en'} · ${archived.length} vollständig verkaufte historische Titel.` },
+    { kind: mismatches.length ? 'warn' : 'info', text: `${matches} offene CSV-Bestände passen bereits zur aktuellen App. ${mismatches.length ? mismatches.length + ' Abweichung' + (mismatches.length === 1 ? '' : 'en') + ' bitte in der Vorschau prüfen.' : 'Keine Stückzahl-Abweichung bei erkannten Beständen.'}` },
+    { kind: 'info', text: `Sonderbuchungen: ${analysis.counts.split || 0} Split · ${analysis.counts.fusion || 0} Fusion · ${analysis.counts.thesaurierung || 0} Thesaurierung · ${analysis.counts.storno || 0} Storno. Sie werden für Stückhistorie/Einstand cash-neutral eingebucht.` }
+  ];
+  if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} wurden nicht importiert, weil Buchungsart oder Werte fehlen.` });
+  items.push({ kind: 'warn', text: 'Importmodus: Bestehende Aktien/ETF/Krypto-Positionen und deren Wertpapier-Transaktionen werden nach Sicherheitsbackup aus dieser CSV neu aufgebaut. Cash, Ziele, Edelmetalle, Watchlist, Journal und KI-Gedächtnis bleiben erhalten.' });
+  document.getElementById('flatexCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  document.getElementById('flatexCsvPreview').innerHTML = analysis.groups.map(group => {
+    const current = group.currentQuantity == null ? 'nicht in App' : `${fmtNum(group.currentQuantity, group.currentQuantity % 1 ? 6 : 0)} Stk`;
+    const result = group.open ? `${fmtNum(group.netQuantity, group.netQuantity % 1 ? 6 : 0)} Stk offen` : 'Endbestand 0 · nur Verlauf';
+    const cls = group.open ? (group.currentQuantity != null && !group.matchesCurrent ? 'sell' : 'buy') : 'ignore';
+    return `<div class="ss-batch-row ${cls}">
+      <div class="date">${group.entries.length} Zeile${group.entries.length === 1 ? '' : 'n'}</div>
+      <div>
+        <div class="name">${escapeHtml(group.name)}</div>
+        <div class="meta">${escapeHtml(group.isin)} · ${escapeHtml(group.type)} · App: ${current}</div>
+      </div>
+      <div class="type">${result}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('flatexCsvImport').disabled = false;
+  document.getElementById('flatexCsvModal').classList.add('active');
+}
+async function handleFlatexCsvFile(file) {
+  if (!file) return;
+  try {
+    renderFlatexCsvAnalysis(analyzeFlatexCsvText(await readFlatexCsvFile(file)));
+  } catch (e) {
+    flatexCsvAnalysis = null;
+    alert('Flatex CSV konnte nicht gelesen werden: ' + (e.message || e));
+  }
+}
+function closeFlatexCsvModal() {
+  document.getElementById('flatexCsvModal').classList.remove('active');
+  document.getElementById('flatexCsvImport').disabled = true;
+  flatexCsvAnalysis = null;
+  const input = document.getElementById('flatexCsvFileInput');
+  if (input) input.value = '';
+}
+function flatexPositionId(group) {
+  return 'p_flatex_' + String(group.isin || group.key).toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 30);
+}
+function buildFlatexPositionsAndTransactions(analysis) {
+  const positions = [];
+  const positionIds = new Map();
+  analysis.groups.forEach(group => {
+    const existing = group.existing;
+    const id = existing?.id || flatexPositionId(group);
+    const position = existing ? { ...existing } : { id };
+    position.id = id;
+    position.name = group.name;
+    position.symbol = group.symbol || group.isin;
+    position.type = group.type;
+    position.shares = Math.max(0, group.netQuantity);
+    position.costPrice = group.lastPrice || Number(position.costPrice) || 0;
+    position.manualPrice = group.lastPrice || Number(position.manualPrice) || position.costPrice;
+    position.archived = !group.open;
+    position.flatexImported = true;
+    position.stammdaten = { ...(position.stammdaten || {}), isin: group.isin };
+    delete position.purchaseLots;
+    if (group.type === 'Crypto') {
+      const cg = cgIdForCrypto(position);
+      if (cg) position.cgId = cg;
+    }
+    positions.push(position);
+    positionIds.set(group.key, id);
+  });
+  const transactions = analysis.entries.map(entry => ({
+    id: makeTxId(),
+    date: entry.date,
+    valuta: entry.valuta,
+    assetId: positionIds.get(entry.groupKey),
+    assetType: entry.type === 'Crypto' ? 'crypto' : entry.type === 'ETF' ? 'etf' : 'stock',
+    txType: entry.txType,
+    quantity: entry.quantity,
+    price: entry.price,
+    value: entry.value,
+    fees: 0,
+    cashNeutral: entry.cashNeutral,
+    importKey: entry.importKey,
+    flatexTaNumber: entry.taNumber,
+    note: `Flatex CSV · ${entry.bookingKind}${entry.note ? ' · ' + entry.note : ''}`
+  }));
+  return { positions, transactions };
+}
+async function importFlatexCsvAnalysis() {
+  if (!flatexCsvAnalysis) return;
+  const openCount = flatexCsvAnalysis.groups.filter(group => group.open).length;
+  const ok = confirm(`Flatex CSV wirklich übernehmen?\n\n${openCount} heutige Positionen werden aus der CSV neu aufgebaut. Vollständig verkaufte Titel bleiben nur im Verlauf. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
+  if (!ok) return;
+  backupJson('vor-flatex-csv');
+  const built = buildFlatexPositionsAndTransactions(flatexCsvAnalysis);
+  const keepTransactions = (appData.transactions || []).filter(tx => tx.assetType === 'cash' || tx.assetType === 'metal' || String(tx.assetId || '').startsWith('metal_'));
+  appData.positions = built.positions;
+  appData.transactions = keepTransactions.concat(built.transactions).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  syncPositionsFromLedger();
+  closeFlatexCsvModal();
+  await savePositionsToKV();
+  await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370, true), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370, { forceRefresh: true })]);
+  await fetchAllWeeklyCharts();
+  await refreshUI({ skipAI: true });
+  alert(`Flatex CSV übernommen. ${openCount} aktuelle Positionen und ${built.transactions.length} historische Buchungen sind aktiv.`);
+}
 
 function parseImportNumber(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
