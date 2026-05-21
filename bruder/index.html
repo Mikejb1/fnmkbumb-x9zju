@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#0d0d0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Portfolio">
+<meta name="apple-mobile-web-app-title" content="Portfolio 1">
 <meta name="robots" content="noindex,nofollow">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Mein Portfolio</title>
+<title>Mein Portfolio 1</title>
 <style>
   :root {
     color-scheme: dark light;
@@ -236,6 +236,23 @@
   .backup-btn:hover { background: var(--bg-track); }
   .backup-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
   .backup-hint { font-size: 10px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
+  .danger-zone { background: var(--bg-card); border: 1px solid var(--negative); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .danger-zone-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--negative); }
+  .danger-zone-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .danger-zone-hint { font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
+  .danger-reset-btn { background: transparent; border: 1px solid var(--negative); color: var(--negative); border-radius: 8px; padding: 9px 14px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .danger-reset-btn:hover { background: var(--error-bg); }
+  .danger-reset-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .reset-warn-box { background: var(--error-bg); border-radius: 8px; padding: 12px; font-size: 12px; color: var(--error-text); line-height: 1.5; margin-bottom: 12px; }
+  .reset-warn-box strong { display: block; margin-bottom: 6px; font-size: 13px; }
+  .reset-warn-list { margin: 8px 0 0 0; padding-left: 18px; }
+  .reset-warn-list li { padding: 2px 0; }
+  .reset-countdown { text-align: center; font-size: 13px; color: var(--text-secondary); margin: 10px 0; }
+  .reset-countdown .num { font-size: 28px; font-weight: 700; color: var(--negative); font-variant-numeric: tabular-nums; display: block; margin-bottom: 2px; }
+  .reset-backup-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .reset-backup-row .backup-btn { flex: 1; justify-content: center; border-color: var(--positive); color: var(--positive); }
+  .reset-confirm-btn { background: var(--negative); color: #fff; border: 0; }
+  .reset-confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .strat-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0; margin-bottom: 14px; overflow: hidden; }
   .strat-section > summary { padding: 12px 14px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; }
   .strat-section > summary::-webkit-details-marker { display: none; }
@@ -1126,6 +1143,18 @@
     <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import wird Vorschau angezeigt.</div>
   </div>
 
+  <div class="danger-zone">
+    <div class="danger-zone-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Gefahrenzone</span>
+    </div>
+    <div class="danger-zone-hint">Setzt dein komplettes Portfolio unwiderruflich auf Null zurück — inklusive KI-Gedächtnis. Sichere vorher unbedingt ein JSON-Backup.</div>
+    <button class="danger-reset-btn" id="resetPortfolioBtn" type="button">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      <span>Portfolio zurücksetzen</span>
+    </button>
+  </div>
+
   <div class="chat-section" id="anchor-chat">
     <div class="chat-head">
       <h2 class="chat-title">
@@ -1354,6 +1383,33 @@
     </div>
     <div class="modal-field"><label>Geplante Positionsgröße (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlSize" placeholder="z.B. 1000"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="wlCancel">Abbrechen</button><button class="auth-btn" id="wlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal">
+    <h3 style="color:var(--negative);">Portfolio unwiderruflich zurücksetzen</h3>
+    <div class="reset-warn-box">
+      <strong>⚠ Achtung — das kann NICHT rückgängig gemacht werden!</strong>
+      Folgendes wird komplett gelöscht und auf Null gesetzt:
+      <ul class="reset-warn-list">
+        <li>Alle Positionen (Aktien, ETFs, Krypto)</li>
+        <li>Alle Transaktionen (Käufe, Verkäufe)</li>
+        <li>Edelmetalle, Cash, Ziel & Sparrate</li>
+        <li>Watchlist, Journal, Erträge</li>
+        <li>Das komplette KI-Gedächtnis</li>
+      </ul>
+    </div>
+    <div class="reset-backup-row">
+      <button class="backup-btn" id="resetBackupBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Jetzt JSON-Backup sichern</button>
+    </div>
+    <div class="reset-countdown" id="resetCountdown"><span class="num" id="resetCountdownNum">10</span>Bitte warte, bevor du fortfahren kannst …</div>
+    <div class="modal-field"><label>Master-Code zur Bestätigung</label><input type="password" class="auth-input" id="resetMasterCode" placeholder="Dein Master-Code" autocomplete="off"></div>
+    <div class="auth-error" id="resetError"></div>
+    <div class="modal-actions">
+      <button class="auth-btn secondary" id="resetCancel">Abbrechen</button>
+      <button class="auth-btn reset-confirm-btn" id="resetConfirm" disabled>Endgültig löschen</button>
+    </div>
   </div>
 </div>
 
@@ -2147,6 +2203,22 @@ function getComputedPosition(positionId) {
     realizedPnl: realized,
     txCount: txs.length
   };
+}
+
+// ===== SINGLE SOURCE OF TRUTH =====
+// Synchronisiert pos.shares + pos.costPrice IMMER aus dem Transaktions-Ledger (das "Kassenbuch").
+// So können Merkzettel (pos.shares) und Kassenbuch (Transaktionen) nie auseinanderlaufen.
+// Positionen ohne Transaktionen bleiben unangetastet (Fallback auf manuelle Werte).
+function syncPositionsFromLedger() {
+  if (!appData || !Array.isArray(appData.positions)) return;
+  appData.positions.forEach(pos => {
+    if (pos.special) return; // Cash/Edelmetalle haben kein Stück-Ledger
+    const computed = getComputedPosition(pos.id);
+    if (computed.txCount > 0) {
+      pos.shares = Math.max(0, computed.shares);
+      pos.costPrice = computed.shares > 0 ? (computed.costBasis / computed.shares) : pos.costPrice;
+    }
+  });
 }
 
 function getPositionValuation(pos, liveOverride) {
@@ -5491,6 +5563,7 @@ function renderSavingsSim(totals, goal) {
 }
 
 async function refreshUI(opts = {}) {
+  syncPositionsFromLedger(); // Single Source of Truth: shares/costPrice immer aus dem Kassenbuch
   const hadExpiredManualQuote = pruneExpiredManualQuoteOverrides();
   if (hadExpiredManualQuote) savePositionsToKV(1000);
   loadManualPrices();
@@ -5787,6 +5860,13 @@ function wireEvents() {
   document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
   document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFileInput').click());
   document.getElementById('backupFileInput').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) { importJson(f); e.target.value = ''; } });
+  // Portfolio zurücksetzen (Gefahrenzone)
+  document.getElementById('resetPortfolioBtn').addEventListener('click', openResetModal);
+  document.getElementById('resetCancel').addEventListener('click', closeResetModal);
+  document.getElementById('resetConfirm').addEventListener('click', confirmResetPortfolio);
+  document.getElementById('resetBackupBtn').addEventListener('click', backupJson);
+  document.getElementById('resetModal').addEventListener('click', e => { if (e.target.id === 'resetModal') closeResetModal(); });
+  document.getElementById('resetMasterCode').addEventListener('keydown', e => { if (e.key === 'Enter' && !document.getElementById('resetConfirm').disabled) confirmResetPortfolio(); });
   // Szenario-Rechner
   document.querySelectorAll('[data-scenario]').forEach(inp => {
     inp.addEventListener('input', () => {
@@ -6189,6 +6269,101 @@ function renderChatMemoryStatus() {
   const msgCount = chatHistory.length;
   const hasSummary = (chatMemorySummary || '').trim().length > 0;
   el.textContent = `Gedächtnis aktiv · ${msgCount} Nachricht${msgCount === 1 ? '' : 'en'} · ${hasSummary ? 'Zusammenfassung gespeichert' : 'keine Zusammenfassung'}`;
+}
+
+// ===== PORTFOLIO ZURÜCKSETZEN (Gefahrenzone) =====
+let resetCountdownTimer = null;
+function openResetModal() {
+  document.getElementById('resetMasterCode').value = '';
+  const errEl = document.getElementById('resetError');
+  errEl.classList.remove('visible'); errEl.textContent = '';
+  const confirmBtn = document.getElementById('resetConfirm');
+  confirmBtn.disabled = true;
+  // 10-Sekunden-Countdown starten
+  let remaining = 10;
+  const numEl = document.getElementById('resetCountdownNum');
+  const cdEl = document.getElementById('resetCountdown');
+  numEl.textContent = remaining;
+  cdEl.style.display = '';
+  if (resetCountdownTimer) clearInterval(resetCountdownTimer);
+  resetCountdownTimer = setInterval(() => {
+    remaining--;
+    numEl.textContent = remaining;
+    if (remaining <= 0) {
+      clearInterval(resetCountdownTimer);
+      resetCountdownTimer = null;
+      cdEl.style.display = 'none';
+      confirmBtn.disabled = false;
+    }
+  }, 1000);
+  document.getElementById('resetModal').classList.add('active');
+}
+function closeResetModal() {
+  if (resetCountdownTimer) { clearInterval(resetCountdownTimer); resetCountdownTimer = null; }
+  document.getElementById('resetModal').classList.remove('active');
+}
+async function confirmResetPortfolio() {
+  const errEl = document.getElementById('resetError');
+  const code = document.getElementById('resetMasterCode').value;
+  errEl.classList.remove('visible');
+  if (!code) { errEl.textContent = 'Bitte Master-Code eingeben.'; errEl.classList.add('visible'); return; }
+  if (code !== appPassword) { errEl.textContent = 'Falscher Master-Code — Zurücksetzen abgebrochen.'; errEl.classList.add('visible'); return; }
+  const btn = document.getElementById('resetConfirm');
+  btn.disabled = true; btn.textContent = 'Lösche …';
+  try {
+    // 1) Alle Portfolio-Daten auf Null setzen
+    appData.positions = [];
+    appData.transactions = [];
+    appData.watchlist = [];
+    appData.journal = [];
+    appData.income = [];
+    appData.metalHistory = null;
+    appData.layout = null;
+    appData.goal = {
+      year: new Date().getFullYear() + 1,
+      amount: 15000,
+      savingsRate: 0,
+      cash: 0,
+      goldGrams: 0, silverGrams: 0, platinumGrams: 0, palladiumGrams: 0,
+      metalLots: {},
+      ath: 0, athDate: null,
+      targetAllocation: null,
+      riskRules: null
+    };
+    appData.schemaVersion = 2;
+    // Laufende Kurse/Caches leeren
+    currentPrices = {}; weeklyData = {}; quoteIssues = {};
+    // 2) KI-Gedächtnis lokal + serverseitig löschen
+    chatHistory = [];
+    chatMemorySummary = '';
+    try {
+      await fetch(AI_WORKER_URL, {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ action: 'clear-memory', userKey: kvKeyActive() })
+      });
+      // Legacy-Key ebenfalls leeren (falls noch alte Daten existieren)
+      if (appUserKey && appUserKey !== USER_KEY) {
+        await fetch(AI_WORKER_URL, {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify({ action: 'clear-memory', userKey: USER_KEY })
+        });
+      }
+    } catch (e) { console.warn('clear-memory fehlgeschlagen:', e); }
+    // 3) Geleerten Stand verschlüsselt in KV speichern (überschreibt die alten Daten)
+    await savePositionsToKV();
+    // 4) UI zurücksetzen
+    document.getElementById('chatMessages').innerHTML = '';
+    closeResetModal();
+    await initApp();
+    alert('Portfolio wurde vollständig zurückgesetzt.');
+  } catch (e) {
+    errEl.textContent = 'Fehler beim Zurücksetzen: ' + (e.message || e);
+    errEl.classList.add('visible');
+  } finally {
+    btn.textContent = 'Endgültig löschen';
+  }
 }
 
 function chatShowWelcome() {
