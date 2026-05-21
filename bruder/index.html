@@ -2551,8 +2551,9 @@ function sharesAtDate(pos, date) {
   // Wenn Transaktionen vorhanden, primär aus Tx-Modell rechnen (berücksichtigt Käufe + Verkäufe + Adjust in der Vergangenheit)
   if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
     const cutoff = date instanceof Date ? date.toISOString().slice(0, 10) : String(date);
-    const txs = appData.transactions.filter(t => t.assetId === pos.id && (t.date || '') <= cutoff);
-    if (txs.length > 0) {
+    const assetTxs = appData.transactions.filter(t => t.assetId === pos.id);
+    const txs = assetTxs.filter(t => (t.date || '') <= cutoff);
+    if (assetTxs.length > 0) {
       let shares = 0;
       txs.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).forEach(t => {
         if (t.txType === 'buy') shares += Number(t.quantity) || 0;
@@ -2625,8 +2626,9 @@ function metalGramsAtDate(metal, date) {
   const assetId = 'metal_' + metal.key;
   if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
     const cutoff = date instanceof Date ? toIsoDate(date) : String(date);
-    const txs = appData.transactions.filter(t => t.assetId === assetId && (t.date || '') <= cutoff);
-    if (txs.length > 0) {
+    const assetTxs = appData.transactions.filter(t => t.assetId === assetId);
+    const txs = assetTxs.filter(t => (t.date || '') <= cutoff);
+    if (assetTxs.length > 0) {
       let grams = 0;
       txs.forEach(t => {
         if (t.txType === 'buy') grams += Number(t.quantity) || 0;
@@ -2990,6 +2992,7 @@ function runCoreCalculationSelfTests() {
     currentPrices = { self_stock: { price: 120 } };
     if (!approxEqual(getCashBalance('2026-01-01'), 1000)) failures.push('Cash nach Einzahlung');
     if (!approxEqual(getCashBalance('2026-01-02'), 500)) failures.push('Cash nach Kauf');
+    if (!approxEqual(sharesAtDate(appData.positions[0], '2026-01-01'), 0)) failures.push('Stückzahl vor erstem Kauf');
     const v = getPositionValuation(appData.positions[0], currentPrices.self_stock);
     if (!approxEqual(v.currentValue, 600) || !approxEqual(v.pnlAbs, 100)) failures.push('Positionsbewertung');
     if (!approxEqual(getNetExternalContributions('2026-01-02'), 1000)) failures.push('Netto-Cashflow');
