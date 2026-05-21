@@ -2872,6 +2872,9 @@ function hasAnyQualityMetadata(pos) {
   return fields.some(f => String(metaValueForQuality(pos, f) || '').trim())
     || !!cleanQuoteSymbol(pos?.quoteSymbol || pos?.symbol || pos?.cgId || '');
 }
+function qualityPositionName(pos) {
+  return String(pos?.name || pos?.symbol || pos?.quoteSymbol || 'Unbenannte Position').trim();
+}
 function computeDataQuality(totals) {
   const issues = [];
   const qualityTips = [];
@@ -2919,22 +2922,28 @@ function computeDataQuality(totals) {
       fields.forEach(f => {
         totalFields++;
         if (String(metaValueForQuality(p, f) || '').trim()) filledFields++;
-        else missingByField[f] = (missingByField[f] || 0) + 1;
+        else {
+          if (!missingByField[f]) missingByField[f] = [];
+          missingByField[f].push(qualityPositionName(p));
+        }
       });
     });
     const stammRatio = totalFields > 0 ? filledFields / totalFields : 0;
     score += stammRatio * 15;
     const missingMetaHints = Object.entries(missingByField)
-      .filter(([, count]) => count > 0)
-      .sort((a, b) => b[1] - a[1])
+      .filter(([, names]) => names.length > 0)
+      .sort((a, b) => b[1].length - a[1].length)
       .slice(0, 4)
-      .map(([field, count]) => `${fieldLabels[field] || field} bei ${count} Position${count === 1 ? '' : 'en'}`);
+      .map(([field, names]) => {
+        const shown = names.slice(0, 3).join(', ');
+        return `${fieldLabels[field] || field} fehlt bei ${shown}${names.length > 3 ? ' …' : ''}`;
+      });
     if (missingMetaHints.length > 0) {
       qualityTips.push(`Für 100 Punkte fehlen noch optionale Stammdaten: ${missingMetaHints.join(', ')}.`);
     }
     const positionsWithoutAny = positions.filter(p => !hasAnyQualityMetadata(p));
     if (positionsWithoutAny.length > 0) {
-      const names = positionsWithoutAny.slice(0, 3).map(p => p.name).filter(Boolean).join(', ');
+      const names = positionsWithoutAny.slice(0, 3).map(qualityPositionName).filter(Boolean).join(', ');
       const suffix = names ? `: ${names}${positionsWithoutAny.length > 3 ? ' …' : ''}` : '.';
       issues.push({ severity: 'info', text: `Bei ${positionsWithoutAny.length} Position${positionsWithoutAny.length === 1 ? '' : 'en'} fehlen Stammdaten (ISIN/WKN/Sektor)${suffix}` });
     }
@@ -3693,10 +3702,11 @@ function validateBackupSchema(data) {
   // Positionen prüfen
   if (Array.isArray(data.positions)) {
     data.positions.forEach((p, i) => {
-      if (!p.id || typeof p.id !== 'string') throw new Error(`Position ${i + 1}: id fehlt oder ungültig`);
-      if (!p.name || typeof p.name !== 'string') throw new Error(`Position ${i + 1}: name fehlt`);
-      if (p.shares != null && (typeof p.shares !== 'number' || !isFinite(p.shares))) throw new Error(`Position "${p.name}": shares ungültig`);
-      if (p.costPrice != null && (typeof p.costPrice !== 'number' || !isFinite(p.costPrice))) throw new Error(`Position "${p.name}": costPrice ungültig`);
+      const posLabel = p?.name || p?.symbol || p?.quoteSymbol || `Unbenannte Position (${i + 1})`;
+      if (!p.id || typeof p.id !== 'string') throw new Error(`"${posLabel}": id fehlt oder ungültig`);
+      if (!p.name || typeof p.name !== 'string') throw new Error(`"${posLabel}": name fehlt`);
+      if (p.shares != null && (typeof p.shares !== 'number' || !isFinite(p.shares))) throw new Error(`"${posLabel}": shares ungültig`);
+      if (p.costPrice != null && (typeof p.costPrice !== 'number' || !isFinite(p.costPrice))) throw new Error(`"${posLabel}": costPrice ungültig`);
     });
   }
   // Transaktionen prüfen
