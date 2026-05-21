@@ -2909,7 +2909,7 @@ function computeDataQuality(totals) {
     score += 5;
     issues.push({ severity: 'info', text: 'Cash-Bewegungen sind nicht einzeln gepflegt (nur Slider-Wert).' });
   } else {
-    score += 5;
+    score += 15;
   }
 
   // 4) Stammdaten (ISIN/WKN/Sektor/Custodian) (15 %)
@@ -3000,6 +3000,8 @@ function computeDataQuality(totals) {
   }
   if (finalScore < 100 && qualityTips.length > 0) {
     qualityTips.slice(0, 3).forEach(text => issues.push({ severity: 'info', text }));
+  } else if (finalScore < 100 && issues.every(i => i.severity === 'good')) {
+    issues.push({ severity: 'info', text: `Für 100 Punkte fehlen noch ${100 - finalScore} Punkte in Detaildaten. Bitte Positionen, Kaufdaten, Cash-Bewegungen, Ziel und Backup prüfen.` });
   }
 
   return { score: finalScore, issues };
