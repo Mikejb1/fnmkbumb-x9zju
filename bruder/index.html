@@ -2854,6 +2854,24 @@ function renderAllocation(totals) {
 
 // ===== DATENQUALITÄTS-SCORE =====
 const BACKUP_TS_KEY = 'portfolio_last_backup_ts';
+function looksLikeWkn(value) {
+  return /^[A-Z0-9]{6}$/.test(cleanQuoteSymbol(value)) && !looksLikeIsin(value);
+}
+function metaValueForQuality(pos, field) {
+  const sd = pos?.stammdaten || {};
+  if (field === 'isin') return sd.isin || pos?.isin || (looksLikeIsin(pos?.symbol) ? cleanQuoteSymbol(pos.symbol) : '');
+  if (field === 'wkn') return sd.wkn || pos?.wkn || (looksLikeWkn(pos?.symbol) ? cleanQuoteSymbol(pos.symbol) : '');
+  if (field === 'sektor') return sd.sektor || sd.sector || pos?.sektor || pos?.sector || '';
+  if (field === 'custodian') return sd.custodian || pos?.custodian || '';
+  if (field === 'custodyType') return sd.custodyType || pos?.custodyType || '';
+  if (field === 'land') return sd.land || sd.country || pos?.land || pos?.country || '';
+  return sd[field] || pos?.[field] || '';
+}
+function hasAnyQualityMetadata(pos) {
+  const fields = ['isin', 'wkn', 'sektor', 'custodian', 'custodyType', 'land'];
+  return fields.some(f => String(metaValueForQuality(pos, f) || '').trim())
+    || !!cleanQuoteSymbol(pos?.quoteSymbol || pos?.symbol || pos?.cgId || '');
+}
 function computeDataQuality(totals) {
   const issues = [];
   let score = 0;
@@ -2895,16 +2913,16 @@ function computeDataQuality(totals) {
     const fields = ['isin', 'wkn', 'sektor', 'custodian', 'custodyType', 'land'];
     let totalFields = 0, filledFields = 0;
     positions.forEach(p => {
-      const sd = p.stammdaten || {};
-      fields.forEach(f => { totalFields++; if (sd[f] && String(sd[f]).trim()) filledFields++; });
+      fields.forEach(f => { totalFields++; if (String(metaValueForQuality(p, f) || '').trim()) filledFields++; });
     });
     const stammRatio = totalFields > 0 ? filledFields / totalFields : 0;
     score += stammRatio * 15;
-    const posWithoutAny = positions.filter(p => {
-      const sd = p.stammdaten || {};
-      return !fields.some(f => sd[f] && String(sd[f]).trim());
-    }).length;
-    if (posWithoutAny > 0) issues.push({ severity: 'info', text: `Bei ${posWithoutAny} Position${posWithoutAny === 1 ? '' : 'en'} fehlen Stammdaten (ISIN/WKN/Sektor).` });
+    const positionsWithoutAny = positions.filter(p => !hasAnyQualityMetadata(p));
+    if (positionsWithoutAny.length > 0) {
+      const names = positionsWithoutAny.slice(0, 3).map(p => p.name).filter(Boolean).join(', ');
+      const suffix = names ? `: ${names}${positionsWithoutAny.length > 3 ? ' …' : ''}` : '.';
+      issues.push({ severity: 'info', text: `Bei ${positionsWithoutAny.length} Position${positionsWithoutAny.length === 1 ? '' : 'en'} fehlen Stammdaten (ISIN/WKN/Sektor)${suffix}` });
+    }
   }
 
   // 5) Ziel, Sparrate, Zieljahr (10 %)
