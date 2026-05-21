@@ -2874,6 +2874,7 @@ function hasAnyQualityMetadata(pos) {
 }
 function computeDataQuality(totals) {
   const issues = [];
+  const qualityTips = [];
   let score = 0;
 
   // 1) Positionen mit Stückzahl, Einstand, aktuellem Wert (25 %)
@@ -2911,12 +2912,26 @@ function computeDataQuality(totals) {
   // 4) Stammdaten (ISIN/WKN/Sektor/Custodian) (15 %)
   if (positions.length > 0) {
     const fields = ['isin', 'wkn', 'sektor', 'custodian', 'custodyType', 'land'];
+    const fieldLabels = { isin: 'ISIN', wkn: 'WKN', sektor: 'Sektor', custodian: 'Lagerstelle/Broker', custodyType: 'Verwahrart', land: 'Land' };
+    const missingByField = {};
     let totalFields = 0, filledFields = 0;
     positions.forEach(p => {
-      fields.forEach(f => { totalFields++; if (String(metaValueForQuality(p, f) || '').trim()) filledFields++; });
+      fields.forEach(f => {
+        totalFields++;
+        if (String(metaValueForQuality(p, f) || '').trim()) filledFields++;
+        else missingByField[f] = (missingByField[f] || 0) + 1;
+      });
     });
     const stammRatio = totalFields > 0 ? filledFields / totalFields : 0;
     score += stammRatio * 15;
+    const missingMetaHints = Object.entries(missingByField)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([field, count]) => `${fieldLabels[field] || field} bei ${count} Position${count === 1 ? '' : 'en'}`);
+    if (missingMetaHints.length > 0) {
+      qualityTips.push(`Für 100 Punkte fehlen noch optionale Stammdaten: ${missingMetaHints.join(', ')}.`);
+    }
     const positionsWithoutAny = positions.filter(p => !hasAnyQualityMetadata(p));
     if (positionsWithoutAny.length > 0) {
       const names = positionsWithoutAny.slice(0, 3).map(p => p.name).filter(Boolean).join(', ');
@@ -2961,12 +2976,24 @@ function computeDataQuality(totals) {
     });
     if (totalLots > 0 && lotsWithStorage < totalLots) {
       issues.push({ severity: 'info', text: `Bei Edelmetall-Käufen fehlt teilweise Lagerart/Gebühren-Info.` });
+      qualityTips.push('Für 100 Punkte Edelmetall-Käufe mit Lagerart und Gebühren vervollständigen.');
     }
   }
 
-  if (issues.length === 0) issues.push({ severity: 'good', text: 'Alle wichtigen Daten sind gepflegt — Auswertungen sind belastbar.' });
+  const finalScore = Math.round(Math.min(100, score));
+  if (issues.length === 0) {
+    issues.push({
+      severity: 'good',
+      text: finalScore >= 100
+        ? 'Alle wichtigen Daten sind vollständig gepflegt — Auswertungen sind sehr belastbar.'
+        : 'Alle Pflichtdaten sind gepflegt — Auswertungen sind belastbar.'
+    });
+  }
+  if (finalScore < 100 && qualityTips.length > 0) {
+    qualityTips.slice(0, 3).forEach(text => issues.push({ severity: 'info', text }));
+  }
 
-  return { score: Math.round(Math.min(100, score)), issues };
+  return { score: finalScore, issues };
 }
 function renderDataQuality(totals) {
   const valEl = document.getElementById('qualityScoreVal');
