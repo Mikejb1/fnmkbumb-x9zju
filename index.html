@@ -3889,7 +3889,94 @@ async function handleGate() {
 }
 function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = null; kvLegacyMigrationDone = false; currentPrices = {}; baseLivePrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (manualQuoteTimer) { clearInterval(manualQuoteTimer); manualQuoteTimer = null; } if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
+// Mapping Symbol/Name -> CoinGecko-ID (für zuverlässige Live-Kurse)
+const CRYPTO_CG_IDS = {
+  btc: 'bitcoin', bitcoin: 'bitcoin', xbt: 'bitcoin',
+  eth: 'ethereum', ethereum: 'ethereum', ether: 'ethereum',
+  sol: 'solana', solana: 'solana',
+  xrp: 'ripple', ripple: 'ripple',
+  ada: 'cardano', cardano: 'cardano',
+  dot: 'polkadot', polkadot: 'polkadot',
+  doge: 'dogecoin', dogecoin: 'dogecoin',
+  ltc: 'litecoin', litecoin: 'litecoin',
+  bnb: 'binancecoin', binancecoin: 'binancecoin',
+  matic: 'matic-network', polygon: 'matic-network',
+  avax: 'avalanche-2', avalanche: 'avalanche-2',
+  link: 'chainlink', chainlink: 'chainlink',
+  trx: 'tron', tron: 'tron',
+  sui: 'sui',
+  atom: 'cosmos', cosmos: 'cosmos',
+  uni: 'uniswap', uniswap: 'uniswap',
+  xlm: 'stellar', stellar: 'stellar',
+  algo: 'algorand', algorand: 'algorand',
+  shib: 'shiba-inu',
+  pepe: 'pepe',
+  near: 'near', apt: 'aptos', aptos: 'aptos', arb: 'arbitrum', op: 'optimism'
+};
+function cgIdForCrypto(pos) {
+  if (pos.cgId) return String(pos.cgId).toLowerCase();
+  const sym = cleanQuoteSymbol(pos.symbol || '').toLowerCase();
+  if (CRYPTO_CG_IDS[sym]) return CRYPTO_CG_IDS[sym];
+  const name = normalizeText(pos.name || '').toLowerCase().replace(/\s+/g, '');
+  if (CRYPTO_CG_IDS[name]) return CRYPTO_CG_IDS[name];
+  // Symbol/Name könnten Teilstrings enthalten (z.B. "Ripple XRP")
+  const hay = (sym + ' ' + name);
+  for (const key of Object.keys(CRYPTO_CG_IDS)) {
+    if (key.length >= 3 && hay.includes(key)) return CRYPTO_CG_IDS[key];
+  }
+  return '';
+}
+
 async function fetchCryptoPrices() {
+  const cryptos = (appData?.positions || [])
+    .filter(p => isCryptoPos(p))
+    .map(pos => ({ pos, cg: cgIdForCrypto(pos) }))
+    .filter(x => x.cg);
+
+  if (cryptos.length === 0) return false;
+
+  // Primär: CoinGecko direkt (zuverlässige JSON-API, EUR + 24h-Veränderung)
+  const ids = [...new Set(cryptos.map(x => x.cg))].join(',');
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=eur&include_24hr_change=true`);
+    if (!res.ok) throw new Error('CoinGecko HTTP ' + res.status);
+    const data = await res.json();
+    let anySuccess = false;
+    cryptos.forEach(({ pos, cg }) => {
+      const d = data[cg];
+      const price = Number(d?.eur);
+      if (price > 0) {
+        const changePct = Number(d.eur_24h_change);
+        const validPct = Number.isFinite(changePct) ? changePct : 0;
+        const previousClose = validPct !== 0 ? price / (1 + validPct / 100) : price;
+        const liveQuote = {
+          price,
+          previousClose: previousClose > 0 ? previousClose : null,
+          change: previousClose > 0 ? price - previousClose : null,
+          changePct: validPct,
+          live: true,
+          source: 'CoinGecko EUR (24h)',
+          symbol: pos.symbol || cg.toUpperCase(),
+          currency: 'EUR',
+          venue: 'coingecko',
+          venueLabel: 'CoinGecko',
+          updatedAt: new Date().toISOString()
+        };
+        baseLivePrices[pos.id] = liveQuote;
+        currentPrices[pos.id] = effectiveQuoteForPosition(pos, liveQuote);
+        anySuccess = true;
+      }
+    });
+    if (anySuccess) return true;
+    throw new Error('CoinGecko lieferte keine Kurse');
+  } catch (e) {
+    console.warn('Crypto fetch (CoinGecko) failed, fallback auf Worker:', e);
+    return await fetchCryptoPricesViaWorker();
+  }
+}
+
+// Fallback: Crypto-Kurse über den Worker (Google Finance)
+async function fetchCryptoPricesViaWorker() {
   const cryptoPositions = (appData?.positions || [])
     .filter(p => isCryptoPos(p))
     .map(pos => ({
@@ -3902,9 +3989,7 @@ async function fetchCryptoPrices() {
       wkn: ''
     }))
     .filter(pos => pos.symbol || pos.name);
-
   if (cryptoPositions.length === 0) return false;
-
   try {
     const res = await fetch(AI_WORKER_URL, {
       method: 'POST',
@@ -3919,7 +4004,6 @@ async function fetchCryptoPrices() {
     if (!res.ok) throw new Error('Crypto market HTTP ' + res.status);
     const data = await res.json();
     const quotes = data?.quotes || {};
-
     (appData.positions || []).forEach(pos => {
       if (!isCryptoPos(pos)) return;
       const q = quotes[pos.id];
@@ -3947,7 +4031,7 @@ async function fetchCryptoPrices() {
     });
     return true;
   } catch (e) {
-    console.warn('Crypto fetch failed:', e);
+    console.warn('Crypto fetch (Worker) failed:', e);
     return false;
   }
 }
