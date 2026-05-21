@@ -192,8 +192,10 @@
   .cash-tx-item .cash-tx-meta { display: flex; flex-direction: column; gap: 2px; }
   .cash-tx-item .cash-tx-date { font-size: 10px; color: var(--text-tertiary); }
   .cash-tx-item .cash-tx-val.deposit { color: var(--positive); font-weight: 500; }
-  .cash-tx-item .cash-tx-val.withdraw { color: var(--negative); font-weight: 500; }
+  .cash-tx-item .cash-tx-val.withdraw, .cash-tx-item .cash-tx-val.fee, .cash-tx-item .cash-tx-val.tax { color: var(--negative); font-weight: 500; }
   .cash-tx-del { background: transparent; border: 0; color: var(--negative); cursor: pointer; padding: 4px 8px; font-size: 11px; }
+  .backup-status { font-size: 10px; color: var(--text-secondary); margin-top: 7px; line-height: 1.4; }
+  .backup-status.warn { color: #fbbf24; }
   .risk-rules-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
   .risk-rules-section.has-violations { border-color: var(--negative); }
   .risk-rules-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
@@ -940,10 +942,10 @@
       <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
       <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
-      <div class="history-balance-row" title="Inklusive Einzahlungen — zeigt wie sich dein Vermögen entwickelt hat. Cash-Einzahlungen ziehen das Ergebnis nach oben."><span>Inkl. Einzahlungen</span><strong id="historyReturnGross">—</strong></div>
-      <div class="history-balance-row" title="Geldgewichtete Rendite (MWR) auf Basis aller Transaktionen — bereinigt um Einzahlungen. Zeigt die reine Performance deiner Anlageentscheidungen."><span>Performance (MWR)</span><strong id="historyReturnMwr">—</strong></div>
-      <div class="history-balance-row" title="Zeitgewichtete Rendite (TWR) — verkettet tägliche Segmentrenditen. Vergleichbar mit ETF-/Benchmark-Renditen, unabhängig vom Einzahlungszeitpunkt."><span>Performance (TWR)</span><strong id="historyReturnTwr">—</strong></div>
-      <div class="history-disclaimer">Tagespunkte aus Kaufdaten und verfügbaren historischen Kursen. Bei manuellen Titeln ohne Tageskurs wird der passende Monatskurs verwendet.</div>
+      <div class="history-balance-row" title="Wert abzüglich Kapitalbasis. Mit erfassten Einzahlungen nutzt die App Netto-Einzahlungen, sonst den Einstand als Näherung."><span>Wert ggü. Kapitalbasis</span><strong id="historyReturnGross">—</strong></div>
+      <div class="history-balance-row" title="Geldgewichtete Rendite (MWR): berücksichtigt Zeitpunkt und Höhe externer Ein- und Auszahlungen. Nur belastbar, wenn Cashflows gepflegt sind."><span>Rendite mit Cashflows (MWR)</span><strong id="historyReturnMwr">—</strong></div>
+      <div class="history-balance-row" title="Zeitgewichtete Rendite (TWR): trennt Anlageentwicklung möglichst von externen Ein- und Auszahlungen. Ersatzkurse schränken die Aussagekraft ein."><span>Anlageentwicklung (TWR)</span><strong id="historyReturnTwr">—</strong></div>
+      <div class="history-disclaimer">Depotwert zeigt Vermögensstand. Einstand zeigt Anschaffungskosten. MWR/TWR sind Renditekennzahlen und werden bei unvollständigen Cashflows oder Ersatzkursen bewusst eingeschränkt.</div>
       <div class="history-disclaimer" id="cashHistoryNote" style="display:none;">Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.</div>
     </div>
   </div>
@@ -1147,7 +1149,8 @@
       <button class="backup-btn" id="backupImportBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>JSON importieren</button>
       <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
     </div>
-    <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import wird Vorschau angezeigt.</div>
+    <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import zeigt die App eine Vorschau und lädt ein Sicherheitsbackup des aktuellen Stands herunter.</div>
+    <div class="backup-status warn" id="backupStatus">Noch kein JSON-Backup in diesem Browser erkannt.</div>
     <details class="danger-zone">
       <summary class="danger-zone-summary">
         <span class="danger-zone-title">
@@ -1305,7 +1308,7 @@
     <h3 id="cashTxTitle">Cash-Einzahlung</h3>
     <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="ctxDate"></div>
     <div class="modal-field"><label>Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="ctxAmount" placeholder="z.B. 500.00"></div>
-    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="ctxNote" placeholder="z.B. Gehalt, Sparrate, Übertrag"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="ctxNote" placeholder="z.B. Gehalt, Sparrate, Depotgebühr, Quellensteuer"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="ctxCancel">Abbrechen</button><button class="auth-btn" id="ctxSave">Speichern</button></div>
   </div>
 </div>
@@ -2369,6 +2372,11 @@ function startManualQuoteExpiryTimer() {
 }
 
 // Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
+function isCashCreditType(type) { return ['deposit', 'dividend', 'distribution', 'interest', 'bonus', 'staking'].includes(type); }
+function isCashDebitType(type) { return ['withdraw', 'fee', 'tax'].includes(type); }
+function cashTxLabel(type) {
+  return ({ deposit: 'Einzahlung', withdraw: 'Auszahlung', fee: 'Gebühr', tax: 'Steuer', dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking' })[type] || type;
+}
 function getCashBalance(asOfDate) {
   if (!Array.isArray(appData?.transactions)) return Number(appData?.goal?.cash || 0);
   const cutoff = asOfDate ? (asOfDate instanceof Date ? asOfDate.toISOString().slice(0, 10) : String(asOfDate)) : null;
@@ -2378,10 +2386,8 @@ function getCashBalance(asOfDate) {
     if (cutoff && (t.date || '') > cutoff) return;
     if (t.assetType === 'cash') {
       hasCashTx = true;
-      if (t.txType === 'deposit') bal += t.value;
-      else if (t.txType === 'withdraw') bal -= t.value;
-      else if (t.txType === 'fee') bal -= t.value;
-      else if (t.txType === 'dividend') bal += t.value;
+      if (isCashCreditType(t.txType)) bal += t.value;
+      else if (isCashDebitType(t.txType)) bal -= t.value;
     } else {
       // Käufe ziehen Cash ab, Verkäufe schreiben Cash gut (Gegenbuchung)
       if (t.txType === 'buy') bal -= (t.value + (t.fees || 0));
@@ -2917,7 +2923,8 @@ function renderAllocation(totals) {
 }
 
 // ===== DATENQUALITÄTS-SCORE =====
-const BACKUP_TS_KEY = 'portfolio_last_backup_ts';
+const BACKUP_TS_KEY = STORAGE_PREFIX + 'last_backup_ts';
+const LEGACY_BACKUP_TS_KEY = 'portfolio_last_backup_ts';
 function looksLikeWkn(value) {
   return /^[A-Z0-9]{6}$/.test(cleanQuoteSymbol(value)) && !looksLikeIsin(value);
 }
@@ -2938,6 +2945,76 @@ function hasAnyQualityMetadata(pos) {
 }
 function qualityPositionName(pos) {
   return String(pos?.name || pos?.symbol || pos?.quoteSymbol || 'Unbenannte Position').trim();
+}
+function quoteAgeMinutes(live) {
+  const ts = live?.updatedAt ? new Date(live.updatedAt).getTime() : NaN;
+  return Number.isFinite(ts) ? Math.max(0, Math.round((Date.now() - ts) / 60000)) : null;
+}
+function historyQualityForPositions() {
+  const positions = (appData?.positions || []).filter(p => !p.special);
+  const namesWithDailyFxApprox = [];
+  const namesWithMonthlyOnly = [];
+  const namesWithoutHistory = [];
+  positions.forEach(pos => {
+    if (isCryptoPos(pos)) {
+      if (!Array.isArray(weeklyData[pos.id]) || weeklyData[pos.id].length < 2) namesWithoutHistory.push(qualityPositionName(pos));
+      return;
+    }
+    if (Array.isArray(pos.dailyHistory) && pos.dailyHistory.length > 20) {
+      if (pos.dailyHistoryFxApproximate) namesWithDailyFxApprox.push(qualityPositionName(pos));
+      return;
+    }
+    if (Array.isArray(pos.monthlyHistory) && pos.monthlyHistory.length > 0) namesWithMonthlyOnly.push(qualityPositionName(pos));
+    else namesWithoutHistory.push(qualityPositionName(pos));
+  });
+  return { namesWithDailyFxApprox, namesWithMonthlyOnly, namesWithoutHistory };
+}
+let coreCalculationSelfTestResult = null;
+function approxEqual(a, b, epsilon = 0.01) {
+  return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= epsilon;
+}
+function runCoreCalculationSelfTests() {
+  if (coreCalculationSelfTestResult) return coreCalculationSelfTestResult;
+  const savedData = appData;
+  const savedPrices = currentPrices;
+  const failures = [];
+  try {
+    appData = {
+      goal: { cash: 0 },
+      positions: [{ id: 'self_stock', type: 'Aktie', shares: 5, costPrice: 100 }],
+      transactions: [
+        { id: 'self_cash', date: '2026-01-01', assetId: 'cash', assetType: 'cash', txType: 'deposit', value: 1000, quantity: 1000, price: 1, fees: 0 },
+        { id: 'self_buy', date: '2026-01-02', assetId: 'self_stock', assetType: 'stock', txType: 'buy', value: 500, quantity: 5, price: 100, fees: 0 }
+      ]
+    };
+    currentPrices = { self_stock: { price: 120 } };
+    if (!approxEqual(getCashBalance('2026-01-01'), 1000)) failures.push('Cash nach Einzahlung');
+    if (!approxEqual(getCashBalance('2026-01-02'), 500)) failures.push('Cash nach Kauf');
+    const v = getPositionValuation(appData.positions[0], currentPrices.self_stock);
+    if (!approxEqual(v.currentValue, 600) || !approxEqual(v.pnlAbs, 100)) failures.push('Positionsbewertung');
+    if (!approxEqual(getNetExternalContributions('2026-01-02'), 1000)) failures.push('Netto-Cashflow');
+  } catch (e) {
+    failures.push(e.message || 'Laufzeitfehler');
+  } finally {
+    appData = savedData;
+    currentPrices = savedPrices;
+  }
+  coreCalculationSelfTestResult = { ok: failures.length === 0, failures };
+  if (!coreCalculationSelfTestResult.ok) console.warn('Portfolio calculation self-test failed:', failures);
+  return coreCalculationSelfTestResult;
+}
+function calculationSanityIssues(totals) {
+  const issues = [];
+  const selfTest = runCoreCalculationSelfTests();
+  if (!selfTest.ok) issues.push({ severity: 'error', text: `Interner Berechnungscheck fehlgeschlagen: ${selfTest.failures.join(', ')}.` });
+  if (totals && (!Number.isFinite(totals.totalCur) || !Number.isFinite(totals.totalCost))) {
+    issues.push({ severity: 'error', text: 'Depotwert oder Einstand ist nicht numerisch belastbar. Bitte Positionen und Kurse prüfen.' });
+  }
+  const invalidTx = (appData?.transactions || []).filter(t => !t.date || !Number.isFinite(Number(t.value)) || Number(t.value) < 0);
+  if (invalidTx.length > 0) issues.push({ severity: 'warn', text: `${invalidTx.length} Transaktion${invalidTx.length === 1 ? '' : 'en'} haben fehlendes Datum oder unplausiblen Betrag.` });
+  const negativeShares = (appData?.positions || []).filter(p => !p.special && getPositionValuation(p).shares < -1e-8);
+  if (negativeShares.length > 0) issues.push({ severity: 'warn', text: `Negative Stückzahl erkannt bei ${negativeShares.slice(0, 3).map(qualityPositionName).join(', ')}.` });
+  return issues;
 }
 function computeDataQuality(totals) {
   const issues = [];
@@ -3013,6 +3090,36 @@ function computeDataQuality(totals) {
     }
   }
 
+  // Zusatzsignale: Kurs- und Verlaufsqualität offen ausweisen
+  const pricePositions = positions.filter(p => !p.special);
+  const missingLive = pricePositions.filter(p => !currentPrices[p.id]?.live && !isManualQuoteOverrideActive(p));
+  const manualOnly = pricePositions.filter(p => isManualQuoteOverrideActive(p) || (!currentPrices[p.id]?.live && !quoteIssues[p.id]));
+  const staleLive = pricePositions.filter(p => {
+    const live = currentPrices[p.id];
+    const age = quoteAgeMinutes(live);
+    return live?.live && age != null && age > Math.max(45, quoteCadenceMinutes(p, live) * 3);
+  });
+  if (missingLive.length > 0) {
+    issues.push({ severity: 'warn', text: `Ohne Livekurs: ${missingLive.slice(0, 3).map(qualityPositionName).join(', ')}${missingLive.length > 3 ? ' ...' : ''}. Gesamtwert nutzt dort manuelle oder alte Kursbasis.` });
+  }
+  if (manualOnly.length > 0) {
+    qualityTips.push(`Kursbasis prüfen bei ${manualOnly.slice(0, 3).map(qualityPositionName).join(', ')}${manualOnly.length > 3 ? ' ...' : ''}.`);
+  }
+  if (staleLive.length > 0) {
+    issues.push({ severity: 'info', text: `Verzögerte Livekurse erkannt bei ${staleLive.slice(0, 3).map(qualityPositionName).join(', ')}${staleLive.length > 3 ? ' ...' : ''}.` });
+  }
+  const historyQuality = historyQualityForPositions();
+  if (historyQuality.namesWithoutHistory.length > 0) {
+    issues.push({ severity: 'info', text: `Depot-Verlauf nutzt Ersatzkurse bei ${historyQuality.namesWithoutHistory.slice(0, 3).join(', ')}${historyQuality.namesWithoutHistory.length > 3 ? ' ...' : ''}.` });
+  }
+  if (historyQuality.namesWithDailyFxApprox.length > 0) {
+    issues.push({ severity: 'info', text: `Tageshistorie mit aktueller FX-Näherung bei ${historyQuality.namesWithDailyFxApprox.slice(0, 3).join(', ')}${historyQuality.namesWithDailyFxApprox.length > 3 ? ' ...' : ''}.` });
+  }
+  if (historyQuality.namesWithMonthlyOnly.length > 0) {
+    issues.push({ severity: 'info', text: `Historie nur monatlich bei ${historyQuality.namesWithMonthlyOnly.slice(0, 3).join(', ')}${historyQuality.namesWithMonthlyOnly.length > 3 ? ' ...' : ''}; Tagespunkte sind dazwischen Näherungen.` });
+  }
+  calculationSanityIssues(totals).forEach(issue => issues.push(issue));
+
   // 5) Ziel, Sparrate, Zieljahr (10 %)
   const g = appData?.goal || {};
   let goalPts = 0;
@@ -3030,7 +3137,7 @@ function computeDataQuality(totals) {
 
   // 6) Backup vorhanden / aktuell (10 %)
   let backupTs = 0;
-  try { backupTs = parseInt(localStorage.getItem(BACKUP_TS_KEY) || '0', 10); } catch (e) {}
+  try { backupTs = parseInt(localStorage.getItem(BACKUP_TS_KEY) || localStorage.getItem(LEGACY_BACKUP_TS_KEY) || '0', 10); } catch (e) {}
   if (backupTs > 0) {
     const ageDays = (Date.now() - backupTs) / (1000 * 60 * 60 * 24);
     if (ageDays < 30) score += 10;
@@ -3528,6 +3635,57 @@ async function saveSellModal() {
 
 // ===== ERTRÄGE (Dividenden, Zinsen, Staking) =====
 function ensureIncome() { if (!Array.isArray(appData.income)) appData.income = []; return appData.income; }
+function ensureCashLedgerStart(date) {
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  if (appData.transactions.some(t => t.assetType === 'cash')) return false;
+  const allBuys = appData.transactions.filter(t => t.assetType !== 'cash' && t.txType === 'buy').reduce((sum, t) => sum + (Number(t.value) || 0) + (Number(t.fees) || 0), 0);
+  const allSells = appData.transactions.filter(t => t.assetType !== 'cash' && t.txType === 'sell').reduce((sum, t) => sum + (Number(t.value) || 0) - (Number(t.fees) || 0), 0);
+  const initialDeposit = allBuys - allSells + Number(appData.goal?.cash || 0);
+  if (initialDeposit <= 0) return false;
+  const earliest = appData.transactions.filter(t => t.date).map(t => t.date).sort()[0] || date || new Date().toISOString().slice(0, 10);
+  appData.transactions.push({
+    id: makeTxId(), date: earliest, assetId: 'cash', assetType: 'cash', txType: 'deposit',
+    quantity: initialDeposit, price: 1, value: initialDeposit, fees: 0,
+    note: 'Automatische Initial-Einzahlung (deckt bisherige Käufe + Slider-Cash)'
+  });
+  return true;
+}
+function removeIncomeCashTransactions(incomeId) {
+  const before = (appData.transactions || []).length;
+  appData.transactions = (appData.transactions || []).filter(t => t.sourceIncomeId !== incomeId);
+  return before !== appData.transactions.length;
+}
+function upsertIncomeCashTransactions(entry) {
+  if (!entry?.id || !entry.date || !(Number(entry.gross) > 0)) return false;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  ensureCashLedgerStart(entry.date);
+  removeIncomeCashTransactions(entry.id);
+  const name = INCOME_KIND_LABELS[entry.kind] || 'Ertrag';
+  appData.transactions.push({
+    id: makeTxId(), date: entry.date, assetId: 'cash', assetType: 'cash', txType: entry.kind || 'dividend',
+    quantity: entry.gross, price: 1, value: entry.gross, fees: 0, sourceIncomeId: entry.id,
+    note: `${name} brutto${entry.note ? ' · ' + entry.note : ''}`
+  });
+  if (Number(entry.tax) > 0) appData.transactions.push({
+    id: makeTxId(), date: entry.date, assetId: 'cash', assetType: 'cash', txType: 'tax',
+    quantity: entry.tax, price: 1, value: entry.tax, fees: 0, sourceIncomeId: entry.id,
+    note: `Steuer/Abzug zu ${name}`
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  return true;
+}
+function syncIncomeCashTransactions() {
+  const list = ensureIncome();
+  if (list.length === 0) return false;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  let changed = false;
+  list.forEach(entry => {
+    const expected = entry.tax > 0 ? 2 : 1;
+    const existing = appData.transactions.filter(t => t.sourceIncomeId === entry.id);
+    if (existing.length !== expected) changed = upsertIncomeCashTransactions(entry) || changed;
+  });
+  return changed;
+}
 let editingIncomeId = null;
 const INCOME_KIND_LABELS = { dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking' };
 function openIncomeModal(id) {
@@ -3570,12 +3728,18 @@ async function saveIncomeModal() {
   if (!isFinite(gross) || gross <= 0) { alert('Bitte gültigen Brutto-Betrag eingeben.'); return; }
   const net = Math.max(0, gross - (isFinite(tax) ? tax : 0));
   const list = ensureIncome();
+  let savedEntry = null;
   if (editingIncomeId) {
     const idx = list.findIndex(e => e.id === editingIncomeId);
-    if (idx >= 0) list[idx] = { ...list[idx], date, positionId, kind, gross, tax: tax || 0, net, note };
+    if (idx >= 0) {
+      savedEntry = { ...list[idx], date, positionId, kind, gross, tax: tax || 0, net, note };
+      list[idx] = savedEntry;
+    }
   } else {
-    list.push({ id: 'inc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6), date, positionId, kind, gross, tax: tax || 0, net, note });
+    savedEntry = { id: 'inc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6), date, positionId, kind, gross, tax: tax || 0, net, note };
+    list.push(savedEntry);
   }
+  if (savedEntry) upsertIncomeCashTransactions(savedEntry);
   list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   closeIncomeModal();
   await savePositionsToKV();
@@ -3584,11 +3748,13 @@ async function saveIncomeModal() {
 async function deleteIncome(id) {
   if (!confirm('Ertrag wirklich löschen?')) return;
   appData.income = (appData.income || []).filter(e => e.id !== id);
+  removeIncomeCashTransactions(id);
   await savePositionsToKV();
   renderIncome();
 }
 function renderIncome() {
   const list = ensureIncome();
+  if (syncIncomeCashTransactions()) savePositionsToKV(1200);
   const countEl = document.getElementById('incomeCount');
   if (countEl) countEl.textContent = String(list.length);
   const summaryEl = document.getElementById('incomeSummary');
@@ -3712,7 +3878,21 @@ function downloadBlob(content, filename, mime) {
   a.click();
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
-function backupJson() {
+function renderBackupStatus() {
+  const el = document.getElementById('backupStatus');
+  if (!el) return;
+  let ts = 0;
+  try { ts = parseInt(localStorage.getItem(BACKUP_TS_KEY) || localStorage.getItem(LEGACY_BACKUP_TS_KEY) || '0', 10); } catch (e) {}
+  if (!ts) {
+    el.textContent = 'Noch kein JSON-Backup für dieses Portfolio in diesem Browser erkannt.';
+    el.className = 'backup-status warn';
+    return;
+  }
+  const ageDays = Math.floor((Date.now() - ts) / (24 * 60 * 60 * 1000));
+  el.textContent = `Letztes JSON-Backup: ${new Date(ts).toLocaleString('de-AT')} · ${ageDays === 0 ? 'heute' : ageDays + ' Tag' + (ageDays === 1 ? '' : 'e') + ' alt'}.`;
+  el.className = 'backup-status' + (ageDays >= 30 ? ' warn' : '');
+}
+function backupJson(reason = '') {
   if (!appData) return;
   const today = new Date().toISOString().slice(0, 10);
   const payload = {
@@ -3729,8 +3909,11 @@ function backupJson() {
     layout: appData.layout || null,
     chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
   };
-  downloadBlob(JSON.stringify(payload, null, 2), `portfolio-backup-${today}.json`, 'application/json');
+  const account = typeof USER_KEY !== 'undefined' ? USER_KEY : 'portfolio';
+  const suffix = reason ? '-' + String(reason).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase() : '';
+  downloadBlob(JSON.stringify(payload, null, 2), `portfolio-${account}-backup${suffix}-${today}.json`, 'application/json');
   try { localStorage.setItem(BACKUP_TS_KEY, String(Date.now())); } catch (e) {}
+  renderBackupStatus();
   if (typeof renderDataQuality === 'function') {
     try { renderDataQuality(); } catch (e) {}
   }
@@ -3777,7 +3960,7 @@ function validateBackupSchema(data) {
   }
   // Transaktionen prüfen
   if (Array.isArray(data.transactions)) {
-    const validTxTypes = new Set(['buy', 'sell', 'deposit', 'withdraw', 'fee', 'dividend', 'adjust']);
+    const validTxTypes = new Set(['buy', 'sell', 'deposit', 'withdraw', 'fee', 'tax', 'dividend', 'distribution', 'interest', 'bonus', 'staking', 'adjust']);
     const validAssetTypes = new Set(['stock', 'etf', 'crypto', 'metal', 'cash']);
     data.transactions.forEach((t, i) => {
       if (!t.id) throw new Error(`Transaktion ${i + 1}: id fehlt`);
@@ -3815,8 +3998,13 @@ async function importJson(file) {
       warnings.slice(0, 5).forEach(w => lines.push('  · ' + w));
       if (warnings.length > 5) lines.push(`  · ... und ${warnings.length - 5} weitere`);
     }
-    const ok = confirm(`Backup importieren? Dies überschreibt deine aktuellen Daten.\n\n${lines.join('\n')}\n\nFortfahren?`);
+    if (data.user && typeof USER_KEY !== 'undefined' && data.user !== USER_KEY) {
+      const foreign = confirm(`Dieses Backup gehört zu "${data.user}", geöffnet ist aber "${USER_KEY}". Wirklich in dieses Portfolio importieren?`);
+      if (!foreign) return;
+    }
+    const ok = confirm(`Backup importieren? Dies überschreibt deine aktuellen Daten. Vorher wird automatisch ein Sicherheitsbackup des jetzigen Stands heruntergeladen.\n\n${lines.join('\n')}\n\nFortfahren?`);
     if (!ok) return;
+    backupJson('vor-import');
     if (Array.isArray(data.positions)) appData.positions = data.positions;
     if (data.goal) appData.goal = data.goal;
     if (Array.isArray(data.transactions)) appData.transactions = data.transactions;
@@ -4178,7 +4366,10 @@ function isTrustedCryptoQuote(pos, quote) {
   const symbol = String(quote?.symbol || '').toLowerCase();
   const cg = cgIdForCrypto(pos);
   if (source.includes('yahoo') || /\.de$|\.f$|\.mu$|\.sg$|\.du$|\.tg$|\.lu$/.test(symbol)) return false;
-  if (cg === 'ripple' && Number(quote?.price) > 10) return false;
+  if (cg === 'ripple' && Number(quote?.price) > 5) return false;
+  const previous = Number(baseLivePrices[pos?.id]?.price || currentPrices[pos?.id]?.price);
+  const next = Number(quote?.price);
+  if (previous > 0 && next > 0 && (next / previous > 4 || next / previous < 0.25)) return false;
   return source.includes('crypto') || source.includes('coingecko') || venue.includes('crypto') || venue.includes('coingecko') || symbol.includes('-eur') || symbol.includes('eur');
 }
 
@@ -4254,6 +4445,87 @@ function venueOf(pos) {
   if (pos && pos.venue) return pos.venue;
   return isCryptoPos(pos) ? 'tradias' : 'auto';
 }
+function rejectedMarketQuoteIssue(pos, quote) {
+  const price = Number(quote?.price);
+  if (!Number.isFinite(price) || price <= 0) return 'Kurs fehlt oder ist nicht positiv';
+  const currency = String(quote?.currency || 'EUR').toUpperCase();
+  if (currency && currency !== 'EUR') return `Kurswährung ${currency} ist nicht EUR`;
+  const previousClose = Number(quote?.previousClose);
+  if (previousClose > 0) {
+    const dailyPct = Math.abs(((price - previousClose) / previousClose) * 100);
+    if (dailyPct > 60) return `Tagesabweichung ${fmtNum(dailyPct, 1)} % ist unplausibel`;
+  }
+  const old = baseLivePrices[pos.id] || currentPrices[pos.id];
+  const oldPrice = Number(old?.price);
+  if (oldPrice > 0 && old?.live) {
+    const ratio = price / oldPrice;
+    if (ratio > 3 || ratio < 0.33) return 'Kurs springt gegenüber der letzten Live-Basis unplausibel';
+  }
+  if (price > 100000) return 'Stückkurs ist unplausibel hoch';
+  return '';
+}
+function rememberRejectedMarketQuote(pos, quote, reason) {
+  quoteIssues[pos.id] = {
+    message: `Livekurs verworfen: ${reason}. Alter/manueller Kurs bleibt aktiv.`,
+    symbol: quote?.symbol || quoteSymbolForPosition(pos),
+    suggestion: 'Quelle, Symbol, Handelsplatz und Währung prüfen'
+  };
+  const existing = currentPrices[pos.id] || baseQuoteForPosition(pos);
+  if (existing) currentPrices[pos.id] = effectiveQuoteForPosition(pos, { ...existing, quoteIssue: quoteIssues[pos.id] });
+}
+
+async function fetchMarketHistory(days = 370, opts = {}) {
+  const candidates = (appData?.positions || [])
+    .filter(pos => !isCryptoPos(pos) && !pos.special)
+    .filter(pos => {
+      const ts = pos.dailyHistoryUpdatedAt ? new Date(pos.dailyHistoryUpdatedAt).getTime() : 0;
+      const fresh = Array.isArray(pos.dailyHistory) && pos.dailyHistory.length > 20 && Date.now() - ts < 6 * 60 * 60 * 1000;
+      return opts.forceRefresh === true || !fresh;
+    })
+    .map(pos => ({
+      id: pos.id,
+      name: pos.name,
+      symbol: quoteSymbolForPosition(pos),
+      type: pos.type,
+      venue: venueOf(pos),
+      isin: pos.stammdaten?.isin || pos.isin || (looksLikeIsin(pos.symbol) ? cleanQuoteSymbol(pos.symbol) : ''),
+      wkn: pos.stammdaten?.wkn || pos.wkn || ''
+    }))
+    .filter(pos => pos.symbol || pos.isin || pos.wkn);
+  if (candidates.length === 0) return false;
+  let changed = false;
+  const chunkSize = 8;
+  for (let i = 0; i < candidates.length; i += chunkSize) {
+    const chunk = candidates.slice(i, i + chunkSize);
+    try {
+      const res = await fetch(AI_WORKER_URL, {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ action: 'get-market-history', positions: chunk, days, userKey: kvKeyActive() })
+      });
+      if (!res.ok) throw new Error('Market history HTTP ' + res.status);
+      const data = await res.json();
+      const histories = data?.histories || {};
+      chunk.forEach(item => {
+        const history = histories[item.id];
+        const pos = (appData.positions || []).find(p => p.id === item.id);
+        if (!pos || !Array.isArray(history?.points) || history.points.length < 2) return;
+        pos.dailyHistory = history.points
+          .filter(p => /^\d{4}-\d{2}-\d{2}$/.test(p.date) && Number(p.price) > 0)
+          .slice(-370)
+          .map(p => ({ date: p.date, price: Number(p.price) }));
+        pos.dailyHistoryUpdatedAt = history.updatedAt || data.updatedAt || new Date().toISOString();
+        pos.dailyHistorySource = history.source || data.source || 'Tageshistorie';
+        pos.dailyHistoryFxApproximate = history.fxApproximate === true;
+        changed = true;
+      });
+    } catch (e) {
+      console.warn('Market history fetch failed:', e);
+    }
+  }
+  if (changed) await savePositionsToKV(1200);
+  return changed;
+}
 
 async function fetchMarketPrices(opts = {}) {
   const positions = (appData?.positions || [])
@@ -4291,7 +4563,8 @@ async function fetchMarketPrices(opts = {}) {
     (appData.positions || []).forEach(pos => {
       const q = quotes[pos.id];
       const price = Number(q?.price);
-      if (price > 0) {
+      const rejectedReason = price > 0 ? rejectedMarketQuoteIssue(pos, q) : '';
+      if (price > 0 && !rejectedReason) {
         delete quoteIssues[pos.id];
         const resolvedSymbol = cleanQuoteSymbol(q?.resolvedSymbol || '');
         const marketType = String(pos.type || '').toLowerCase();
@@ -4317,6 +4590,8 @@ async function fetchMarketPrices(opts = {}) {
         };
         baseLivePrices[pos.id] = liveQuote;
         currentPrices[pos.id] = effectiveQuoteForPosition(pos, liveQuote);
+      } else if (rejectedReason) {
+        rememberRejectedMarketQuote(pos, q, rejectedReason);
       } else if (quoteIssues[pos.id]) {
         const fallbackPrice = Number(pos.manualPrice ?? currentPrices[pos.id]?.price ?? pos.costPrice);
         const fallbackQuote = {
@@ -4479,7 +4754,10 @@ function renderChart(canvasId, points, valueKey, opts) {
   new Chart(canvas, {
     type: 'line',
     data: { labels: points.map(p => p.label || p.date), datasets },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => points[items[0].dataIndex].events || [] } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => {
+          const point = points[items[0].dataIndex];
+          return [...(point.events || []), ...(point.historyNote ? [point.historyNote] : [])];
+        } } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
   });
 }
 
@@ -4943,8 +5221,10 @@ function closeMetalLotModal() {
 // ===== CASH-TRANSAKTIONEN =====
 let pendingCashTxType = 'deposit';
 function openCashTxModal(type) {
-  pendingCashTxType = type === 'withdraw' ? 'withdraw' : 'deposit';
-  document.getElementById('cashTxTitle').textContent = pendingCashTxType === 'deposit' ? 'Cash-Einzahlung' : 'Cash-Auszahlung';
+  pendingCashTxType = ['deposit', 'withdraw', 'fee', 'tax'].includes(type) ? type : 'deposit';
+  document.getElementById('cashTxTitle').textContent = ({
+    deposit: 'Cash-Einzahlung', withdraw: 'Cash-Auszahlung', fee: 'Cash-Gebühr', tax: 'Cash-Steuer'
+  })[pendingCashTxType];
   document.getElementById('ctxDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('ctxAmount').value = '';
   document.getElementById('ctxNote').value = '';
@@ -4959,33 +5239,12 @@ async function saveCashTxModal() {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
   if (!isFinite(amount) || amount <= 0) { alert('Bitte gültigen Betrag eingeben.'); return; }
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
-  // Erste Cash-Tx? Falls ja: automatische Initial-Einzahlung anlegen, damit computed Cash sinnvoll startet
-  // (sonst würde getCashBalance plötzlich auf -[Summe der Käufe] fallen)
-  const hasExistingCashTx = appData.transactions.some(t => t.assetType === 'cash');
-  if (!hasExistingCashTx) {
-    const allBuys = appData.transactions
-      .filter(t => t.assetType !== 'cash' && t.txType === 'buy')
-      .reduce((s, t) => s + t.value + (t.fees || 0), 0);
-    const allSells = appData.transactions
-      .filter(t => t.assetType !== 'cash' && t.txType === 'sell')
-      .reduce((s, t) => s + (t.value - (t.fees || 0)), 0);
-    const sliderCash = Number(appData.goal?.cash || 0);
-    const initialDeposit = allBuys - allSells + sliderCash;
-    if (initialDeposit > 0) {
-      const earliest = appData.transactions
-        .filter(t => t.date).map(t => t.date).sort()[0] || date;
-      appData.transactions.push({
-        id: makeTxId(), date: earliest,
-        assetId: 'cash', assetType: 'cash', txType: 'deposit',
-        quantity: initialDeposit, price: 1, value: initialDeposit, fees: 0,
-        note: 'Automatische Initial-Einzahlung (deckt bisherige Käufe + Slider-Cash)'
-      });
-    }
-  }
+  // Erste Cash-Tx startet mit automatischer Anfangsbasis, damit alte Käufe den Cashsaldo nicht plötzlich negativ machen.
+  ensureCashLedgerStart(date);
   appData.transactions.push({
     id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: pendingCashTxType,
     quantity: amount, price: 1, value: amount, fees: 0,
-    note: note || (pendingCashTxType === 'deposit' ? 'Einzahlung' : 'Auszahlung')
+    note: note || cashTxLabel(pendingCashTxType)
   });
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   closeCashTxModal();
@@ -5000,11 +5259,11 @@ function openCashTxList() {
     wrap.innerHTML = txs.map(t => `
       <div class="cash-tx-item">
         <div class="cash-tx-meta">
-          <div>${t.txType === 'deposit' ? 'Einzahlung' : t.txType === 'withdraw' ? 'Auszahlung' : t.txType}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
+          <div>${cashTxLabel(t.txType)}${t.sourceIncomeId ? ' · aus Erträge' : ''}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
           <div class="cash-tx-date">${formatDateAT(t.date)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <span class="cash-tx-val ${t.txType}">${t.txType === 'withdraw' ? '−' : '+'}${fmt.format(t.value)}</span>
+          <span class="cash-tx-val ${t.txType}">${isCashDebitType(t.txType) ? '−' : '+'}${fmt.format(t.value)}</span>
           <button class="cash-tx-del" data-cash-del="${t.id}" title="Löschen">×</button>
         </div>
       </div>`).join('');
@@ -5013,6 +5272,8 @@ function openCashTxList() {
 }
 function closeCashTxList() { document.getElementById('cashTxListModal').classList.remove('active'); }
 async function deleteCashTx(txId) {
+  const tx = (appData.transactions || []).find(t => t.id === txId);
+  if (tx?.sourceIncomeId) { alert('Diese Cash-Buchung gehört zu einem Ertrag. Bitte den Ertrag bearbeiten oder löschen.'); return; }
   if (!confirm('Diese Cash-Bewegung wirklich löschen?')) return;
   appData.transactions = (appData.transactions || []).filter(t => t.id !== txId);
   await savePositionsToKV();
@@ -5171,8 +5432,11 @@ function buildSpecialCard(kind, totals) {
       <div class="cash-tx-toolbar">
         <button class="cash-tx-btn" id="cashAddDepositBtn" type="button">+ Einzahlung</button>
         <button class="cash-tx-btn" id="cashAddWithdrawBtn" type="button">− Auszahlung</button>
+        <button class="cash-tx-btn" id="cashAddFeeBtn" type="button">− Gebühr</button>
+        <button class="cash-tx-btn" id="cashAddTaxBtn" type="button">− Steuer</button>
         <button class="cash-tx-btn cash-tx-list" id="cashShowTxBtn" type="button">Bewegungen</button>
-      </div>`;
+      </div>
+      <div class="cash-tx-hint">Dividenden, Ausschüttungen, Zinsen und Staking werden im Erträge-Bereich erfasst und automatisch ins Cash-Kassenbuch gespiegelt.</div>`;
   }
   return wrap;
 }
@@ -5324,6 +5588,7 @@ async function refreshLiveValuesOnly() {
     await Promise.all([
       fetchCryptoPrices(),
       fetchMarketPrices({ forceRefresh: true }),
+      fetchMarketHistory(370),
       fetchMetalPrices({ showProgress: true }),
       fetchMetalHistory(365)
     ]);
@@ -5355,8 +5620,38 @@ function historyStartDate(period, today) {
   else start.setMonth(today.getMonth() - 12);
   return start;
 }
+function historyApproximationForPosition(pos) {
+  if (!pos || pos.special) return '';
+  if (Array.isArray(pos.dailyHistory) && pos.dailyHistory.length > 20) return pos.dailyHistoryFxApproximate ? 'Tageskurs mit aktueller FX-Näherung' : '';
+  if (isCryptoPos(pos)) return Array.isArray(weeklyData[pos.id]) && weeklyData[pos.id].length > 1 ? 'Krypto-Historie nur im Wochenbereich verfügbar' : 'aktueller oder Einstandskurs';
+  if (Array.isArray(pos.monthlyHistory) && pos.monthlyHistory.length > 0) return 'Monatskurs';
+  return 'aktueller oder Einstandskurs';
+}
+function historyApproximationNote(date, isToday) {
+  if (isToday) return '';
+  const approx = (appData?.positions || [])
+    .filter(pos => !pos.special)
+    .map(pos => ({ name: qualityPositionName(pos), basis: historyApproximationForPosition(pos) }))
+    .filter(item => item.basis);
+  if (approx.length === 0) return '';
+  const shown = approx.slice(0, 3).map(item => `${item.name}: ${item.basis}`).join(', ');
+  return `Kursbasis teils angenähert: ${shown}${approx.length > 3 ? ' ...' : ''}`;
+}
+function dailyHistoryPriceAtDate(pos, date) {
+  if (!Array.isArray(pos?.dailyHistory) || pos.dailyHistory.length === 0) return null;
+  const iso = toIsoDate(date);
+  let matched = null;
+  for (const point of pos.dailyHistory) {
+    if (!point?.date || Number(point.price) <= 0) continue;
+    if (point.date <= iso) matched = point;
+    else break;
+  }
+  return matched ? Number(matched.price) : null;
+}
 function priceForHistoryDate(pos, date, isToday) {
   if (isToday) return (currentPrices[pos.id] || { price: pos.costPrice }).price;
+  const daily = dailyHistoryPriceAtDate(pos, date);
+  if (daily > 0) return daily;
   if (pos.monthlyHistory) {
     const ym = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
     const sorted = pos.monthlyHistory.slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -5426,7 +5721,7 @@ function buildPortfolioHistory(period) {
     const pnl = value - invested;
     const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
     const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, netContributions, cash: cashForDay, pnl, events: purchaseEventsForDate(d) });
+    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, netContributions, cash: cashForDay, pnl, events: purchaseEventsForDate(d), historyNote: historyApproximationNote(d, isToday) });
   }
   return points;
 }
@@ -5824,6 +6119,7 @@ async function refreshUI(opts = {}) {
   renderWatchlist();
   renderJournal();
   renderIncome();
+  renderBackupStatus();
   applyLayoutSettings();
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
@@ -5864,7 +6160,7 @@ async function applyGoalSettingsUpdate() {
   if (status) { status.textContent = 'Aktualisiert alles…'; status.classList.remove('dirty'); }
   try {
     if (status) status.textContent = 'Lädt aktuelle Kurse…';
-    await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true }), fetchMetalPrices(), fetchMetalHistory(365)]);
+    await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
     await fetchAllWeeklyCharts();
     if (status) status.textContent = 'Berechnet Simulationen…';
     await refreshUI({ skipAI: true });
@@ -5900,7 +6196,7 @@ async function initApp() {
   usageRefreshTimer = setInterval(renderUsage, 60000);
   startManualQuoteExpiryTimer();
   await refreshUI({ skipAI: true });
-  await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMetalPrices(), fetchMetalHistory(365)]);
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices(), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
 }
@@ -5953,6 +6249,8 @@ function wireEvents() {
   document.getElementById('positions').addEventListener('click', e => {
     if (e.target.id === 'cashAddDepositBtn') { e.stopPropagation(); openCashTxModal('deposit'); return; }
     if (e.target.id === 'cashAddWithdrawBtn') { e.stopPropagation(); openCashTxModal('withdraw'); return; }
+    if (e.target.id === 'cashAddFeeBtn') { e.stopPropagation(); openCashTxModal('fee'); return; }
+    if (e.target.id === 'cashAddTaxBtn') { e.stopPropagation(); openCashTxModal('tax'); return; }
     if (e.target.id === 'cashShowTxBtn') { e.stopPropagation(); openCashTxList(); return; }
     const metalAdd = e.target.closest('[data-metal-add]');
     if (metalAdd) { e.preventDefault(); e.stopPropagation(); addMetalLot(metalAdd.dataset.metalAdd); return; }
