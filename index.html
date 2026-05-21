@@ -2070,6 +2070,13 @@ let metalsProgressState = null;
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNoCent = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 const fmtNum = (v, d = 2) => v == null || isNaN(v) ? '—' : new Intl.NumberFormat('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+function priceDecimalsForPosition(pos, price) {
+  const type = String(pos?.type || '').toLowerCase();
+  if (type === 'crypto') return 4;
+  return Number(price) > 0 && Number(price) < 10 ? 4 : 2;
+}
+function fmtPrice(pos, price) { return fmtNum(price, priceDecimalsForPosition(pos, price)) + ' €'; }
+function fixedPriceInput(pos, price) { return Number(price || 0).toFixed(priceDecimalsForPosition(pos, price)); }
 const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtNum(v) + ' %';
 const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -2525,9 +2532,9 @@ function buildStammdatenSection(pos, live, totals) {
   const pnlClass = pnlAbs >= 0 ? 'positive' : 'negative';
   const rows = [
     row('Stück', fmtNum(valuation.shares, valuation.shares % 1 ? 6 : 0)),
-    row('Kurs', fmt.format(live.price)),
+    row('Kurs', fmtPrice(pos, live.price)),
     row('Gesamtwert', fmt.format(valueEur)),
-    row('Einstandskurs', fmt.format(valuation.costPrice)),
+    row('Einstandskurs', fmtPrice(pos, valuation.costPrice)),
     row('Einstandswert', fmt.format(costValue)),
     row('Entwicklung', `${pnlAbs >= 0 ? '+' : ''}${fmt.format(pnlAbs)}`, pnlClass),
     row('Entwicklung %', fmtPct(pnlPct), pnlClass),
@@ -2540,7 +2547,7 @@ function buildStammdatenSection(pos, live, totals) {
     <summary><span>Käufe / Buchungen anzeigen</span><span>${lots.length} Eintrag${lots.length === 1 ? '' : 'e'}</span></summary>
     <div class="lot-table">
       <div class="lot-row head"><span>Datum</span><span>Stück</span><span>Einstand</span><span>Wert</span></div>
-      ${lots.map(lot => `<div class="lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)}</span><span>${fmt.format(lot.costPrice)}</span><span>${fmt.format(lot.value)}</span></div>`).join('')}
+      ${lots.map(lot => `<div class="lot-row"><span>${formatDateAT(lot.date)}</span><span>${fmtNum(lot.shares, lot.shares % 1 ? 6 : 0)}</span><span>${fmtPrice(pos, lot.costPrice)}</span><span>${fmt.format(lot.value)}</span></div>`).join('')}
     </div>
   </details>` : '';
   return `<div class="stammdaten-box"><div class="stammdaten-title">Depot-Stammdaten</div><div class="stammdaten-grid">${rows}</div>${lotRows}</div>`;
@@ -3318,10 +3325,10 @@ function openBuyMoreModal(posId) {
   buyingMorePosId = posId;
   document.getElementById('buyMoreTitle').textContent = 'Nachkauf: ' + pos.name;
   const live = currentPrices[posId] || { price: pos.costPrice };
-  document.getElementById('buyMoreSubtitle').textContent = `Aktuell ${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)} Stk @ Ø ${fmtNum(pos.costPrice)} € · letzter Kurs ${fmtNum(live.price)} €`;
+  document.getElementById('buyMoreSubtitle').textContent = `Aktuell ${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)} Stk @ Ø ${fmtPrice(pos, pos.costPrice)} · letzter Kurs ${fmtPrice(pos, live.price)}`;
   document.getElementById('bmDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('bmShares').value = '';
-  document.getElementById('bmPrice').value = live.price.toFixed(2);
+  document.getElementById('bmPrice').value = fixedPriceInput(pos, live.price);
   document.getElementById('bmFees').value = '';
   document.getElementById('bmNote').value = '';
   document.getElementById('bmPreview').style.display = 'none';
@@ -3344,7 +3351,7 @@ function updateBuyMorePreview() {
   const newAvg = newShares > 0 ? newCostBasis / newShares : 0;
   body.innerHTML = `
     <div class="realized-line"><span class="lbl">Bestand neu</span><span>${fmtNum(newShares, newShares % 1 === 0 ? 0 : 4)} Stk</span></div>
-    <div class="realized-line"><span class="lbl">Ø Einstand neu</span><span>${fmtNum(newAvg)} € (vorher ${fmtNum(pos.costPrice)} €)</span></div>
+    <div class="realized-line"><span class="lbl">Ø Einstand neu</span><span>${fmtPrice(pos, newAvg)} (vorher ${fmtPrice(pos, pos.costPrice)})</span></div>
     <div class="realized-line"><span class="lbl">Kaufwert</span><span>${fmt.format(shares * price + fees)}</span></div>
   `;
   preview.style.display = '';
@@ -3397,11 +3404,11 @@ function openSellModal(posId) {
   sellingPosId = posId;
   document.getElementById('sellTitle').textContent = 'Verkauf: ' + pos.name;
   const live = currentPrices[posId] || { price: pos.costPrice };
-  document.getElementById('sellSubtitle').textContent = `Aktuell ${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)} Stk im Bestand · letzter Kurs ${fmtNum(live.price)} €`;
+  document.getElementById('sellSubtitle').textContent = `Aktuell ${fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4)} Stk im Bestand · letzter Kurs ${fmtPrice(pos, live.price)}`;
   document.getElementById('sellDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('sellShares').value = '';
   document.getElementById('sellShares').max = pos.shares;
-  document.getElementById('sellPrice').value = live.price.toFixed(2);
+  document.getElementById('sellPrice').value = fixedPriceInput(pos, live.price);
   document.getElementById('sellFees').value = '';
   document.getElementById('sellNote').value = '';
   document.getElementById('sellPreview').style.display = 'none';
@@ -3426,7 +3433,7 @@ function updateSellPreview() {
   const cls = realized >= 0 ? 'positive' : 'negative';
   body.innerHTML = `
     <div class="realized-line"><span class="lbl">Verkaufserlös brutto</span><span>${fmt.format(erlös)}</span></div>
-    <div class="realized-line"><span class="lbl">Einstand anteilig (Avg ${fmtNum(avgBefore)} €/Stk)</span><span>${fmt.format(costAnteilig)}</span></div>
+    <div class="realized-line"><span class="lbl">Einstand anteilig (Avg ${fmtPrice(pos, avgBefore)}/Stk)</span><span>${fmt.format(costAnteilig)}</span></div>
     ${fees > 0 ? `<div class="realized-line"><span class="lbl">Gebühr</span><span>−${fmt.format(fees)}</span></div>` : ''}
     <div class="realized-line" style="font-weight:600;border-top:1px solid var(--border-light);margin-top:4px;padding-top:4px;"><span class="lbl">Realisierter G/V</span><span class="${cls}">${realized >= 0 ? '+' : ''}${fmt.format(realized)}</span></div>
   `;
@@ -3985,7 +3992,6 @@ const CRYPTO_CG_IDS = {
   near: 'near', apt: 'aptos', aptos: 'aptos', arb: 'arbitrum', op: 'optimism'
 };
 function cgIdForCrypto(pos) {
-  if (pos.cgId) return String(pos.cgId).toLowerCase();
   const sym = cleanQuoteSymbol(pos.symbol || '').toLowerCase();
   if (CRYPTO_CG_IDS[sym]) return CRYPTO_CG_IDS[sym];
   const name = normalizeText(pos.name || '').toLowerCase().replace(/\s+/g, '');
@@ -3995,10 +4001,27 @@ function cgIdForCrypto(pos) {
   for (const key of Object.keys(CRYPTO_CG_IDS)) {
     if (key.length >= 3 && hay.includes(key)) return CRYPTO_CG_IDS[key];
   }
+  if (pos.cgId) return String(pos.cgId).toLowerCase();
   return '';
+}
+function normalizeCryptoMetadata() {
+  let changed = false;
+  (appData?.positions || []).forEach(pos => {
+    if (!isCryptoPos(pos)) return;
+    const cg = cgIdForCrypto(pos);
+    if (cg && pos.cgId !== cg) { pos.cgId = cg; changed = true; }
+    if (pos.quoteSymbol) { delete pos.quoteSymbol; changed = true; }
+    if (currentPrices[pos.id] && !String(currentPrices[pos.id].source || '').toLowerCase().includes('crypto') && currentPrices[pos.id].venue !== 'coingecko') {
+      delete currentPrices[pos.id];
+      delete baseLivePrices[pos.id];
+    }
+  });
+  if (changed) savePositionsToKV(1200);
+  return changed;
 }
 
 async function fetchCryptoPrices() {
+  normalizeCryptoMetadata();
   const cryptos = (appData?.positions || [])
     .filter(p => isCryptoPos(p))
     .map(pos => ({ pos, cg: cgIdForCrypto(pos) }))
@@ -4079,7 +4102,7 @@ async function fetchCryptoPricesViaWorker() {
       if (!isCryptoPos(pos)) return;
       const q = quotes[pos.id];
       const price = Number(q?.price);
-      if (price > 0) {
+      if (price > 0 && isTrustedCryptoQuote(pos, q)) {
         const previousClose = Number(q?.previousClose);
         const change = Number(q?.change);
         const changePct = Number(q?.changePct);
@@ -4105,6 +4128,15 @@ async function fetchCryptoPricesViaWorker() {
     console.warn('Crypto fetch (Worker) failed:', e);
     return false;
   }
+}
+function isTrustedCryptoQuote(pos, quote) {
+  const source = String(quote?.source || '').toLowerCase();
+  const venue = String(quote?.venue || '').toLowerCase();
+  const symbol = String(quote?.symbol || '').toLowerCase();
+  const cg = cgIdForCrypto(pos);
+  if (source.includes('yahoo') || /\.de$|\.f$|\.mu$|\.sg$|\.du$|\.tg$|\.lu$/.test(symbol)) return false;
+  if (cg === 'ripple' && Number(quote?.price) > 10) return false;
+  return source.includes('crypto') || source.includes('coingecko') || venue.includes('crypto') || venue.includes('coingecko') || symbol.includes('-eur') || symbol.includes('eur');
 }
 
 const KNOWN_YAHOO_BY_ISIN = {
@@ -4182,6 +4214,7 @@ function venueOf(pos) {
 
 async function fetchMarketPrices(opts = {}) {
   const positions = (appData?.positions || [])
+    .filter(pos => !isCryptoPos(pos))
     .map(pos => ({
       id: pos.id,
       name: pos.name,
@@ -4579,10 +4612,10 @@ function buildCard(pos, totals, alloc) {
     </div>
     <div class="card-expanded-content">
       <div class="price-grid">
-        <div class="price-grid-cell"><div class="lbl">Ø Einstieg</div><div class="val">${fmtNum(valuation.costPrice)} €</div></div>
-        <div class="price-grid-cell"><div class="lbl">Aktuell</div><div class="val">${fmtNum(live.price)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Ø Einstieg</div><div class="val">${fmtPrice(pos, valuation.costPrice)}</div></div>
+        <div class="price-grid-cell"><div class="lbl">Aktuell</div><div class="val">${fmtPrice(pos, live.price)}</div></div>
         <div class="price-grid-cell"><div class="lbl">Abstand Ø</div><div class="val ${pnlClass}">${priceDistance >= 0 ? '+' : ''}${fmtNum(priceDistance, 2)} € · ${pnlPct >= 0 ? '+' : ''}${fmtNum(pnlPct, 2)} %</div></div>
-        <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtNum(valuation.costPrice)} €</div></div>
+        <div class="price-grid-cell"><div class="lbl">Break-Even</div><div class="val">${fmtPrice(pos, valuation.costPrice)}</div></div>
         <div class="price-grid-cell"><div class="lbl">Veränd. heute</div><div class="val ${todayMove ? todayClass : ''}">${todayText}</div></div>
         <div class="price-grid-cell"><div class="lbl">Aktualisiert</div><div class="val" style="font-size:11px;">${updatedText}</div></div>
       </div>
@@ -4633,12 +4666,13 @@ function buildManualQuotePanel(pos, live) {
   const active = getManualQuoteOverride(pos);
   const remaining = active ? manualQuoteRemainingText(pos) : '';
   const basePrice = baseQuoteForPosition(pos)?.price || (live?.manualOverride ? null : live?.price);
-  const placeholder = basePrice ? fmtNum(basePrice, basePrice < 10 ? 4 : 2) : fmtNum(live?.price || pos.manualPrice || pos.costPrice || 0, 2);
+  const displayPrice = basePrice || live?.price || pos.manualPrice || pos.costPrice || 0;
+  const placeholder = fmtNum(displayPrice, priceDecimalsForPosition(pos, displayPrice));
   return `<div class="manual-quote-panel" data-manual-quote-panel="${pos.id}">
     <div class="manual-quote-head">
       <div class="manual-quote-title">Kurs manuell überschreiben</div>
       <div class="manual-quote-state ${active ? 'active' : ''}" id="manualQuoteState-${pos.id}">
-        ${active ? `Manueller Kurs ${fmtNum(active.price, active.price < 10 ? 4 : 2)} € · ${escapeHtml(remaining)}` : 'Inaktiv · Berechnung nutzt Live/Quelle'}
+        ${active ? `Manueller Kurs ${fmtPrice(pos, active.price)} · ${escapeHtml(remaining)}` : 'Inaktiv · Berechnung nutzt Live/Quelle'}
       </div>
     </div>
     <div class="manual-quote-form">
@@ -4746,7 +4780,7 @@ function updateVenueSaveState(pos) {
 function renderVenueList(pos) {
   const list = document.getElementById('venueListBody');
   const live = currentPrices[pos.id];
-  const currentPrice = live && live.price ? fmtNum(live.price) + ' €' : null;
+  const currentPrice = live && live.price ? fmtPrice(pos, live.price) : null;
   list.innerHTML = VENUE_OPTIONS.map(v => {
     const isSel = v.code === venuePendingCode;
     const priceLine = isSel && currentPrice ? `<span class="vprice">${currentPrice}</span>` : `<span class="vprice muted">${v.code === 'auto' ? 'Standard-Quelle' : 'Quelle aktivieren'}</span>`;
@@ -5578,7 +5612,7 @@ function openEditModal(posId) {
   editingId = posId;
   document.getElementById('editTitle').textContent = pos.name;
   const live = currentPrices[posId] || { price: pos.costPrice };
-  document.getElementById('editPrice').value = live.price.toFixed(2);
+  document.getElementById('editPrice').value = fixedPriceInput(pos, live.price);
   document.getElementById('editQuoteSymbol').value = pos.quoteSymbol || quoteSymbolForPosition(pos) || '';
   const venueField = document.getElementById('editVenue');
   if (venueField) venueField.value = venueOf(pos);
@@ -5618,7 +5652,7 @@ async function saveEditModal() {
       id: makeTxId(), date: today,
       assetId: pos.id, assetType: assetTypeOf(pos), txType: 'adjust',
       quantity: newShares, price: newCost, value: newShares * newCost, fees: 0,
-      note: 'Manuelle Korrektur via Edit-Modal' + (sharesDiff ? ` · Stück ${pos.shares} → ${newShares}` : '') + (costDiff ? ` · Ø ${fmtNum(pos.costPrice)} → ${fmtNum(newCost)} €` : '')
+      note: 'Manuelle Korrektur via Edit-Modal' + (sharesDiff ? ` · Stück ${pos.shares} → ${newShares}` : '') + (costDiff ? ` · Ø ${fmtPrice(pos, pos.costPrice)} → ${fmtPrice(pos, newCost)}` : '')
     });
     appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   }
@@ -6313,7 +6347,7 @@ function buildChatSystemPrompt() {
     const value = valuation.currentValue;
     const pct = totalCur > 0 ? (value / totalCur) * 100 : 0;
     const pnlPct = valuation.pnlPct;
-    return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${valuation.shares} Stk × ${live.price.toFixed(2)} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
+    return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${valuation.shares} Stk × ${fmtNum(live.price, priceDecimalsForPosition(pos, live.price))} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
   }).join('\n');
   const goal = appData.goal || { year: 2026, amount: 15000 };
   const strategy = getGoalStrategy(goal);
@@ -6974,14 +7008,14 @@ function openScreenshotPreviewModal(data) {
   if (data.manualPrice && data.costPrice) {
     const diffPct = ((data.manualPrice - data.costPrice) / data.costPrice) * 100;
     if (Math.abs(diffPct) > 80) {
-      items.push({ kind: 'warn', text: `Großer Unterschied zwischen Kurs (${fmtNum(data.manualPrice)} €) und Einstand (${fmtNum(data.costPrice)} €) — ${fmtNum(diffPct, 0)} %. Bitte verifizieren.` });
+      items.push({ kind: 'warn', text: `Großer Unterschied zwischen Kurs (${fmtPrice(data, data.manualPrice)}) und Einstand (${fmtPrice(data, data.costPrice)}) — ${fmtNum(diffPct, 0)} %. Bitte verifizieren.` });
     }
   }
   if (data.shares && data.shares > 100000) {
     items.push({ kind: 'warn', text: `Sehr hohe Stückzahl erkannt (${data.shares}). Bitte verifizieren.` });
   }
   if (data.costPrice && data.costPrice > 100000) {
-    items.push({ kind: 'warn', text: `Sehr hoher Einstandspreis (${fmtNum(data.costPrice)} €). Bitte verifizieren.` });
+    items.push({ kind: 'warn', text: `Sehr hoher Einstandspreis (${fmtPrice(data, data.costPrice)}). Bitte verifizieren.` });
   }
   if (items.length === 0) {
     items.push({ kind: 'info', text: 'Alle Werte plausibel. Tap "Übernehmen" zum Speichern.' });
@@ -7013,7 +7047,7 @@ function openScreenshotBatchPreviewModal(rows) {
       <div class="date">${formatDateAT(row.date)}</div>
       <div>
         <div class="name">${escapeHtml(row.name)}</div>
-        <div class="meta">${escapeHtml(row.symbol || row.isin || '')} · ${fmtNum(row.quantity, row.quantity % 1 ? 6 : 0)} Stk · ${fmtNum(row.price)} € · ${fmt.format(row.amount || row.quantity * row.price)}</div>
+        <div class="meta">${escapeHtml(row.symbol || row.isin || '')} · ${fmtNum(row.quantity, row.quantity % 1 ? 6 : 0)} Stk · ${fmtPrice(row, row.price)} · ${fmt.format(row.amount || row.quantity * row.price)}</div>
         ${row.note ? `<div class="meta">${escapeHtml(row.note.slice(0, 90))}</div>` : ''}
       </div>
       <div class="type">${action}</div>
