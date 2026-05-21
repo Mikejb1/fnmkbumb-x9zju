@@ -2247,7 +2247,7 @@ function getPositionValuation(pos, liveOverride) {
   const price = Number(live.price) || 0;
 
   if (pos.special === 'cash') {
-    const value = Number(appData?.goal?.cash || pos.manualPrice || pos.costPrice || 0);
+    const value = currentCashValue();
     return { shares: 1, price: value, costPrice: value, costValue: value, currentValue: value, pnlAbs: 0, pnlPct: 0 };
   }
 
@@ -2411,68 +2411,111 @@ function getTotalDeposits() {
 function getTotalWithdrawals() {
   return (appData?.transactions || []).filter(t => t.assetType === 'cash' && t.txType === 'withdraw').reduce((s, t) => s + t.value, 0);
 }
-// Zeitgewichtete Rendite (Time-Weighted Return / TWR) auf Basis täglicher Werte und Cashflows
-// Erwartet `points` aus buildPortfolioHistory mit value + invested (täglich). Cashflows werden aus Tx-Tagen extrahiert.
+function hasCashTransactions() {
+  return Array.isArray(appData?.transactions) && appData.transactions.some(t => t.assetType === 'cash');
+}
+function currentCashValue() {
+  return hasCashTransactions() ? Math.max(0, getCashBalance()) : Number(appData?.goal?.cash || 0);
+}
+function externalCashflowAmount(t) {
+  if (!t || t.assetType !== 'cash') return 0;
+  if (t.txType === 'deposit') return Number(t.value) || 0;
+  if (t.txType === 'withdraw') return -(Number(t.value) || 0);
+  return 0;
+}
+function getNetExternalContributions(asOfDate) {
+  if (!Array.isArray(appData?.transactions)) return 0;
+  const cutoff = asOfDate ? (asOfDate instanceof Date ? toIsoDate(asOfDate) : String(asOfDate)) : null;
+  return appData.transactions.reduce((sum, t) => {
+    if (cutoff && (t.date || '') > cutoff) return sum;
+    return sum + externalCashflowAmount(t);
+  }, 0);
+}
+// Zeitgewichtete Rendite (TWR): Depotentwicklung bereinigt um externe Ein-/Auszahlungen.
+// Käufe/Verkäufe innerhalb des Depots sind interne Umschichtungen und werden hier nicht als Cashflow abgezogen.
 function computeTWR(points) {
   if (!points || points.length < 2) return null;
-  // Cashflows je Datum: positive = Einzahlung/Buy (Geld kommt rein), Buys = +value
   const cashflowsByDate = {};
   (appData?.transactions || []).forEach(t => {
-    if (t.assetType === 'cash') return; // Einzahlungen sind Externals, nicht relevant für TWR der Investments
     const k = t.date;
     if (!k) return;
-    if (t.txType === 'buy') cashflowsByDate[k] = (cashflowsByDate[k] || 0) + (t.value + (t.fees || 0));
-    else if (t.txType === 'sell') cashflowsByDate[k] = (cashflowsByDate[k] || 0) - (t.value - (t.fees || 0));
+    const flow = externalCashflowAmount(t);
+    if (flow) cashflowsByDate[k] = (cashflowsByDate[k] || 0) + flow;
   });
-  // Segmentrendite: r_i = (V_i - CF_i) / V_{i-1}
   let product = 1;
   let validSegments = 0;
   for (let i = 1; i < points.length; i++) {
-    const dateKey = points[i].date.toISOString().slice(0, 10);
+    const dateKey = toIsoDate(points[i].date);
     const cf = cashflowsByDate[dateKey] || 0;
     const prev = points[i - 1].value;
     const cur = points[i].value;
     if (prev <= 0) continue;
-    const segRet = (cur - cf) / prev;
-    if (!isFinite(segRet) || segRet <= 0) continue;
-    product *= segRet;
+    const factor = (cur - cf) / prev;
+    if (!isFinite(factor) || factor <= 0) continue;
+    product *= factor;
     validSegments++;
   }
   if (validSegments === 0) return null;
-  // Annualisieren
   const firstMs = points[0].date.getTime();
   const lastMs = points[points.length - 1].date.getTime();
   const years = (lastMs - firstMs) / (365.25 * 24 * 3600 * 1000);
-  if (years <= 0) return product - 1;
+  const totalReturn = product - 1;
+  if (years <= 0) return totalReturn;
   return Math.pow(product, 1 / years) - 1;
 }
-// Geldgewichtete Rendite (Money-Weighted Return / IRR) auf Basis aller Cashflows
-// Cashflows: Buys = negativ (Geld geht aus Cash raus), Sells = positiv. Aktueller Depotwert = final positive cashflow heute.
+// Geldgewichtete Rendite (MWR/XIRR): nutzt echte externe Cash-Einzahlungen/-Auszahlungen.
+// Deposit = Geld kommt von außen ins Depot (negativer Investor-Cashflow), Withdraw = Geld geht raus (positiv).
 function computeMWR(currentValue) {
   if (!Array.isArray(appData?.transactions) || appData.transactions.length === 0) return null;
   const flows = [];
   appData.transactions.forEach(t => {
-    if (t.assetType === 'cash') return; // Cash-Einzahlungen sind keine Investitionen
+    const external = externalCashflowAmount(t);
+    if (!external || !t.date) return;
     const dateMs = new Date(t.date + 'T00:00:00').getTime();
-    if (t.txType === 'buy') flows.push({ ms: dateMs, amount: -(t.value + (t.fees || 0)) });
-    else if (t.txType === 'sell') flows.push({ ms: dateMs, amount: t.value - (t.fees || 0) });
+    flows.push({ ms: dateMs, amount: -external });
   });
-  if (flows.length === 0) return null;
+  if (!flows.some(f => f.amount < 0)) return null;
   flows.push({ ms: Date.now(), amount: currentValue });
-  // Newton-Raphson IRR (jährlich)
+  flows.sort((a, b) => a.ms - b.ms);
+  if (!flows.some(f => f.amount > 0)) return null;
+
   const firstMs = flows[0].ms;
   const npv = (rate) => flows.reduce((s, f) => {
     const years = (f.ms - firstMs) / (365.25 * 24 * 3600 * 1000);
     return s + f.amount / Math.pow(1 + rate, years);
   }, 0);
-  let low = -0.99, high = 10;
-  for (let i = 0; i < 80; i++) {
+
+  let low = -0.9999;
+  let high = 10;
+  let fLow = npv(low);
+  let fHigh = npv(high);
+  for (const candidate of [20, 50, 100]) {
+    if (isFinite(fLow) && isFinite(fHigh) && fLow * fHigh <= 0) break;
+    high = candidate;
+    fHigh = npv(high);
+  }
+  if (!isFinite(fLow) || !isFinite(fHigh) || fLow * fHigh > 0) return null;
+
+  for (let i = 0; i < 100; i++) {
     const mid = (low + high) / 2;
-    const v = npv(mid);
-    if (Math.abs(v) < 0.01) return mid;
-    if (v > 0) low = mid; else high = mid;
+    const fMid = npv(mid);
+    if (!isFinite(fMid)) return null;
+    if (Math.abs(fMid) < 0.01) return mid;
+    if (fLow * fMid <= 0) {
+      high = mid;
+      fHigh = fMid;
+    } else {
+      low = mid;
+      fLow = fMid;
+    }
   }
   return (low + high) / 2;
+}
+function plausiblePerformancePct(rate) {
+  if (rate == null || !isFinite(rate)) return null;
+  const pct = rate * 100;
+  if (!isFinite(pct) || pct <= -95 || Math.abs(pct) > 500) return null;
+  return pct;
 }
 function formatDateAT(iso) {
   if (!iso) return '—';
@@ -2773,7 +2816,7 @@ function buildAllSpecialPositions() {
     const price = metalPrice(metal);
     if (grams > 0) list.push({ id: `__${metal.key}`, special: 'metal', metalKey: metal.key, name: metal.name, type: 'Edelmetall', symbol: `${price.toFixed(2)} €/g`, shares: grams, costPrice: hasMetalLots(metal) ? metalAvgCost(metal) : price, manualPrice: price });
   });
-  const cash = appData.goal?.cash || 0;
+  const cash = currentCashValue();
   if (cash > 0) list.push({ id: '__cash', special: 'cash', name: 'Cash', type: 'Bargeld', symbol: 'Verrechnungskonto', shares: 1, costPrice: cash, manualPrice: cash });
   return list;
 }
@@ -5193,7 +5236,7 @@ function renderTotals() {
   const marketPnlPct = marketCost > 0 ? (marketPnl / marketCost) * 100 : 0;
   const metalValueTotal = metalsTotalValue();
   const metalCostTotal = metalsTotalCost();
-  const cashValue = appData.goal?.cash || 0;
+  const cashValue = currentCashValue();
 
   totalCur += metalValueTotal + cashValue;
   totalCost += metalCostTotal + cashValue;
@@ -5360,15 +5403,13 @@ function purchaseEventsForDate(date) {
 function buildPortfolioHistory(period) {
   const today = new Date();
   const start = historyStartDate(period, today);
-  const cashValue = appData.goal?.cash || 0;
-  const extraToday = metalsTotalValue() + cashValue;
   const currentTotals = (() => {
     let t = 0;
     appData.positions.forEach(pos => {
       const live = currentPrices[pos.id] || { price: pos.costPrice };
       t += getPositionValuation(pos, live).currentValue;
     });
-    return t + extraToday;
+    return t + metalsTotalValue() + currentCashValue();
   })();
   const points = [];
   for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
@@ -5377,13 +5418,15 @@ function buildPortfolioHistory(period) {
     appData.positions.forEach(pos => {
       dayTotal += priceForHistoryDate(pos, d, isToday) * sharesAtDate(pos, d);
     });
-    dayTotal += metalsValueAtDate(d, isToday) + cashValue;
+    const cashForDay = hasCashTransactions() ? Math.max(0, getCashBalance(d)) : Number(appData.goal?.cash || 0);
+    dayTotal += metalsValueAtDate(d, isToday) + cashForDay;
     const invested = getInvestedCapital(d);
+    const netContributions = getNetExternalContributions(d);
     const value = isToday ? currentTotals : dayTotal;
     const pnl = value - invested;
     const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
     const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, pnl, events: purchaseEventsForDate(d) });
+    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, netContributions, cash: cashForDay, pnl, events: purchaseEventsForDate(d) });
   }
   return points;
 }
@@ -5425,41 +5468,53 @@ function renderHistory() {
   document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
   // Performance-Kennzahlen
-  const totalDeposits = getTotalDeposits();
   const invested = last.invested;
+  const netContributions = getNetExternalContributions();
   const grossEl = document.getElementById('historyReturnGross');
   if (grossEl) {
-    if (invested > 0) {
-      const grossPct = ((last.value - invested) / invested) * 100;
-      grossEl.textContent = `${grossPct >= 0 ? '+' : ''}${fmtNum(grossPct, 1)} % · ${fmt.format(last.value - invested)}`;
+    const base = netContributions > 0 ? netContributions : invested;
+    if (base > 0) {
+      const grossPct = ((last.value - base) / base) * 100;
+      grossEl.textContent = `${grossPct >= 0 ? '+' : ''}${fmtNum(grossPct, 1)} % · ${fmt.format(last.value - base)}`;
       grossEl.className = grossPct >= 0 ? 'positive' : 'negative';
-    } else { grossEl.textContent = '—'; }
+    } else { grossEl.textContent = '—'; grossEl.className = ''; }
   }
   const mwrEl = document.getElementById('historyReturnMwr');
   if (mwrEl) {
-    const mwr = computeMWR(last.value);
-    if (mwr != null && isFinite(mwr)) {
-      const pct = mwr * 100;
-      mwrEl.textContent = `${pct >= 0 ? '+' : ''}${fmtNum(pct, 1)} % p.a.`;
-      mwrEl.className = pct >= 0 ? 'positive' : 'negative';
-    } else { mwrEl.textContent = '—'; }
+    const mwrPct = plausiblePerformancePct(computeMWR(last.value));
+    if (mwrPct != null) {
+      mwrEl.textContent = `${mwrPct >= 0 ? '+' : ''}${fmtNum(mwrPct, 1)} % p.a.`;
+      mwrEl.className = mwrPct >= 0 ? 'positive' : 'negative';
+    } else {
+      mwrEl.textContent = hasCashTransactions() ? 'nicht belastbar' : 'Cashflows fehlen';
+      mwrEl.className = '';
+    }
   }
   const twrEl = document.getElementById('historyReturnTwr');
   if (twrEl) {
-    const twr = computeTWR(points);
-    if (twr != null && isFinite(twr)) {
-      const pct = twr * 100;
-      twrEl.textContent = `${pct >= 0 ? '+' : ''}${fmtNum(pct, 1)} % p.a.`;
-      twrEl.className = pct >= 0 ? 'positive' : 'negative';
-    } else { twrEl.textContent = '—'; }
+    const twrPct = plausiblePerformancePct(computeTWR(points));
+    if (twrPct != null) {
+      twrEl.textContent = `${twrPct >= 0 ? '+' : ''}${fmtNum(twrPct, 1)} % p.a.`;
+      twrEl.className = twrPct >= 0 ? 'positive' : 'negative';
+    } else {
+      twrEl.textContent = 'nicht belastbar';
+      twrEl.className = '';
+    }
   }
-  // Cash-Historie-Hinweis einblenden, wenn Cash > 0 und (noch) keine Cash-Transaktionen vorhanden
+  // Datenqualitaets-Hinweis fuer Depot-Entwicklung
   const cashNoteEl = document.getElementById('cashHistoryNote');
   if (cashNoteEl) {
-    const hasCash = (appData.goal?.cash || 0) > 0;
-    const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
-    cashNoteEl.style.display = (hasCash && !hasCashTx) ? '' : 'none';
+    const notes = [];
+    const hasCash = currentCashValue() > 0 || getNetExternalContributions() !== 0;
+    const hasCashTx = hasCashTransactions();
+    const hasFallbackHistory = (appData.positions || []).some(pos => !pos.cgId && !Array.isArray(pos.monthlyHistory));
+    if (hasCash && !hasCashTx) notes.push('Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.');
+    if (!hasCashTx) notes.push('MWR wird erst belastbar, wenn Einzahlungen und Auszahlungen als Cash-Bewegungen erfasst sind.');
+    if (hasFallbackHistory) notes.push('Bei Titeln ohne historische Kursreihe verwendet die App ersatzweise aktuelle oder monatliche Kurse.');
+    cashNoteEl.textContent = notes.join(' ');
+    cashNoteEl.style.display = notes.length ? '' : 'none';
   }
+
 }
 
 function clampNumber(value, min, max) {
