@@ -236,9 +236,16 @@
   .backup-btn:hover { background: var(--bg-track); }
   .backup-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
   .backup-hint { font-size: 10px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
-  .danger-zone { background: var(--bg-card); border: 1px solid var(--negative); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
-  .danger-zone-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--negative); }
-  .danger-zone-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .danger-zone { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0; margin-bottom: 14px; overflow: hidden; }
+  .danger-zone[open] { border-color: rgba(248, 113, 113, 0.45); }
+  .danger-zone-summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; color: var(--text-secondary); }
+  .danger-zone-summary::-webkit-details-marker { display: none; }
+  .danger-zone-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .danger-zone-title svg { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; }
+  .danger-zone-note { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; }
+  .danger-zone-chevron { width: 15px; height: 15px; stroke: var(--text-tertiary); fill: none; transition: transform 0.16s ease; flex-shrink: 0; }
+  .danger-zone[open] .danger-zone-chevron { transform: rotate(180deg); }
+  .danger-zone-body { border-top: 1px solid var(--border-light); padding: 12px 14px 14px; }
   .danger-zone-hint { font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
   .danger-reset-btn { background: transparent; border: 1px solid var(--negative); color: var(--negative); border-radius: 8px; padding: 9px 14px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; gap: 6px; }
   .danger-reset-btn:hover { background: var(--error-bg); }
@@ -1143,17 +1150,25 @@
     <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import wird Vorschau angezeigt.</div>
   </div>
 
-  <div class="danger-zone">
-    <div class="danger-zone-head">
-      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span>Gefahrenzone</span>
+  <details class="danger-zone">
+    <summary class="danger-zone-summary">
+      <span class="danger-zone-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span>Erweiterte Verwaltung</span>
+      </span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="danger-zone-note">Zurücksetzen</span>
+        <svg class="danger-zone-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </summary>
+    <div class="danger-zone-body">
+      <div class="danger-zone-hint">Setzt dein komplettes Portfolio unwiderruflich auf Null zurück — inklusive KI-Gedächtnis. Sichere vorher unbedingt ein JSON-Backup.</div>
+      <button class="danger-reset-btn" id="resetPortfolioBtn" type="button">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        <span>Portfolio zurücksetzen</span>
+      </button>
     </div>
-    <div class="danger-zone-hint">Setzt dein komplettes Portfolio unwiderruflich auf Null zurück — inklusive KI-Gedächtnis. Sichere vorher unbedingt ein JSON-Backup.</div>
-    <button class="danger-reset-btn" id="resetPortfolioBtn" type="button">
-      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-      <span>Portfolio zurücksetzen</span>
-    </button>
-  </div>
+  </details>
 
   <div class="chat-section" id="anchor-chat">
     <div class="chat-head">
