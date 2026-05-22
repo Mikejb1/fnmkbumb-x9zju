@@ -191,7 +191,7 @@
   .cash-tx-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
   .cash-tx-item .cash-tx-meta { display: flex; flex-direction: column; gap: 2px; }
   .cash-tx-item .cash-tx-date { font-size: 10px; color: var(--text-tertiary); }
-  .cash-tx-item .cash-tx-val.deposit { color: var(--positive); font-weight: 500; }
+  .cash-tx-item .cash-tx-val.deposit, .cash-tx-item .cash-tx-val.refund, .cash-tx-item .cash-tx-val.dividend, .cash-tx-item .cash-tx-val.distribution, .cash-tx-item .cash-tx-val.interest, .cash-tx-item .cash-tx-val.bonus, .cash-tx-item .cash-tx-val.staking { color: var(--positive); font-weight: 500; }
   .cash-tx-item .cash-tx-val.withdraw, .cash-tx-item .cash-tx-val.fee, .cash-tx-item .cash-tx-val.tax { color: var(--negative); font-weight: 500; }
   .cash-tx-del { background: transparent; border: 0; color: var(--negative); cursor: pointer; padding: 4px 8px; font-size: 11px; }
   .backup-status { font-size: 10px; color: var(--text-secondary); margin-top: 7px; line-height: 1.4; }
@@ -2425,13 +2425,17 @@ function isCashDebitType(type) { return ['withdraw', 'fee', 'tax'].includes(type
 function cashTxLabel(type) {
   return ({ deposit: 'Einzahlung', withdraw: 'Auszahlung', fee: 'Gebühr', tax: 'Steuer', dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking', refund: 'Erstattung' })[type] || type;
 }
+function cashEffectiveDate(t) {
+  if (!t) return '';
+  return t.assetType === 'cash' ? (t.date || '') : (t.accountValuta || t.date || '');
+}
 function getCashBalance(asOfDate) {
   if (!Array.isArray(appData?.transactions)) return Number(appData?.goal?.cash || 0);
   const cutoff = asOfDate ? (asOfDate instanceof Date ? asOfDate.toISOString().slice(0, 10) : String(asOfDate)) : null;
   let bal = 0;
   let hasCashTx = false;
   appData.transactions.forEach(t => {
-    if (cutoff && (t.date || '') > cutoff) return;
+    if (cutoff && cashEffectiveDate(t) > cutoff) return;
     if (t.assetType === 'cash') {
       hasCashTx = true;
       if (isCashCreditType(t.txType)) bal += t.value;
@@ -2471,7 +2475,7 @@ function hasCashTransactions() {
   return Array.isArray(appData?.transactions) && appData.transactions.some(t => t.assetType === 'cash');
 }
 function currentCashValue() {
-  return hasCashTransactions() ? Math.max(0, getCashBalance()) : Number(appData?.goal?.cash || 0);
+  return hasCashTransactions() ? getCashBalance() : Number(appData?.goal?.cash || 0);
 }
 function externalCashflowAmount(t) {
   if (!t || t.assetType !== 'cash') return 0;
@@ -2486,6 +2490,13 @@ function getNetExternalContributions(asOfDate) {
     if (cutoff && (t.date || '') > cutoff) return sum;
     return sum + externalCashflowAmount(t);
   }, 0);
+}
+function accountImportCashStats() {
+  const txs = appData?.transactions || [];
+  const cashRows = txs.filter(tx => tx.assetType === 'cash' && tx.accountImportSource === FLATEX_ACCOUNT_SOURCE);
+  const orderRows = txs.filter(tx => tx.assetType !== 'cash' && tx.accountOrderSource === FLATEX_ACCOUNT_SOURCE);
+  const latest = cashRows.concat(orderRows).map(tx => cashEffectiveDate(tx)).filter(Boolean).sort().pop() || '';
+  return { cashRows: cashRows.length, orderRows: orderRows.length, latest };
 }
 // Zeitgewichtete Rendite (TWR): Depotentwicklung bereinigt um externe Ein-/Auszahlungen.
 // Käufe/Verkäufe innerhalb des Depots sind interne Umschichtungen und werden hier nicht als Cashflow abgezogen.
@@ -5422,7 +5433,7 @@ function openCashTxList() {
     wrap.innerHTML = txs.map(t => `
       <div class="cash-tx-item">
         <div class="cash-tx-meta">
-          <div>${cashTxLabel(t.txType)}${t.sourceIncomeId ? ' · aus Erträge' : ''}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
+          <div>${cashTxLabel(t.txType)}${t.accountImportSource === FLATEX_ACCOUNT_SOURCE ? ' · aus Kontoumsätze CSV' : ''}${t.sourceIncomeId ? ' · aus Erträge' : ''}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
           <div class="cash-tx-date">${formatDateAT(t.date)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -5564,16 +5575,17 @@ function buildSpecialCard(kind, totals) {
   } else {
     const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
     const computed = hasCashTx ? getCashBalance() : null;
-    const cash = hasCashTx ? Math.max(0, computed) : (appData.goal?.cash || 0);
+    const cash = hasCashTx ? computed : (appData.goal?.cash || 0);
+    const accountStats = hasCashTx ? accountImportCashStats() : { cashRows: 0, orderRows: 0, latest: '' };
     const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
     wrap.id = 'card-cash';
     const sliderHtml = hasCashTx ? `
       <div class="special-slider-wrap" style="opacity:0.6;">
         <span class="special-slider-min">0 €</span>
-        <input type="range" min="0" max="1000000" step="100" value="${cash}" disabled>
+        <input type="range" min="0" max="1000000" step="100" value="${Math.max(0, cash)}" disabled>
         <span class="special-slider-val">${fmt.format(cash)}</span>
       </div>
-      <div class="cash-tx-hint">Wert wird aus Cash-Bewegungen berechnet · Regler deaktiviert</div>
+      <div class="cash-tx-hint">Wert wird aus Cash-Bewegungen berechnet · Regler deaktiviert${cash < 0 ? ' · Negativer Saldo wird als Abzug im Depotwert berücksichtigt' : ''}</div>
     ` : `
       <div class="special-slider-wrap">
         <span class="special-slider-min">0 €</span>
@@ -5600,6 +5612,9 @@ function buildSpecialCard(kind, totals) {
         <button class="cash-tx-btn cash-tx-list" id="cashShowTxBtn" type="button">Bewegungen</button>
       </div>
       <div class="cash-tx-hint">Dividenden, Ausschüttungen, Zinsen und Staking werden im Erträge-Bereich erfasst und automatisch ins Cash-Kassenbuch gespiegelt.</div>`;
+    if (accountStats.cashRows || accountStats.orderRows) {
+      wrap.innerHTML += `<div class="cash-tx-hint">Kontoumsätze CSV aktiv: ${accountStats.cashRows} Cash-Bewegung${accountStats.cashRows === 1 ? '' : 'en'} sichtbar unter „Bewegungen“ · ${accountStats.orderRows} Order${accountStats.orderRows === 1 ? '' : 's'} mit echtem Konto-Cash abgeglichen${accountStats.latest ? ' · letzter Kontotag ' + formatDateAT(accountStats.latest) : ''}.</div>`;
+    }
   }
   return wrap;
 }
@@ -5831,7 +5846,7 @@ function purchaseEventsForDate(date) {
   const events = [];
   // Primär aus Transaktionsmodell (Schema v2) — zeigt Buys, Sells und Cash-Bewegungen
   if (Array.isArray(appData?.transactions) && appData.transactions.length > 0) {
-    const dayTxs = appData.transactions.filter(t => t.date === iso);
+    const dayTxs = appData.transactions.filter(t => (t.assetType === 'cash' ? cashEffectiveDate(t) : t.date) === iso);
     dayTxs.forEach(t => {
       const pos = appData.positions.find(p => p.id === t.assetId);
       const metalKey = t.assetId && t.assetId.startsWith('metal_') ? t.assetId.slice(6) : null;
@@ -5843,6 +5858,8 @@ function purchaseEventsForDate(date) {
       else if (t.txType === 'sell') events.push(`Verkauf: ${name} · ${qty} ${unit} · ${fmt.format(t.value)}`);
       else if (t.txType === 'deposit' && t.assetType === 'cash') events.push(`Einzahlung: ${fmt.format(t.value)}`);
       else if (t.txType === 'withdraw' && t.assetType === 'cash') events.push(`Auszahlung: ${fmt.format(t.value)}`);
+      else if (t.assetType === 'cash' && isCashCreditType(t.txType)) events.push(`${cashTxLabel(t.txType)}: ${fmt.format(t.value)}`);
+      else if (t.assetType === 'cash' && isCashDebitType(t.txType)) events.push(`${cashTxLabel(t.txType)}: −${fmt.format(t.value)}`);
     });
     if (events.length > 0) return events;
   }
@@ -5877,7 +5894,7 @@ function buildPortfolioHistory(period) {
     appData.positions.forEach(pos => {
       dayTotal += priceForHistoryDate(pos, d, isToday) * sharesAtDate(pos, d);
     });
-    const cashForDay = hasCashTransactions() ? Math.max(0, getCashBalance(d)) : Number(appData.goal?.cash || 0);
+    const cashForDay = hasCashTransactions() ? getCashBalance(d) : Number(appData.goal?.cash || 0);
     dayTotal += metalsValueAtDate(d, isToday) + cashForDay;
     const invested = getInvestedCapital(d);
     const netContributions = getNetExternalContributions(d);
@@ -5969,6 +5986,8 @@ function renderHistory() {
     const hasFallbackHistory = (appData.positions || []).some(pos => !pos.cgId && !Array.isArray(pos.monthlyHistory));
     if (hasCash && !hasCashTx) notes.push('Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.');
     if (!hasCashTx) notes.push('MWR wird erst belastbar, wenn Einzahlungen und Auszahlungen als Cash-Bewegungen erfasst sind.');
+    const accountStats = accountImportCashStats();
+    if (accountStats.cashRows || accountStats.orderRows) notes.push(`Kontoumsätze CSV fließen ein: ${accountStats.cashRows} Cash-Bewegungen und ${accountStats.orderRows} echte Order-Cashwerte sind im Verlauf berücksichtigt.`);
     if (hasFallbackHistory) notes.push('Bei Titeln ohne historische Kursreihe verwendet die App ersatzweise aktuelle oder monatliche Kurse.');
     cashNoteEl.textContent = notes.join(' ');
     cashNoteEl.style.display = notes.length ? '' : 'none';
