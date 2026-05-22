@@ -226,6 +226,15 @@
   .quality-issue { padding: 5px 0; font-size: 11px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px; border-top: 1px solid var(--border-light); }
   .quality-issue:first-of-type { border-top: 0; }
   .quality-issue .ico { flex-shrink: 0; line-height: 1; }
+  .quality-issue-body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; line-height: 1.45; }
+  .quality-action-btn { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); cursor: pointer; font: inherit; font-weight: 500; padding: 4px 8px; white-space: nowrap; }
+  .quality-action-btn:hover { background: var(--bg-track); }
+  .quality-task-hint { color: var(--text-tertiary); font-size: 11px; line-height: 1.45; margin: 0 0 10px; }
+  .quality-task-list { display: grid; gap: 6px; max-height: min(52vh, 420px); overflow-y: auto; margin: 10px 0; }
+  .quality-task-row { align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px; display: flex; gap: 8px; justify-content: space-between; padding: 9px 10px; }
+  .quality-task-row .name { color: var(--text-primary); font-size: 12px; font-weight: 500; }
+  .quality-task-row .meta { color: var(--text-tertiary); font-size: 10px; margin-top: 2px; }
+  .quality-history-note { color: var(--text-tertiary); }
   .quality-issue.warn .ico { color: #fbbf24; }
   .quality-issue.info .ico { color: var(--text-tertiary); }
   .quality-issue.good .ico { color: var(--positive); }
@@ -1235,7 +1244,7 @@
         <option value="very-high">Sehr hoch</option>
       </select>
     </div>
-    <details style="margin-top:12px;">
+    <details id="editStammdatenDetails" style="margin-top:12px;">
       <summary style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;padding:6px 0;">Stammdaten (optional)</summary>
       <div class="modal-field"><label>Lagerstelle / Custodian</label><input type="text" class="auth-input" id="editCustodian" placeholder="z.B. Clearstream Lux."></div>
       <div class="modal-field"><label>Verwahrart</label><input type="text" class="auth-input" id="editCustodyType" placeholder="z.B. Wertpapierrechnung"></div>
@@ -1245,6 +1254,15 @@
       <div class="modal-field"><label>Sektor</label><input type="text" class="auth-input" id="editSektor" placeholder="z.B. Technology"></div>
     </details>
     <div class="modal-actions"><button class="auth-btn secondary" id="editCancel">Abbrechen</button><button class="auth-btn" id="editSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="qualityActionModal">
+  <div class="modal">
+    <h3 id="qualityActionTitle">Datenqualität verbessern</h3>
+    <p class="quality-task-hint" id="qualityActionHint"></p>
+    <div class="quality-task-list" id="qualityActionList"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="qualityActionClose">Schließen</button></div>
   </div>
 </div>
 
@@ -2970,6 +2988,14 @@ function hasAnyQualityMetadata(pos) {
 function qualityPositionName(pos) {
   return String(pos?.name || pos?.symbol || pos?.quoteSymbol || 'Unbenannte Position').trim();
 }
+function qualityMetadataFields(pos) {
+  // Krypto braucht keine Aktien-WKN, keinen Aktien-Sektor und keine Verwahrart-Pflicht.
+  return isCryptoPos(pos) ? ['isin', 'custodian'] : ['isin', 'wkn', 'sektor', 'custodian', 'custodyType', 'land'];
+}
+function qualityPositionAction(kind, label, title, hint, positions) {
+  const posIds = (positions || []).map(pos => pos?.id).filter(Boolean);
+  return posIds.length ? { kind, label, title, hint, posIds } : null;
+}
 function quoteAgeMinutes(live) {
   const ts = live?.updatedAt ? new Date(live.updatedAt).getTime() : NaN;
   return Number.isFinite(ts) ? Math.max(0, Math.round((Date.now() - ts) / 60000)) : null;
@@ -3047,23 +3073,26 @@ function computeDataQuality(totals) {
   let score = 0;
 
   // 1) Positionen mit Stückzahl, Einstand, aktuellem Wert (25 %)
-  const positions = appData?.positions || [];
+  const positions = currentPortfolioPositions();
+  const historicalPositions = (appData?.positions || []).filter(pos => !pos.special && pos.archived);
   if (positions.length === 0) {
     issues.push({ severity: 'info', text: 'Noch keine Positionen erfasst.' });
   } else {
-    const complete = positions.filter(p => p.shares > 0 && p.costPrice > 0).length;
+    const incompletePositions = positions.filter(p => !(Number(getPositionValuation(p).shares) > 0 && Number(p.costPrice) > 0));
+    const complete = positions.length - incompletePositions.length;
     score += (complete / positions.length) * 25;
-    const missing = positions.length - complete;
-    if (missing > 0) issues.push({ severity: 'warn', text: `Bei ${missing} Position${missing === 1 ? '' : 'en'} fehlen Stückzahl oder Einstandspreis.` });
+    const missing = incompletePositions.length;
+    if (missing > 0) issues.push({ severity: 'warn', text: `Bei ${missing} aktueller Position${missing === 1 ? '' : 'en'} fehlen Stückzahl oder Einstandspreis.`, action: qualityPositionAction('core', 'Position bearbeiten', 'Stückzahl und Einstand prüfen', 'Öffne die betroffene aktuelle Position und ergänze Stückzahl oder Einstand.', incompletePositions) });
   }
 
   // 2) Kauf-Lots mit Datum und Betrag (25 %) — Anzahl Positionen mit ≥ 1 zugeordneter buy-Transaktion
   if (positions.length > 0) {
     const txs = appData?.transactions || [];
-    const posWithTx = positions.filter(p => txs.some(t => t.assetId === p.id && t.txType === 'buy' && t.date && t.value > 0)).length;
+    const positionsWithoutBuyTx = positions.filter(p => !txs.some(t => t.assetId === p.id && t.txType === 'buy' && t.date && t.value > 0));
+    const posWithTx = positions.length - positionsWithoutBuyTx.length;
     score += (posWithTx / positions.length) * 25;
-    const noLot = positions.length - posWithTx;
-    if (noLot > 0) issues.push({ severity: 'warn', text: `Bei ${noLot} Position${noLot === 1 ? '' : 'en'} fehlen Kaufdaten (Datum + Betrag).` });
+    const noLot = positionsWithoutBuyTx.length;
+    if (noLot > 0) issues.push({ severity: 'warn', text: `Bei ${noLot} aktueller Position${noLot === 1 ? '' : 'en'} fehlen Kaufdaten (Datum + Betrag).`, action: qualityPositionAction('buy', 'Kaufdaten ergänzen', 'Kaufdaten ergänzen', 'Erfasse einen Kauf mit Datum, Stückzahl und Preis oder importiere die vollständigen Flatex-Umsätze.', positionsWithoutBuyTx) });
   }
 
   // 3) Cash-Bewegungen gepflegt (15 %)
@@ -3073,19 +3102,18 @@ function computeDataQuality(totals) {
     score += 15;
   } else if (cashAmount > 0) {
     score += 5;
-    issues.push({ severity: 'info', text: 'Cash-Bewegungen sind nicht einzeln gepflegt (nur Slider-Wert).' });
+    issues.push({ severity: 'info', text: 'Cash-Bewegungen sind nicht einzeln gepflegt (nur Slider-Wert).', action: { kind: 'cash', label: 'Cash-Bewegung erfassen' } });
   } else {
     score += 15;
   }
 
   // 4) Stammdaten (ISIN/WKN/Sektor/Custodian) (15 %)
   if (positions.length > 0) {
-    const fields = ['isin', 'wkn', 'sektor', 'custodian', 'custodyType', 'land'];
     const fieldLabels = { isin: 'ISIN', wkn: 'WKN', sektor: 'Sektor', custodian: 'Lagerstelle/Broker', custodyType: 'Verwahrart', land: 'Land' };
     const missingByField = {};
     let totalFields = 0, filledFields = 0;
     positions.forEach(p => {
-      fields.forEach(f => {
+      qualityMetadataFields(p).forEach(f => {
         totalFields++;
         if (String(metaValueForQuality(p, f) || '').trim()) filledFields++;
         else {
@@ -3105,13 +3133,14 @@ function computeDataQuality(totals) {
         return `${fieldLabels[field] || field} fehlt bei ${shown}${names.length > 3 ? ' …' : ''}`;
       });
     if (missingMetaHints.length > 0) {
-      qualityTips.push(`Für 100 Punkte fehlen noch optionale Stammdaten: ${missingMetaHints.join(', ')}.`);
+      const missingMetaPositions = positions.filter(p => qualityMetadataFields(p).some(f => !String(metaValueForQuality(p, f) || '').trim()));
+      qualityTips.push({ text: `Für 100 Punkte fehlen noch optionale Stammdaten bei aktuellen Positionen: ${missingMetaHints.join(', ')}.`, action: qualityPositionAction('meta', 'Stammdaten ergänzen', 'Optionale Stammdaten ergänzen', 'Nur aktuelle Positionen zählen für diese Qualitätswertung. Krypto wird dabei nicht wie eine Aktie nach WKN oder Sektor bewertet.', missingMetaPositions) });
     }
     const positionsWithoutAny = positions.filter(p => !hasAnyQualityMetadata(p));
     if (positionsWithoutAny.length > 0) {
       const names = positionsWithoutAny.slice(0, 3).map(qualityPositionName).filter(Boolean).join(', ');
       const suffix = names ? `: ${names}${positionsWithoutAny.length > 3 ? ' …' : ''}` : '.';
-      issues.push({ severity: 'info', text: `Bei ${positionsWithoutAny.length} Position${positionsWithoutAny.length === 1 ? '' : 'en'} fehlen Stammdaten (ISIN/WKN/Sektor)${suffix}` });
+      issues.push({ severity: 'info', text: `Bei ${positionsWithoutAny.length} aktueller Position${positionsWithoutAny.length === 1 ? '' : 'en'} fehlen Stammdaten (ISIN/WKN/Sektor)${suffix}`, action: qualityPositionAction('meta', 'Stammdaten ergänzen', 'Stammdaten ergänzen', 'Öffne die aktuelle Position und ergänze die sichtbaren Stammdaten.', positionsWithoutAny) });
     }
   }
 
@@ -3125,7 +3154,7 @@ function computeDataQuality(totals) {
     return live?.live && age != null && age > Math.max(45, quoteCadenceMinutes(p, live) * 3);
   });
   if (missingLive.length > 0) {
-    issues.push({ severity: 'warn', text: `Ohne Livekurs: ${missingLive.slice(0, 3).map(qualityPositionName).join(', ')}${missingLive.length > 3 ? ' ...' : ''}. Gesamtwert nutzt dort manuelle oder alte Kursbasis.` });
+    issues.push({ severity: 'warn', text: `Ohne Livekurs: ${missingLive.slice(0, 3).map(qualityPositionName).join(', ')}${missingLive.length > 3 ? ' ...' : ''}. Gesamtwert nutzt dort manuelle oder alte Kursbasis.`, action: qualityPositionAction('quote', 'Kursquelle prüfen', 'Kursquelle prüfen', 'Prüfe Symbol, ISIN/WKN oder Handelsplatz der betroffenen aktuellen Position.', missingLive) });
   }
   if (manualOnly.length > 0) {
     qualityTips.push(`Kursbasis prüfen bei ${manualOnly.slice(0, 3).map(qualityPositionName).join(', ')}${manualOnly.length > 3 ? ' ...' : ''}.`);
@@ -3157,7 +3186,7 @@ function computeDataQuality(totals) {
     if (!g.year) miss.push('Zieljahr');
     if (!g.amount) miss.push('Zielbetrag');
     if (!g.savingsRate) miss.push('Sparrate');
-    if (miss.length > 0) issues.push({ severity: 'info', text: `Ziel-Eingaben unvollständig (${miss.join(', ')}).` });
+    if (miss.length > 0) issues.push({ severity: 'info', text: `Ziel-Eingaben unvollständig (${miss.join(', ')}).`, action: { kind: 'goal', label: 'Ziel bearbeiten' } });
   }
 
   // 6) Backup vorhanden / aktuell (10 %)
@@ -3166,10 +3195,10 @@ function computeDataQuality(totals) {
   if (backupTs > 0) {
     const ageDays = (Date.now() - backupTs) / (1000 * 60 * 60 * 24);
     if (ageDays < 30) score += 10;
-    else if (ageDays < 90) { score += 5; issues.push({ severity: 'warn', text: `Letztes Backup ist ${Math.floor(ageDays)} Tage alt — neues JSON-Backup empfohlen.` }); }
-    else { score += 2; issues.push({ severity: 'warn', text: `Backup älter als 3 Monate — bitte aktuelles JSON-Backup herunterladen.` }); }
+    else if (ageDays < 90) { score += 5; issues.push({ severity: 'warn', text: `Letztes Backup ist ${Math.floor(ageDays)} Tage alt — neues JSON-Backup empfohlen.`, action: { kind: 'backup', label: 'Backup erstellen' } }); }
+    else { score += 2; issues.push({ severity: 'warn', text: `Backup älter als 3 Monate — bitte aktuelles JSON-Backup herunterladen.`, action: { kind: 'backup', label: 'Backup erstellen' } }); }
   } else {
-    issues.push({ severity: 'warn', text: 'Noch kein lokales Backup heruntergeladen — JSON-Backup im Backup-Bereich nutzen.' });
+    issues.push({ severity: 'warn', text: 'Noch kein lokales Backup heruntergeladen — JSON-Backup im Backup-Bereich nutzen.', action: { kind: 'backup', label: 'Backup erstellen' } });
   }
 
   // Edelmetall-Hinweis: Lagerart/Gebühren bei vorhandenen Lots
@@ -3194,14 +3223,18 @@ function computeDataQuality(totals) {
         : 'Alle Pflichtdaten sind gepflegt — Auswertungen sind belastbar.'
     });
   }
+  if (historicalPositions.length > 0) {
+    issues.push({ severity: 'info', text: `${historicalPositions.length} vollständig verkaufte CSV-Titel bleiben nur für die Depot-Historie erhalten. Ihre optionalen Stammdaten zählen nicht zur aktuellen Datenqualität.` });
+  }
   if (finalScore < 100 && qualityTips.length > 0) {
-    qualityTips.slice(0, 3).forEach(text => issues.push({ severity: 'info', text }));
+    qualityTips.slice(0, 3).forEach(tip => issues.push({ severity: 'info', text: typeof tip === 'string' ? tip : tip.text, action: typeof tip === 'string' ? null : tip.action }));
   } else if (finalScore < 100 && issues.every(i => i.severity === 'good')) {
     issues.push({ severity: 'info', text: `Für 100 Punkte fehlen noch ${100 - finalScore} Punkte in Detaildaten. Bitte Positionen, Kaufdaten, Cash-Bewegungen, Ziel und Backup prüfen.` });
   }
 
   return { score: finalScore, issues };
 }
+let qualityRenderIssues = [];
 function renderDataQuality(totals) {
   const valEl = document.getElementById('qualityScoreVal');
   const barEl = document.getElementById('qualityBarFill');
@@ -3213,10 +3246,67 @@ function renderDataQuality(totals) {
   valEl.className = 'quality-score ' + tier;
   barEl.style.width = score + '%';
   barEl.className = 'quality-bar-fill ' + tier;
-  issuesEl.innerHTML = issues.map(i => {
+  qualityRenderIssues = issues;
+  issuesEl.innerHTML = issues.map((i, index) => {
     const icoMap = { warn: '⚠', info: 'ℹ', good: '✓', error: '✕' };
-    return `<div class="quality-issue ${i.severity}"><span class="ico">${icoMap[i.severity] || '·'}</span><span>${escapeHtml(i.text)}</span></div>`;
+    const action = i.action ? `<button type="button" class="quality-action-btn" data-quality-action="${index}">${escapeHtml(i.action.label)}</button>` : '';
+    return `<div class="quality-issue ${i.severity}"><span class="ico">${icoMap[i.severity] || '·'}</span><span class="quality-issue-body"><span>${escapeHtml(i.text)}</span>${action}</span></div>`;
   }).join('');
+}
+let qualityTaskAction = null;
+function focusQualityEditField(pos, kind) {
+  if (kind === 'meta') {
+    const details = document.getElementById('editStammdatenDetails');
+    if (details) details.open = true;
+    const fieldIds = { isin: 'editIsin', wkn: 'editWkn', sektor: 'editSektor', custodian: 'editCustodian', custodyType: 'editCustodyType', land: 'editLand' };
+    const missingField = qualityMetadataFields(pos).find(field => !String(metaValueForQuality(pos, field) || '').trim());
+    const target = document.getElementById(fieldIds[missingField] || 'editIsin');
+    if (target) setTimeout(() => target.focus(), 60);
+    return;
+  }
+  const fieldId = kind === 'quote' ? 'editQuoteSymbol' : !(Number(pos.shares) > 0) ? 'editShares' : 'editCost';
+  const target = document.getElementById(fieldId);
+  if (target) setTimeout(() => target.focus(), 60);
+}
+function openQualityPositionInput(posId, kind) {
+  const pos = appData?.positions?.find(p => p.id === posId);
+  if (!pos) return;
+  closeQualityActionModal();
+  if (kind === 'buy') return openBuyMoreModal(posId);
+  openEditModal(posId);
+  focusQualityEditField(pos, kind);
+}
+function closeQualityActionModal() {
+  const modal = document.getElementById('qualityActionModal');
+  if (modal) modal.classList.remove('active');
+  qualityTaskAction = null;
+}
+function openQualityPositionsModal(action) {
+  const positions = (action.posIds || []).map(id => appData?.positions?.find(pos => pos.id === id)).filter(Boolean);
+  if (positions.length === 1) return openQualityPositionInput(positions[0].id, action.kind);
+  qualityTaskAction = action;
+  document.getElementById('qualityActionTitle').textContent = action.title || 'Datenqualität verbessern';
+  document.getElementById('qualityActionHint').textContent = action.hint || 'Wähle die Position, die du direkt bearbeiten möchtest.';
+  document.getElementById('qualityActionList').innerHTML = positions.map(pos => `<div class="quality-task-row">
+    <div><div class="name">${escapeHtml(qualityPositionName(pos))}</div><div class="meta">${escapeHtml(pos.type || '')}${pos.symbol ? ' · ' + escapeHtml(pos.symbol) : ''}</div></div>
+    <button type="button" class="quality-action-btn" data-quality-pos="${escapeHtml(pos.id)}">${escapeHtml(action.label || 'Öffnen')}</button>
+  </div>`).join('');
+  document.getElementById('qualityActionModal').classList.add('active');
+}
+function scrollQualityTarget(target) {
+  const el = document.getElementById(target) || document.querySelector(target);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - 60;
+  window.scrollTo({ top, behavior: 'smooth' });
+  setTimeout(() => el.focus?.(), 350);
+}
+function runQualityAction(index) {
+  const action = qualityRenderIssues[Number(index)]?.action;
+  if (!action) return;
+  if (action.posIds?.length) return openQualityPositionsModal(action);
+  if (action.kind === 'backup') return backupJson();
+  if (action.kind === 'cash') return openCashTxModal('deposit');
+  if (action.kind === 'goal') return scrollQualityTarget('anchor-goal');
 }
 
 // ===== RISIKO-REGELN =====
@@ -6426,6 +6516,16 @@ function wireEvents() {
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   document.getElementById('editSave').addEventListener('click', saveEditModal);
   document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
+  document.getElementById('qualityIssues').addEventListener('click', e => {
+    const actionBtn = e.target.closest('[data-quality-action]');
+    if (actionBtn) runQualityAction(actionBtn.dataset.qualityAction);
+  });
+  document.getElementById('qualityActionClose').addEventListener('click', closeQualityActionModal);
+  document.getElementById('qualityActionModal').addEventListener('click', e => {
+    if (e.target.id === 'qualityActionModal') return closeQualityActionModal();
+    const posBtn = e.target.closest('[data-quality-pos]');
+    if (posBtn && qualityTaskAction) openQualityPositionInput(posBtn.dataset.qualityPos, qualityTaskAction.kind);
+  });
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
   document.getElementById('chatWipeBtn').addEventListener('click', chatWipeMemory);
