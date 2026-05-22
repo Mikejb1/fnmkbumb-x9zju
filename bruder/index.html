@@ -1749,10 +1749,10 @@ function renderLayoutModal(settingsOverride) {
     wireLayoutListInteractions(sectionList);
   }
   if (positionList) {
-    const positions = Array.isArray(appData?.positions) ? appData.positions : [];
+    const positions = currentPortfolioPositions();
     positionList.innerHTML = positions.length
       ? positions.map(positionLayoutRowHtml).join('')
-      : '<div class="layout-meta" style="padding:8px;">Noch keine Titel vorhanden.</div>';
+      : '<div class="layout-meta" style="padding:8px;">Noch keine aktuellen Titel vorhanden.</div>';
     wireLayoutListInteractions(positionList);
   }
 }
