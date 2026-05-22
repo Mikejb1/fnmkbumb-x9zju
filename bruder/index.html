@@ -886,11 +886,16 @@
       </button>
       <button class="add-pos-btn" id="addPosFlatexCsvBtn">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-        <span>Flatex CSV importieren</span>
+        <span>Depotumsätze CSV</span>
       </button>
       <input type="file" id="flatexCsvFileInput" accept=".csv,text/csv" style="display:none;">
+      <button class="add-pos-btn" id="flatexAccountCsvBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M7 15h4"/><path d="M16 14v4"/><path d="M14 16h4"/></svg>
+        <span>Kontoumsätze CSV</span>
+      </button>
+      <input type="file" id="flatexAccountCsvFileInput" accept=".csv,text/csv" style="display:none;">
     </div>
-    <div class="add-pos-hint">Screenshot oder Flatex-Depotumsatz-CSV importieren — die CSV kann Käufe, Verkäufe, Splits, Fusionen und historische Nullbestände sauberer rekonstruieren.</div>
+    <div class="add-pos-hint">Depotumsätze rekonstruieren Titel und Stückzahlen. Kontoumsätze ergänzen Einzahlungen, Erträge und die echte Cash-Belastung passender Orders.</div>
   </div>
   <div class="alloc-section">
     <div class="alloc-head">
@@ -1413,6 +1418,16 @@
     <div class="ss-conflicts" id="flatexCsvSummary"></div>
     <div class="ss-batch-preview" id="flatexCsvPreview"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Historie neu aufbauen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="flatexAccountCsvModal">
+  <div class="modal">
+    <h3>Flatex Kontoumsätze prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Diese Liste ergänzt den Cash-Verlauf. Einzahlungen und Erträge werden übernommen; Käufe und Verkäufe werden über ISIN und Ordernummer mit bestehenden Depotumsätzen verknüpft.</p>
+    <div class="ss-conflicts" id="flatexAccountCsvSummary"></div>
+    <div class="ss-batch-preview" id="flatexAccountCsvPreview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="flatexAccountCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexAccountCsvImport" disabled>Kontoumsätze übernehmen</button></div>
   </div>
 </div>
 
@@ -2405,10 +2420,10 @@ function startManualQuoteExpiryTimer() {
 }
 
 // Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
-function isCashCreditType(type) { return ['deposit', 'dividend', 'distribution', 'interest', 'bonus', 'staking'].includes(type); }
+function isCashCreditType(type) { return ['deposit', 'dividend', 'distribution', 'interest', 'bonus', 'staking', 'refund'].includes(type); }
 function isCashDebitType(type) { return ['withdraw', 'fee', 'tax'].includes(type); }
 function cashTxLabel(type) {
-  return ({ deposit: 'Einzahlung', withdraw: 'Auszahlung', fee: 'Gebühr', tax: 'Steuer', dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking' })[type] || type;
+  return ({ deposit: 'Einzahlung', withdraw: 'Auszahlung', fee: 'Gebühr', tax: 'Steuer', dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking', refund: 'Erstattung' })[type] || type;
 }
 function getCashBalance(asOfDate) {
   if (!Array.isArray(appData?.transactions)) return Number(appData?.goal?.cash || 0);
@@ -2423,8 +2438,9 @@ function getCashBalance(asOfDate) {
       else if (isCashDebitType(t.txType)) bal -= t.value;
     } else {
       // Käufe ziehen Cash ab, Verkäufe schreiben Cash gut (Gegenbuchung)
-      if (!t.cashNeutral && t.txType === 'buy') bal -= (t.value + (t.fees || 0));
-      else if (!t.cashNeutral && t.txType === 'sell') bal += (t.value - (t.fees || 0));
+      const accountCashValue = Number(t.accountCashValue);
+      if (!t.cashNeutral && t.txType === 'buy') bal -= accountCashValue > 0 ? accountCashValue : (t.value + (t.fees || 0));
+      else if (!t.cashNeutral && t.txType === 'sell') bal += accountCashValue > 0 ? accountCashValue : (t.value - (t.fees || 0));
     }
   });
   // Wenn keine Cash-Transaktionen vorhanden, fällt der Slider-Wert zurück
@@ -2439,8 +2455,9 @@ function getInvestedCapital(asOfDate) {
   appData.transactions.forEach(t => {
     if (cutoff && (t.date || '') > cutoff) return;
     if (t.assetType === 'cash' || t.cashNeutral) return;
-    if (t.txType === 'buy') invested += t.value + (t.fees || 0);
-    else if (t.txType === 'sell') invested -= t.value;
+    const accountCashValue = Number(t.accountCashValue);
+    if (t.txType === 'buy') invested += accountCashValue > 0 ? accountCashValue : t.value + (t.fees || 0);
+    else if (t.txType === 'sell') invested -= accountCashValue > 0 ? accountCashValue : t.value;
   });
   return Math.max(0, invested);
 }
@@ -6647,6 +6664,11 @@ function wireEvents() {
   document.getElementById('flatexCsvCancel').addEventListener('click', closeFlatexCsvModal);
   document.getElementById('flatexCsvImport').addEventListener('click', importFlatexCsvAnalysis);
   document.getElementById('flatexCsvModal').addEventListener('click', e => { if (e.target.id === 'flatexCsvModal') closeFlatexCsvModal(); });
+  document.getElementById('flatexAccountCsvBtn').addEventListener('click', () => document.getElementById('flatexAccountCsvFileInput').click());
+  document.getElementById('flatexAccountCsvFileInput').addEventListener('change', e => handleFlatexAccountCsvFile(e.target.files && e.target.files[0]));
+  document.getElementById('flatexAccountCsvCancel').addEventListener('click', closeFlatexAccountCsvModal);
+  document.getElementById('flatexAccountCsvImport').addEventListener('click', importFlatexAccountCsvAnalysis);
+  document.getElementById('flatexAccountCsvModal').addEventListener('click', e => { if (e.target.id === 'flatexAccountCsvModal') closeFlatexAccountCsvModal(); });
   document.getElementById('apType').addEventListener('change', updateAddPosTypeFields);
   document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
   document.getElementById('apSave').addEventListener('click', saveNewPosition);
@@ -7388,6 +7410,7 @@ NUR JSON, sonst nichts.`;
 let ssPreviewMatchedPosId = null;
 let ssBatchRows = null;
 let flatexCsvAnalysis = null;
+let flatexAccountCsvAnalysis = null;
 const FLATEX_QTY_EPSILON = 1e-6;
 
 function parseSemicolonCsv(text) {
@@ -7643,6 +7666,279 @@ async function importFlatexCsvAnalysis() {
   await fetchAllWeeklyCharts();
   await refreshUI({ skipAI: true });
   alert(`Flatex CSV übernommen. ${openCount} aktuelle Positionen und ${built.transactions.length} historische Buchungen sind aktiv.`);
+}
+
+// ===== FLATEX KONTOUMSAETZE CSV — Cash-Verlauf + Orderabgleich =====
+const FLATEX_ACCOUNT_SOURCE = 'flatex-account-csv';
+function accountOrderParts(info) {
+  const raw = String(info || '').toUpperCase();
+  const isin = raw.match(/\b([A-Z]{2}[A-Z0-9]{10})\b/)?.[1] || '';
+  const number = raw.match(/\bORDER\s+(?:KAUF|VERKAUF)\s+[A-Z0-9]{12}\s+(\d{6,})\b/)?.[1] || '';
+  return { isin, number };
+}
+function flatexAccountKind(recipient, info, amount) {
+  const text = normalizeText(`${recipient || ''} ${info || ''}`).replace(/�/g, '');
+  if (text.includes('einzahlung auf das verrechnungskonto')) return 'deposit';
+  if (text.includes('order kauf')) return 'order-buy';
+  if (text.includes('order verkauf')) return 'order-sell';
+  if (text.includes('dividendenzahlung') || text.includes('dividende')) return 'dividend';
+  if (text.includes('zinsabschluss')) return amount > 0 ? 'interest' : amount < 0 ? 'interest-fee' : 'zero';
+  if (text.includes('storno') && text.includes('thesaur')) return 'refund';
+  if (text.includes('thesaur')) return 'tax';
+  if (!amount) return 'zero';
+  return amount > 0 ? 'other-credit' : 'other-debit';
+}
+function accountKindLabel(kind) {
+  return ({
+    deposit: 'Einzahlung',
+    'order-buy': 'Order Kauf',
+    'order-sell': 'Order Verkauf',
+    dividend: 'Dividende',
+    interest: 'Zinsen',
+    'interest-fee': 'Zinsbelastung',
+    tax: 'Thesaurierung/Steuer',
+    refund: 'Erstattung/Storno',
+    zero: '0-EUR-Zeile',
+    'other-credit': 'unbekannter Zufluss',
+    'other-debit': 'unbekannter Abfluss'
+  })[kind] || kind;
+}
+function flatexAccountImportKey(entry) {
+  return `flatex-account:${[entry.rowIndex, entry.date, entry.valuta, entry.kind, entry.orderNumber || entry.info, entry.amount].join('|')}`;
+}
+function positionIsinForTransaction(tx) {
+  const pos = (appData?.positions || []).find(item => item.id === tx?.assetId);
+  return String(metaValueForQuality(pos, 'isin') || pos?.isin || '').trim().toUpperCase();
+}
+function noteHasFlatexOrderNumber(tx, number) {
+  if (!number) return false;
+  return String(tx?.flatexTaNumber || '') === number || String(tx?.note || '').includes(number);
+}
+function findFlatexAccountOrderTransaction(entry) {
+  if (!entry?.orderNumber && !entry?.isin) return null;
+  const txType = entry.kind === 'order-sell' ? 'sell' : 'buy';
+  const orderDate = entry.valuta || entry.date;
+  const candidates = (appData?.transactions || []).filter(tx => {
+    if (!tx || tx.assetType === 'cash' || tx.assetType === 'metal' || tx.txType !== txType || tx.cashNeutral) return false;
+    return true;
+  });
+  const exactOrder = candidates.find(tx => noteHasFlatexOrderNumber(tx, entry.orderNumber));
+  if (exactOrder) return exactOrder;
+  return candidates.find(tx => {
+    const sameIsin = entry.isin && positionIsinForTransaction(tx) === entry.isin;
+    const sameDate = orderDate && (tx.valuta === orderDate || tx.date === orderDate);
+    return sameIsin && sameDate && String(tx.note || '').includes('Flatex CSV');
+  }) || null;
+}
+function roundImportMoney(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+function analyzeFlatexAccountCsvText(text) {
+  const parsed = parseSemicolonCsv(text);
+  if (parsed.length < 2) throw new Error('Kontoumsatz-CSV enthält keine Buchungszeilen.');
+  const columns = {};
+  parsed[0].forEach((header, index) => { columns[flatexHeaderKey(header)] = index; });
+  if (columns.buchungstag == null || columns.betragineuro == null) {
+    throw new Error('Flatex-Kontospalten nicht erkannt. Erwartet werden Buchungstag und Betrag in Euro.');
+  }
+  const entries = [];
+  const ignored = [];
+  parsed.slice(1).forEach((row, rowOffset) => {
+    const date = normalizeImportDate(flatexRowValue(row, columns, ['Buchungstag']));
+    const valuta = normalizeImportDate(flatexRowValue(row, columns, ['Valuta']));
+    const recipient = flatexRowValue(row, columns, ['Empfänger', 'Empfaenger', 'Empfnger']).trim();
+    const info = flatexRowValue(row, columns, ['Buchungsinformationen', 'Buchungsinformation']).trim();
+    const amount = parseImportNumber(flatexRowValue(row, columns, ['Betrag in Euro', 'Betrag']));
+    if (!recipient && !info && amount == null) return;
+    const kind = flatexAccountKind(recipient, info, Number(amount) || 0);
+    const order = accountOrderParts(info);
+    const entry = {
+      rowIndex: rowOffset + 2,
+      date,
+      valuta,
+      ledgerDate: valuta || date,
+      recipient,
+      info,
+      amount: Number(amount) || 0,
+      kind,
+      isin: order.isin,
+      orderNumber: order.number
+    };
+    entry.importKey = flatexAccountImportKey(entry);
+    if (kind === 'zero') {
+      ignored.push({ ...entry, reason: '0-EUR-Zeile' });
+      return;
+    }
+    if (kind === 'other-credit' || kind === 'other-debit') {
+      ignored.push({ ...entry, reason: 'Buchungsart nicht automatisch zugeordnet' });
+      return;
+    }
+    if ((kind === 'order-buy' || kind === 'order-sell') && !(entry.orderNumber || entry.isin)) {
+      ignored.push({ ...entry, reason: 'Orderkennung fehlt' });
+      return;
+    }
+    entry.matchId = (kind === 'order-buy' || kind === 'order-sell') ? findFlatexAccountOrderTransaction(entry)?.id || '' : '';
+    entries.push(entry);
+  });
+  if (entries.length === 0) throw new Error('Keine importierbaren Flatex-Kontoumsätze erkannt.');
+  const counts = entries.reduce((acc, entry) => {
+    acc[entry.kind] = (acc[entry.kind] || 0) + 1;
+    return acc;
+  }, {});
+  const totals = entries.reduce((acc, entry) => {
+    if (entry.kind === 'deposit') acc.deposits += Math.max(0, entry.amount);
+    if (entry.kind === 'dividend' || entry.kind === 'interest') acc.income += Math.max(0, entry.amount);
+    if (entry.kind === 'tax' || entry.kind === 'interest-fee') acc.debits += Math.abs(entry.amount);
+    if (entry.kind === 'refund') acc.refunds += Math.max(0, entry.amount);
+    if (entry.kind === 'order-buy' || entry.kind === 'order-sell') acc.orderCash += Math.abs(entry.amount);
+    return acc;
+  }, { deposits: 0, income: 0, debits: 0, refunds: 0, orderCash: 0 });
+  const orders = entries.filter(entry => entry.kind === 'order-buy' || entry.kind === 'order-sell');
+  return { entries, ignored, counts, totals, orders, matchedOrders: orders.filter(entry => entry.matchId), unmatchedOrders: orders.filter(entry => !entry.matchId) };
+}
+function renderFlatexAccountCsvAnalysis(analysis) {
+  flatexAccountCsvAnalysis = analysis;
+  const items = [
+    { kind: 'info', text: `${analysis.entries.length} Kontobewegungen erkannt · ${analysis.counts.deposit || 0} Einzahlung${analysis.counts.deposit === 1 ? '' : 'en'} (${fmt.format(analysis.totals.deposits)}) · ${analysis.counts.dividend || 0} Dividende${analysis.counts.dividend === 1 ? '' : 'n'} · ${analysis.counts.interest || 0} Zinsgutschrift${analysis.counts.interest === 1 ? '' : 'en'}.` },
+    { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen Depotumsätzen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depotumsätze-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
+    { kind: 'info', text: `Sonder-Cash: ${analysis.counts.tax || 0} Thesaurierung/Steuer · ${analysis.counts.refund || 0} Storno/Erstattung · ${analysis.counts['interest-fee'] || 0} Zinsbelastung. Wertpapier-Stückzahlen werden durch diesen Import nicht verändert.` }
+  ];
+  if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} werden ausgelassen: 0-EUR-Zeilen oder nicht eindeutig erkannte Kontobewegungen.` });
+  items.push({ kind: 'warn', text: 'Importmodus: Frühere Kontoumsatz-Importspuren werden ersetzt. Manuell gepflegte Cash-Bewegungen bleiben erhalten und können zusätzlich wirken.' });
+  document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  const previewEntries = analysis.entries.filter(entry => entry.kind !== 'order-buy' && entry.kind !== 'order-sell').slice(0, 24)
+    .concat(analysis.orders.slice(0, 24));
+  document.getElementById('flatexAccountCsvPreview').innerHTML = previewEntries.map(entry => {
+    const isOrder = entry.kind === 'order-buy' || entry.kind === 'order-sell';
+    const cls = isOrder ? (entry.matchId ? 'buy' : 'sell') : entry.amount < 0 ? 'sell' : 'buy';
+    const detail = isOrder
+      ? `${entry.isin || 'ISIN fehlt'} · Order ${entry.orderNumber || 'ohne Nummer'} · ${entry.matchId ? 'Depotumsatz gefunden' : 'kein Depotumsatz gefunden'}`
+      : `${accountKindLabel(entry.kind)} · ${entry.info || entry.recipient || 'Kontobewegung'}`;
+    return `<div class="ss-batch-row ${cls}">
+      <div class="date">${formatDateAT(entry.ledgerDate)}</div>
+      <div><div class="name">${accountKindLabel(entry.kind)}</div><div class="meta">${escapeHtml(detail)}</div></div>
+      <div class="type">${entry.amount >= 0 ? '+' : '−'}${fmt.format(Math.abs(entry.amount))}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('flatexAccountCsvImport').disabled = false;
+  document.getElementById('flatexAccountCsvModal').classList.add('active');
+}
+async function handleFlatexAccountCsvFile(file) {
+  if (!file) return;
+  try {
+    renderFlatexAccountCsvAnalysis(analyzeFlatexAccountCsvText(await readFlatexCsvFile(file)));
+  } catch (e) {
+    flatexAccountCsvAnalysis = null;
+    alert('Flatex Kontoumsätze konnten nicht gelesen werden: ' + (e.message || e));
+  }
+}
+function closeFlatexAccountCsvModal() {
+  document.getElementById('flatexAccountCsvModal').classList.remove('active');
+  document.getElementById('flatexAccountCsvImport').disabled = true;
+  flatexAccountCsvAnalysis = null;
+  const input = document.getElementById('flatexAccountCsvFileInput');
+  if (input) input.value = '';
+}
+function clearFlatexAccountCsvImports() {
+  const importedIncomeIds = new Set((appData.income || []).filter(entry => entry.accountImportSource === FLATEX_ACCOUNT_SOURCE).map(entry => entry.id));
+  appData.income = (appData.income || []).filter(entry => entry.accountImportSource !== FLATEX_ACCOUNT_SOURCE);
+  appData.transactions = (appData.transactions || []).filter(tx => {
+    if (tx.accountImportSource === FLATEX_ACCOUNT_SOURCE) return false;
+    if (importedIncomeIds.has(tx.sourceIncomeId)) return false;
+    return !(tx.assetType === 'cash' && String(tx.note || '').startsWith('Automatische Initial-Einzahlung'));
+  });
+  appData.transactions.forEach(tx => {
+    if (tx.accountOrderSource !== FLATEX_ACCOUNT_SOURCE) return;
+    if (Object.prototype.hasOwnProperty.call(tx, 'accountOriginalFees')) tx.fees = tx.accountOriginalFees;
+    delete tx.accountOriginalFees;
+    delete tx.accountCashValue;
+    delete tx.accountOrderSource;
+    delete tx.accountImportKey;
+    delete tx.accountBookingDate;
+    delete tx.accountValuta;
+    delete tx.accountOrderNumber;
+  });
+}
+function pushFlatexAccountCashTx(entry, txType, value, note) {
+  const amount = roundImportMoney(Math.abs(value));
+  if (!(amount > 0)) return;
+  appData.transactions.push({
+    id: makeTxId(),
+    date: entry.ledgerDate,
+    assetId: 'cash',
+    assetType: 'cash',
+    txType,
+    quantity: amount,
+    price: 1,
+    value: amount,
+    fees: 0,
+    accountImportSource: FLATEX_ACCOUNT_SOURCE,
+    accountImportKey: entry.importKey,
+    note
+  });
+}
+function pushFlatexAccountIncome(entry) {
+  const amount = roundImportMoney(Math.abs(entry.amount));
+  if (!(amount > 0)) return;
+  const kind = entry.kind === 'interest' ? 'interest' : 'dividend';
+  const income = {
+    id: 'inc_flatex_account_' + String(entry.importKey).replace(/[^a-z0-9]+/gi, '').slice(-36),
+    date: entry.ledgerDate,
+    kind,
+    gross: amount,
+    tax: 0,
+    net: amount,
+    note: `Flatex Kontoumsätze · ${entry.info || accountKindLabel(entry.kind)} · Betrag aus Kontoauszug`,
+    accountImportSource: FLATEX_ACCOUNT_SOURCE,
+    accountImportKey: entry.importKey
+  };
+  appData.income.push(income);
+  upsertIncomeCashTransactions(income);
+  (appData.transactions || []).filter(tx => tx.sourceIncomeId === income.id).forEach(tx => {
+    tx.accountImportSource = FLATEX_ACCOUNT_SOURCE;
+    tx.accountImportKey = entry.importKey;
+  });
+}
+function applyFlatexAccountOrder(entry) {
+  const tx = (appData.transactions || []).find(item => item.id === entry.matchId) || findFlatexAccountOrderTransaction(entry);
+  if (!tx) return false;
+  const actualCash = roundImportMoney(Math.abs(entry.amount));
+  if (!(actualCash > 0)) return false;
+  if (tx.accountOrderSource !== FLATEX_ACCOUNT_SOURCE) tx.accountOriginalFees = Number(tx.fees) || 0;
+  const baseValue = Number(tx.value) || ((Number(tx.quantity) || 0) * (Number(tx.price) || 0));
+  const feeEstimate = tx.txType === 'buy' ? actualCash - baseValue : baseValue - actualCash;
+  tx.fees = feeEstimate > 0 ? roundImportMoney(feeEstimate) : Number(tx.accountOriginalFees) || 0;
+  tx.accountCashValue = actualCash;
+  tx.accountOrderSource = FLATEX_ACCOUNT_SOURCE;
+  tx.accountImportKey = entry.importKey;
+  tx.accountBookingDate = entry.date;
+  tx.accountValuta = entry.valuta;
+  tx.accountOrderNumber = entry.orderNumber;
+  return true;
+}
+async function importFlatexAccountCsvAnalysis() {
+  if (!flatexAccountCsvAnalysis) return;
+  const matched = flatexAccountCsvAnalysis.matchedOrders.length;
+  const ok = confirm(`Flatex Kontoumsätze wirklich übernehmen?\n\nEinzahlungen, Erträge und Sonder-Cash-Bewegungen werden in dein Cash-Kassenbuch geschrieben. ${matched} Order-Kontobewegungen werden mit vorhandenen Depotumsätzen abgeglichen. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
+  if (!ok) return;
+  backupJson('vor-flatex-kontoumsaetze');
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  ensureIncome();
+  clearFlatexAccountCsvImports();
+  let orderMatches = 0;
+  flatexAccountCsvAnalysis.entries.forEach(entry => {
+    if (entry.kind === 'deposit') pushFlatexAccountCashTx(entry, 'deposit', entry.amount, 'Flatex Kontoumsätze · Einzahlung Verrechnungskonto');
+    else if (entry.kind === 'dividend' || entry.kind === 'interest') pushFlatexAccountIncome(entry);
+    else if (entry.kind === 'tax') pushFlatexAccountCashTx(entry, 'tax', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Thesaurierung'}`);
+    else if (entry.kind === 'interest-fee') pushFlatexAccountCashTx(entry, 'fee', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Zinsbelastung'}`);
+    else if (entry.kind === 'refund') pushFlatexAccountCashTx(entry, 'refund', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Erstattung'}`);
+    else if ((entry.kind === 'order-buy' || entry.kind === 'order-sell') && applyFlatexAccountOrder(entry)) orderMatches++;
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeFlatexAccountCsvModal();
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+  alert(`Kontoumsätze übernommen. Cash-Verlauf ergänzt; ${orderMatches} Depotumsatz-Order${orderMatches === 1 ? '' : 's'} mit echter Kontobelastung abgeglichen.`);
 }
 
 function parseImportNumber(value) {
