@@ -2494,9 +2494,10 @@ function getNetExternalContributions(asOfDate) {
 function accountImportCashStats() {
   const txs = appData?.transactions || [];
   const cashRows = txs.filter(tx => tx.assetType === 'cash' && tx.accountImportSource === FLATEX_ACCOUNT_SOURCE);
+  const depositRows = cashRows.filter(tx => tx.txType === 'deposit');
   const orderRows = txs.filter(tx => tx.assetType !== 'cash' && tx.accountOrderSource === FLATEX_ACCOUNT_SOURCE);
   const latest = cashRows.concat(orderRows).map(tx => cashEffectiveDate(tx)).filter(Boolean).sort().pop() || '';
-  return { cashRows: cashRows.length, orderRows: orderRows.length, latest };
+  return { cashRows: cashRows.length, depositRows: depositRows.length, orderRows: orderRows.length, latest };
 }
 // Zeitgewichtete Rendite (TWR): Depotentwicklung bereinigt um externe Ein-/Auszahlungen.
 // Käufe/Verkäufe innerhalb des Depots sind interne Umschichtungen und werden hier nicht als Cashflow abgezogen.
@@ -5576,7 +5577,7 @@ function buildSpecialCard(kind, totals) {
     const hasCashTx = Array.isArray(appData.transactions) && appData.transactions.some(t => t.assetType === 'cash');
     const computed = hasCashTx ? getCashBalance() : null;
     const cash = hasCashTx ? computed : (appData.goal?.cash || 0);
-    const accountStats = hasCashTx ? accountImportCashStats() : { cashRows: 0, orderRows: 0, latest: '' };
+    const accountStats = hasCashTx ? accountImportCashStats() : { cashRows: 0, depositRows: 0, orderRows: 0, latest: '' };
     const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
     wrap.id = 'card-cash';
     const sliderHtml = hasCashTx ? `
@@ -5613,7 +5614,10 @@ function buildSpecialCard(kind, totals) {
       </div>
       <div class="cash-tx-hint">Dividenden, Ausschüttungen, Zinsen und Staking werden im Erträge-Bereich erfasst und automatisch ins Cash-Kassenbuch gespiegelt.</div>`;
     if (accountStats.cashRows || accountStats.orderRows) {
-      wrap.innerHTML += `<div class="cash-tx-hint">Kontoumsätze CSV aktiv: ${accountStats.cashRows} Cash-Bewegung${accountStats.cashRows === 1 ? '' : 'en'} sichtbar unter „Bewegungen“ · ${accountStats.orderRows} Order${accountStats.orderRows === 1 ? '' : 's'} mit echtem Konto-Cash abgeglichen${accountStats.latest ? ' · letzter Kontotag ' + formatDateAT(accountStats.latest) : ''}.</div>`;
+      wrap.innerHTML += `<div class="cash-tx-hint">Kontoumsätze CSV aktiv: ${accountStats.cashRows} Cash-Bewegung${accountStats.cashRows === 1 ? '' : 'en'} sichtbar unter „Bewegungen“ · davon ${accountStats.depositRows} Einzahlung${accountStats.depositRows === 1 ? '' : 'en'} · ${accountStats.orderRows} Order${accountStats.orderRows === 1 ? '' : 's'} mit echtem Konto-Cash abgeglichen${accountStats.latest ? ' · letzter Kontotag ' + formatDateAT(accountStats.latest) : ''}.</div>`;
+      if (accountStats.orderRows && !accountStats.depositRows) {
+        wrap.innerHTML += '<div class="cash-tx-hint" style="color:var(--negative);">Kontoumsatz-Import unvollständig: Es sind Orders abgeglichen, aber keine Einzahlungen importiert. Bitte „Kontoumsätze CSV“ erneut übernehmen.</div>';
+      }
     }
   }
   return wrap;
@@ -7765,9 +7769,11 @@ function analyzeFlatexAccountCsvText(text) {
   parsed.slice(1).forEach((row, rowOffset) => {
     const date = normalizeImportDate(flatexRowValue(row, columns, ['Buchungstag']));
     const valuta = normalizeImportDate(flatexRowValue(row, columns, ['Valuta']));
-    const recipient = flatexRowValue(row, columns, ['Empfänger', 'Empfaenger', 'Empfnger']).trim();
-    const info = flatexRowValue(row, columns, ['Buchungsinformationen', 'Buchungsinformation']).trim();
-    const amount = parseImportNumber(flatexRowValue(row, columns, ['Betrag in Euro', 'Betrag']));
+    // Flatex-Kontoumsaetze koennen den Empfaenger-Header als defektes Sonderzeichen exportieren.
+    // Bei diesem CSV-Format ist die Spaltenfolge stabil, daher bleibt Index 2 ein sicherer Fallback.
+    const recipient = (flatexRowValue(row, columns, ['Empfänger', 'Empfaenger', 'Empfnger', 'EmpfŠnger']) || row[2] || '').trim();
+    const info = (flatexRowValue(row, columns, ['Buchungsinformationen', 'Buchungsinformation']) || row[3] || '').trim();
+    const amount = parseImportNumber(flatexRowValue(row, columns, ['Betrag in Euro', 'Betrag']) || row[4]);
     if (!recipient && !info && amount == null) return;
     const kind = flatexAccountKind(recipient, info, Number(amount) || 0);
     const order = accountOrderParts(info);
@@ -7822,6 +7828,9 @@ function renderFlatexAccountCsvAnalysis(analysis) {
     { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen Depotumsätzen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depotumsätze-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
     { kind: 'info', text: `Sonder-Cash: ${analysis.counts.tax || 0} Thesaurierung/Steuer · ${analysis.counts.refund || 0} Storno/Erstattung · ${analysis.counts['interest-fee'] || 0} Zinsbelastung. Wertpapier-Stückzahlen werden durch diesen Import nicht verändert.` }
   ];
+  if (analysis.orders.length && !(analysis.counts.deposit > 0)) {
+    items.push({ kind: 'warn', text: 'Es wurden Orders, aber keine Einzahlungen erkannt. Wenn deine Kontoliste Einzahlungen enthält, Import abbrechen und die CSV prüfen; sonst würde der Cash-Saldo zu stark negativ werden.' });
+  }
   if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} werden ausgelassen: 0-EUR-Zeilen oder nicht eindeutig erkannte Kontobewegungen.` });
   items.push({ kind: 'warn', text: 'Importmodus: Frühere Kontoumsatz-Importspuren werden ersetzt. Manuell gepflegte Cash-Bewegungen bleiben erhalten und können zusätzlich wirken.' });
   document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
