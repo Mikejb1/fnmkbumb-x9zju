@@ -254,6 +254,15 @@
   .quality-task-row { align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px; display: flex; gap: 8px; justify-content: space-between; padding: 9px 10px; }
   .quality-task-row .name { color: var(--text-primary); font-size: 12px; font-weight: 500; }
   .quality-task-row .meta { color: var(--text-tertiary); font-size: 10px; margin-top: 2px; }
+  .quality-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 6px; margin: 8px 0 10px; }
+  .quality-breakdown-item { border: 1px solid var(--border-light); background: var(--bg-secondary); border-radius: 8px; padding: 7px 8px; min-width: 0; }
+  .quality-breakdown-item .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; color: var(--text-secondary); font-size: 10px; }
+  .quality-breakdown-item .pts { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .quality-breakdown-item .mini-bar { height: 4px; background: var(--bg-track); border-radius: 3px; overflow: hidden; margin: 6px 0 5px; }
+  .quality-breakdown-item .mini-fill { height: 100%; border-radius: 3px; background: var(--positive); }
+  .quality-breakdown-item.partial .mini-fill { background: #fbbf24; }
+  .quality-breakdown-item.empty .mini-fill { background: var(--negative); }
+  .quality-breakdown-item .hint { color: var(--text-tertiary); font-size: 9px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .quality-history-note { color: var(--text-tertiary); }
   .quality-issue.warn .ico { color: #fbbf24; }
   .quality-issue.info .ico { color: var(--text-tertiary); }
@@ -991,6 +1000,7 @@
       <div class="quality-score" id="qualityScoreVal">—<span class="denom">/100</span></div>
     </div>
     <div class="quality-bar"><div class="quality-bar-fill" id="qualityBarFill" style="width:0%"></div></div>
+    <div class="quality-breakdown" id="qualityBreakdown"></div>
     <div id="qualityIssues"></div>
   </div>
   <details class="positions-section" id="anchor-positions" open>
@@ -2624,7 +2634,8 @@ function getNetExternalContributions(asOfDate) {
   if (!Array.isArray(appData?.transactions)) return 0;
   const cutoff = asOfDate ? (asOfDate instanceof Date ? toIsoDate(asOfDate) : String(asOfDate)) : null;
   return appData.transactions.reduce((sum, t) => {
-    if (cutoff && (t.date || '') > cutoff) return sum;
+    const effectiveDate = cashEffectiveDate(t) || t.date || '';
+    if (cutoff && effectiveDate > cutoff) return sum;
     return sum + externalCashflowAmount(t);
   }, 0);
 }
@@ -2642,7 +2653,7 @@ function computeTWR(points) {
   if (!points || points.length < 2) return null;
   const cashflowsByDate = {};
   (appData?.transactions || []).forEach(t => {
-    const k = t.date;
+    const k = cashEffectiveDate(t) || t.date;
     if (!k) return;
     const flow = externalCashflowAmount(t);
     if (flow) cashflowsByDate[k] = (cashflowsByDate[k] || 0) + flow;
@@ -2675,8 +2686,9 @@ function computeMWR(currentValue) {
   const flows = [];
   appData.transactions.forEach(t => {
     const external = externalCashflowAmount(t);
-    if (!external || !t.date) return;
-    const dateMs = new Date(t.date + 'T00:00:00').getTime();
+    const flowDate = cashEffectiveDate(t) || t.date;
+    if (!external || !flowDate) return;
+    const dateMs = new Date(flowDate + 'T00:00:00').getTime();
     flows.push({ ms: dateMs, amount: -external });
   });
   if (!flows.some(f => f.amount < 0)) return null;
@@ -3229,9 +3241,56 @@ function calculationSanityIssues(totals) {
   }
   const invalidTx = (appData?.transactions || []).filter(t => !t.date || !Number.isFinite(Number(t.value)) || Number(t.value) < 0);
   if (invalidTx.length > 0) issues.push({ severity: 'warn', text: `${invalidTx.length} Transaktion${invalidTx.length === 1 ? '' : 'en'} haben fehlendes Datum oder unplausiblen Betrag.` });
+  const cashBalance = currentCashValue();
+  if (cashBalance < -0.01) {
+    issues.push({ severity: 'warn', text: `Cash-Saldo ist negativ (${fmt.format(cashBalance)}). Prüfe Kontoumsätze, Einzahlungen und Order-Cashwerte.`, action: { kind: 'cash-list', label: 'Bewegungen prüfen' } });
+  }
   const negativeShares = (appData?.positions || []).filter(p => !p.special && getPositionValuation(p).shares < -1e-8);
   if (negativeShares.length > 0) issues.push({ severity: 'warn', text: `Negative Stückzahl erkannt bei ${negativeShares.slice(0, 3).map(qualityPositionName).join(', ')}.` });
   return issues;
+}
+function buildDataQualityScoreParts() {
+  const parts = [];
+  const add = (label, earned, max, hint) => {
+    const safeEarned = Math.max(0, Math.min(max, Number(earned) || 0));
+    parts.push({ label, earned: safeEarned, max, hint });
+  };
+  const positions = currentPortfolioPositions();
+  if (positions.length > 0) {
+    const complete = positions.filter(p => Number(getPositionValuation(p).shares) > 0 && Number(p.costPrice) > 0).length;
+    add('Positionen', (complete / positions.length) * 25, 25, `${complete}/${positions.length} mit Stück + Einstand`);
+    const txs = appData?.transactions || [];
+    const withBuys = positions.filter(p => txs.some(t => t.assetId === p.id && t.txType === 'buy' && t.date && t.value > 0)).length;
+    add('Kaufdaten', (withBuys / positions.length) * 25, 25, `${withBuys}/${positions.length} mit Kaufhistorie`);
+    const totalFields = positions.reduce((sum, p) => sum + qualityMetadataFields(p).length, 0);
+    const filledFields = positions.reduce((sum, p) => sum + qualityMetadataFields(p).filter(f => String(metaValueForQuality(p, f) || '').trim()).length, 0);
+    add('Stammdaten', totalFields > 0 ? (filledFields / totalFields) * 15 : 0, 15, `${filledFields}/${totalFields} Felder gepflegt`);
+  } else {
+    add('Positionen', 0, 25, 'keine aktuelle Position');
+    add('Kaufdaten', 0, 25, 'keine Kaufhistorie');
+    add('Stammdaten', 0, 15, 'keine aktuellen Titel');
+  }
+
+  const cashAmount = Number(appData?.goal?.cash || 0);
+  const hasCashTx = hasCashTransactions();
+  add('Cash', hasCashTx ? 15 : (cashAmount > 0 ? 5 : 15), 15, hasCashTx ? 'Bewegungen vorhanden' : (cashAmount > 0 ? 'nur Saldo-Wert' : 'kein Cash offen'));
+
+  const g = appData?.goal || {};
+  let goalPts = 0;
+  if (g.year && g.year >= 2025) goalPts += 3;
+  if (g.amount && g.amount > 0) goalPts += 4;
+  if (g.savingsRate != null && g.savingsRate > 0) goalPts += 3;
+  add('Ziel', goalPts, 10, goalPts >= 10 ? 'Ziel vollständig' : 'Zieljahr, Betrag, Sparrate');
+
+  let backupTs = 0;
+  try { backupTs = parseInt(localStorage.getItem(BACKUP_TS_KEY) || localStorage.getItem(LEGACY_BACKUP_TS_KEY) || '0', 10); } catch (e) {}
+  if (backupTs > 0) {
+    const ageDays = (Date.now() - backupTs) / (1000 * 60 * 60 * 24);
+    add('Backup', ageDays < 30 ? 10 : (ageDays < 90 ? 5 : 2), 10, ageDays < 30 ? 'aktuell' : `${Math.floor(ageDays)} Tage alt`);
+  } else {
+    add('Backup', 0, 10, 'noch kein Backup');
+  }
+  return parts;
 }
 function computeDataQuality(totals) {
   const issues = [];
@@ -3398,20 +3457,33 @@ function computeDataQuality(totals) {
     issues.push({ severity: 'info', text: `Für 100 Punkte fehlen noch ${100 - finalScore} Punkte in Detaildaten. Bitte Positionen, Kaufdaten, Cash-Bewegungen, Ziel und Backup prüfen.` });
   }
 
-  return { score: finalScore, issues };
+  return { score: finalScore, issues, parts: buildDataQualityScoreParts() };
 }
 let qualityRenderIssues = [];
+function renderQualityBreakdown(parts) {
+  return (parts || []).map(part => {
+    const pct = part.max > 0 ? Math.round((part.earned / part.max) * 100) : 0;
+    const state = pct >= 95 ? 'full' : pct > 0 ? 'partial' : 'empty';
+    return `<div class="quality-breakdown-item ${state}" title="${escapeHtml(part.hint || '')}">
+      <div class="top"><span>${escapeHtml(part.label)}</span><span class="pts">${Math.round(part.earned)}/${part.max}</span></div>
+      <div class="mini-bar"><div class="mini-fill" style="width:${pct}%"></div></div>
+      <div class="hint">${escapeHtml(part.hint || '')}</div>
+    </div>`;
+  }).join('');
+}
 function renderDataQuality(totals) {
   const valEl = document.getElementById('qualityScoreVal');
   const barEl = document.getElementById('qualityBarFill');
+  const breakdownEl = document.getElementById('qualityBreakdown');
   const issuesEl = document.getElementById('qualityIssues');
   if (!valEl || !barEl || !issuesEl) return;
-  const { score, issues } = computeDataQuality(totals);
+  const { score, issues, parts } = computeDataQuality(totals);
   const tier = score >= 80 ? 'high' : (score >= 55 ? 'mid' : 'low');
   valEl.innerHTML = `${score}<span class="denom">/100</span>`;
   valEl.className = 'quality-score ' + tier;
   barEl.style.width = score + '%';
   barEl.className = 'quality-bar-fill ' + tier;
+  if (breakdownEl) breakdownEl.innerHTML = renderQualityBreakdown(parts);
   qualityRenderIssues = issues;
   issuesEl.innerHTML = issues.map((i, index) => {
     const icoMap = { warn: '⚠', info: 'ℹ', good: '✓', error: '✕' };
@@ -3472,6 +3544,7 @@ function runQualityAction(index) {
   if (action.posIds?.length) return openQualityPositionsModal(action);
   if (action.kind === 'backup') return backupJson();
   if (action.kind === 'cash') return openCashTxModal('deposit');
+  if (action.kind === 'cash-list') return openCashTxList();
   if (action.kind === 'goal') return scrollQualityTarget('anchor-goal');
 }
 
@@ -5197,7 +5270,7 @@ function quoteFreshnessInfo(pos, live) {
   const nextMin = Math.ceil(nextMs / 60000);
   const time = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
   const delayedText = ageMin <= 0 ? 'unter 1 min' : `ca. ${ageMin} min`;
-  const nextText = nextMin <= 0 ? 'ca. 0 min' : `ca. ${nextMin} min`;
+  const nextText = nextMin <= 0 ? 'unter 1 min' : `ca. ${nextMin} min`;
   const className = ageMin >= cadence ? 'stale' : '';
   const shortBase = `Kurszeit: ${time} · verzögert ${delayedText} · nächster Wert in ${nextText}`;
   const detailBase = `Quelle: ${source} · ${venue} · ${shortBase}`;
@@ -5904,7 +5977,7 @@ function renderPositions(totals) {
 function renderTotals() {
   pruneExpiredManualQuoteOverrides();
   let totalCur = 0, totalCost = 0, todayChangeEur = 0, hasChangeData = false;
-  appData.positions.forEach(pos => {
+  currentPortfolioPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
     const valuation = getPositionValuation(pos, live);
     totalCur += valuation.currentValue;
@@ -6046,7 +6119,7 @@ function historyStartDate(period, today) {
 function isFutureHistoryPeriod(period) { return period === '+1W' || period === '+1M' || period === '+1J'; }
 function currentPortfolioHistoryTotal() {
   let total = 0;
-  appData.positions.forEach(pos => {
+  currentPortfolioPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.costPrice };
     total += getPositionValuation(pos, live).currentValue;
   });
@@ -6063,11 +6136,15 @@ function buildPortfolioProjection(period) {
   const startNet = getNetExternalContributions();
   const cash = currentCashValue();
   const savingsRate = Number(appData?.goal?.savingsRate || 0);
+  const annualReturnPct = Number(appData?.goal?.annualReturnPct || 0);
   const points = [];
   const totalDays = Math.max(1, Math.round((end - today) / 86400000));
   for (let step = 0; step <= totalDays; step += 1) {
     const date = addDays(today, step);
-    const contribution = savingsRate * (step / 30.44);
+    const monthsAhead = step / 30.44;
+    const contribution = savingsRate * monthsAhead;
+    const projectedValue = futureValueWithMonthlySavings(startValue, savingsRate, monthsAhead, annualReturnPct);
+    const projectedInvested = startInvested + contribution;
     const label = period === '+1W' || period === '+1M'
       ? String(date.getDate()).padStart(2, '0') + '.'
       : MONTHS_SHORT[date.getMonth()];
@@ -6076,14 +6153,14 @@ function buildPortfolioProjection(period) {
       date,
       label,
       labelLong: step === 0 ? `${labelLong} (heute)` : `${labelLong} (Projektion)`,
-      value: startValue + contribution,
-      invested: startInvested + contribution,
+      value: projectedValue,
+      invested: projectedInvested,
       netContributions: startNet + contribution,
       cash,
-      pnl: startValue - startInvested,
+      pnl: projectedValue - projectedInvested,
       quality: historyDataQualityForDate(date, step === 0, true),
       events: step === 0 ? ['Start der Projektion'] : [],
-      historyNote: `Sparpfad-Projektion mit ${fmt.format(savingsRate)}/Monat ohne Renditeannahme`
+      historyNote: `Sparpfad-Projektion mit ${fmt.format(savingsRate)}/Monat und ${fmtNum(annualReturnPct, 1)}% p.a. Zielannahme`
     });
   }
   return points;
@@ -6131,7 +6208,7 @@ function priceForHistoryDate(pos, date, isToday) {
   return (currentPrices[pos.id] || { price: pos.costPrice }).price;
 }
 function historyDataQualityForDate(date, isToday, futureProjection = false) {
-  if (futureProjection) return { level: 'projection', label: 'Projektion', note: 'Sparpfad ohne Renditeannahme' };
+  if (futureProjection) return { level: 'projection', label: 'Projektion', note: 'Sparpfad mit Ziel-Renditeannahme' };
   const active = (appData?.positions || []).filter(pos => !pos.special && sharesAtDate(pos, date) > 0);
   if (active.length === 0) return { level: 'exact', label: 'Keine aktiven Titel', note: 'Keine aktiven Titel an diesem Tag' };
   if (isToday) return { level: 'exact', label: 'Aktuelle Live-/Quellwerte', note: 'Aktuelle Bewertung aus Live-/Quellwerten' };
@@ -6184,7 +6261,7 @@ function summarizeHistoryQuality(points, futureProjection) {
       level: 'projection',
       pct: null,
       text: 'Projektion',
-      basis: 'Sparpfad mit aktueller Sparrate, ohne Kurs- oder Renditeprognose',
+      basis: 'Sparpfad mit aktueller Sparrate und Ziel-Renditeannahme, keine echte Kursprognose',
       events: points.reduce((s, p) => s + ((p.events || []).length), 0)
     };
   }
@@ -6212,8 +6289,8 @@ function summarizeHistoryQuality(points, futureProjection) {
 function buildHistoryQualityRows(points, summary, futureProjection) {
   if (futureProjection) {
     return [
-      { title: 'Zukunftsansicht', text: 'Diese Ansicht ist eine Sparpfad-Projektion. Sie nutzt deine aktuelle Sparrate und rechnet bewusst keine Kurs- oder Renditeprognose hinein.' },
-      { title: 'Warum kein 100/100?', text: 'Bei Projektionen bewertet die App nicht die historische Datenqualität, sondern zeigt nur, wie sich dein Depot bei gleichbleibender Sparrate rechnerisch entwickeln würde.' }
+      { title: 'Zukunftsansicht', text: 'Diese Ansicht ist eine Sparpfad-Projektion. Sie nutzt deine aktuelle Sparrate und die Renditeannahme aus dem Zielbereich. Das ist ein Planungsszenario, keine Kursvorhersage.' },
+      { title: 'Warum kein 100/100?', text: 'Bei Projektionen bewertet die App nicht die historische Datenqualität, sondern zeigt, wie sich dein Depot bei gleichbleibenden Annahmen rechnerisch entwickeln würde.' }
     ];
   }
   if (!points || points.length === 0) {
@@ -6355,9 +6432,9 @@ function renderHistory() {
   const futureProjection = isFutureHistoryPeriod(currentHistoryPeriod);
   // Zielpfad: linear interpolation vom Startpunkt bis zum Ziel-Enddatum
   if (historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
-    const goalEnd = new Date(appData.goal.year, 11, 31);
+    const goalEnd = endOfGoalMonth(appData.goal.year, appData.goal.month || 12);
     const startVal = points[0].value;
-    const goalVal = appData.goal.amount;
+    const goalVal = goalPlanAmount(appData.goal.amount, appData.goal.bufferPct || 0);
     const startMs = points[0].date.getTime();
     const goalMs = goalEnd.getTime();
     const span = goalMs - startMs;
@@ -6787,9 +6864,9 @@ function renderSavingsSim(totals, goal) {
     const pct = Math.min(100, (projected / target) * 100);
     const diff = projected - target;
     let cls, tag;
-    if (projected < goal.amount * 0.85) { cls = 'late'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
-    else if (projected < goal.amount) { cls = 'tight'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
-    else if (projected < goal.amount * 1.1) { cls = 'fit'; tag = `Puffer ${fmtNoCent.format(diff)}`; }
+    if (projected < target * 0.85) { cls = 'late'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
+    else if (projected < target) { cls = 'tight'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
+    else if (projected < target * 1.1) { cls = 'fit'; tag = `Puffer ${fmtNoCent.format(diff)}`; }
     else { cls = 'early'; tag = `Puffer ${fmtNoCent.format(diff)}`; }
     const isCurrent = Math.abs(rate - current) < 1;
     const isRequired = Math.abs(rate - roundedRequired) < 1;
@@ -6933,7 +7010,7 @@ function wireEvents() {
   ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk', 'goalType', 'goalPriority', 'goalMonth', 'goalMinSavings', 'goalMaxSavings', 'goalBuffer', 'goalReturn'].forEach(id => {
     const goalInputEl = document.getElementById(id);
     if (!goalInputEl) return;
-    goalInputEl.addEventListener('input', async () => {
+    const handleGoalInput = async () => {
       if (!appData) return;
       const year = parseInt(document.getElementById('goalYear').value, 10);
       const amount = parseInt(document.getElementById('goalAmount').value, 10);
@@ -6959,7 +7036,9 @@ function wireEvents() {
       const totals = renderTotals();
       const goal = renderGoal(totals);
       markGoalSettingsDirty(true);
-    });
+    };
+    goalInputEl.addEventListener('input', handleGoalInput);
+    goalInputEl.addEventListener('change', handleGoalInput);
   });
   document.getElementById('statSavings').addEventListener('click', () => { const slider = document.getElementById('goalSavings'); if (slider) { slider.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => slider.focus(), 400); } });
   document.querySelectorAll('.history-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); currentHistoryPeriod = tab.dataset.history || '12M'; if (appData) renderHistory(); }); });
