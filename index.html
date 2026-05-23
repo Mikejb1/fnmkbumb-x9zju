@@ -174,13 +174,19 @@
   .history-chart-wrap { position: relative; height: 180px; margin-bottom: 14px; }
   .history-summary { border-top: 1px solid var(--border-light); padding-top: 12px; }
   .history-quality-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 10px; font-size: 10px; color: var(--text-secondary); }
-  .history-quality-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; border: 1px solid var(--border); background: var(--bg-secondary); font-weight: 600; }
+  .history-quality-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; border: 1px solid var(--border); background: var(--bg-secondary); font-weight: 600; cursor: pointer; user-select: none; }
+  .history-quality-badge:hover { filter: brightness(1.08); }
+  .history-quality-badge:focus-visible { outline: 2px solid var(--positive); outline-offset: 2px; }
   .history-quality-badge.exact { color: var(--positive); border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
   .history-quality-badge.approx { color: #fbbf24; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.10); }
   .history-quality-badge.weak { color: var(--negative); border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.10); }
   .history-quality-badge.projection { color: #fbbf24; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.10); }
   .history-event-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-secondary); }
   .history-basis-text { color: var(--text-tertiary); line-height: 1.35; }
+  .history-quality-detail-list { display: grid; gap: 8px; margin-top: 12px; }
+  .history-quality-detail { border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-secondary); padding: 10px 11px; }
+  .history-quality-detail strong { display: block; color: var(--text-primary); font-size: 12px; margin-bottom: 4px; }
+  .history-quality-detail span { color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
   .history-period-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; gap: 12px; }
   .history-period-label { font-weight: 500; font-size: 15px; }
   .history-delta { font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -1021,7 +1027,7 @@
     </div>
     <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
     <div class="history-quality-strip">
-      <span class="history-quality-badge" id="historyQualityBadge">Datenqualität: —</span>
+      <span class="history-quality-badge" id="historyQualityBadge" tabindex="0" role="button" title="Erklärung zur Verlauf-Datenqualität anzeigen">Datenqualität: —</span>
       <span class="history-event-badge" id="historyEventBadge">Ereignisse: —</span>
       <span class="history-basis-text" id="historyBasisText">—</span>
     </div>
@@ -1352,6 +1358,15 @@
     <p class="quality-task-hint" id="qualityActionHint"></p>
     <div class="quality-task-list" id="qualityActionList"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="qualityActionClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="historyQualityModal">
+  <div class="modal">
+    <h3>Verlauf-Datenqualität</h3>
+    <p class="quality-task-hint" id="historyQualityIntro"></p>
+    <div class="history-quality-detail-list" id="historyQualityDetails"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="historyQualityClose">Schließen</button></div>
   </div>
 </div>
 
@@ -6149,6 +6164,72 @@ function summarizeHistoryQuality(points, futureProjection) {
   const events = points.reduce((s, p) => s + ((p.events || []).length), 0);
   return { level, pct, text, basis, events };
 }
+function buildHistoryQualityRows(points, summary, futureProjection) {
+  if (futureProjection) {
+    return [
+      { title: 'Zukunftsansicht', text: 'Diese Ansicht ist eine Sparpfad-Projektion. Sie nutzt deine aktuelle Sparrate und rechnet bewusst keine Kurs- oder Renditeprognose hinein.' },
+      { title: 'Warum kein 100/100?', text: 'Bei Projektionen bewertet die App nicht die historische Datenqualität, sondern zeigt nur, wie sich dein Depot bei gleichbleibender Sparrate rechnerisch entwickeln würde.' }
+    ];
+  }
+  if (!points || points.length === 0) {
+    return [{ title: 'Keine Verlaufspunkte', text: 'Für den gewählten Zeitraum konnte kein Verlauf aufgebaut werden.' }];
+  }
+
+  const exactDays = points.filter(p => p.quality?.level === 'exact').length;
+  const approxDays = points.filter(p => p.quality?.level === 'approx').length;
+  const weakDays = points.filter(p => p.quality?.level === 'weak').length;
+  const rows = [
+    { title: 'So wird der Score berechnet', text: `Der Zeitraum enthält ${points.length} Tagespunkte: ${exactDays} mit Tagesdaten, ${approxDays} mit Näherung und ${weakDays} mit Ersatzkursen. Tagesdaten zählen voll, Näherungen teilweise, Ersatzkurse deutlich schwächer.` }
+  ];
+
+  if (summary.pct >= 100) {
+    rows.push({ title: 'Alles sauber', text: 'Für den gewählten Zeitraum liegen genügend Tagesdaten vor. Die Depot-Entwicklung ist dadurch besonders belastbar.' });
+    return rows;
+  }
+
+  if (approxDays > 0) {
+    rows.push({ title: 'Näherungen drücken den Score', text: 'An manchen Tagen nutzt die App Monatskurse oder Tageskurse mit Währungs-Näherung. Das ist besser als kein Wert, aber weniger exakt als ein echter Tageskurs in EUR.' });
+  }
+  if (weakDays > 0) {
+    rows.push({ title: 'Ersatzkurse drücken den Score stark', text: 'Für einzelne Tage oder Titel fehlen historische Tages- beziehungsweise Monatskurse. Dann verwendet die App ersatzweise aktuelle, manuelle oder ältere Kursbasen, damit der Verlauf trotzdem berechnet werden kann.' });
+  }
+
+  const notes = [];
+  points.forEach(p => {
+    const note = p.historyNote || p.quality?.note || '';
+    if (p.quality?.level !== 'exact' && note && !notes.includes(note)) notes.push(note);
+  });
+  if (notes.length > 0) {
+    rows.push({ title: 'Konkrete Ursachen im Zeitraum', text: `${notes.slice(0, 4).join(' · ')}${notes.length > 4 ? ' ...' : ''}` });
+  }
+
+  rows.push({ title: 'Wie kommst du näher an 100/100?', text: 'Am meisten hilft eine vollständige CSV-Historie mit Käufen/Verkäufen und möglichst vielen historischen Kursdaten. Zusätzlich sollten Symbol, ISIN/WKN und Kursquelle je aktueller Position stimmen.' });
+  return rows;
+}
+function closeHistoryQualityModal() {
+  document.getElementById('historyQualityModal')?.classList.remove('active');
+}
+function openHistoryQualityModal() {
+  if (!appData) return;
+  const points = buildPortfolioHistory(currentHistoryPeriod);
+  const futureProjection = isFutureHistoryPeriod(currentHistoryPeriod);
+  const summary = summarizeHistoryQuality(points, futureProjection);
+  const intro = document.getElementById('historyQualityIntro');
+  const details = document.getElementById('historyQualityDetails');
+  if (intro) {
+    intro.textContent = futureProjection
+      ? 'Diese Erklärung bezieht sich auf die aktive Zukunftsansicht.'
+      : summary.pct >= 100
+        ? 'Der Verlauf erreicht 100/100. Hier siehst du trotzdem, warum die Bewertung so gut ist.'
+        : `Der Verlauf erreicht ${summary.pct}/100. Hier siehst du, was den Score im gewählten Zeitraum senkt.`;
+  }
+  if (details) {
+    details.innerHTML = buildHistoryQualityRows(points, summary, futureProjection)
+      .map(row => `<div class="history-quality-detail"><strong>${escapeHtml(row.title)}</strong><span>${escapeHtml(row.text)}</span></div>`)
+      .join('');
+  }
+  document.getElementById('historyQualityModal')?.classList.add('active');
+}
 function purchaseEventsForDate(date) {
   const iso = toIsoDate(date);
   const events = [];
@@ -6908,6 +6989,20 @@ function wireEvents() {
     if (e.target.id === 'qualityActionModal') return closeQualityActionModal();
     const posBtn = e.target.closest('[data-quality-pos]');
     if (posBtn && qualityTaskAction) openQualityPositionInput(posBtn.dataset.qualityPos, qualityTaskAction.kind);
+  });
+  const historyQualityBadge = document.getElementById('historyQualityBadge');
+  if (historyQualityBadge) {
+    historyQualityBadge.addEventListener('click', openHistoryQualityModal);
+    historyQualityBadge.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openHistoryQualityModal();
+      }
+    });
+  }
+  document.getElementById('historyQualityClose')?.addEventListener('click', closeHistoryQualityModal);
+  document.getElementById('historyQualityModal')?.addEventListener('click', e => {
+    if (e.target.id === 'historyQualityModal') closeHistoryQualityModal();
   });
   document.getElementById('chatSendBtn').addEventListener('click', chatSend);
   document.getElementById('chatClearBtn').addEventListener('click', chatClear);
