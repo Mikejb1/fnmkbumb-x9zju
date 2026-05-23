@@ -187,6 +187,14 @@
   .history-svg-fallback .line { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .history-svg-fallback .area { opacity: 0.16; }
   .history-chart-fallback-note { position: absolute; right: 0; bottom: 0; color: var(--text-muted); font-size: 9px; font-style: italic; }
+  .history-hover-info { position: absolute; top: 10px; left: 10px; min-width: 190px; max-width: min(280px, calc(100% - 18px)); padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(24,24,24,0.94); box-shadow: 0 10px 30px rgba(0,0,0,0.28); color: var(--text-primary); font-size: 11px; line-height: 1.35; opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity 0.12s, transform 0.12s; z-index: 4; }
+  body.light .history-hover-info { background: rgba(255,255,255,0.96); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
+  .history-hover-info.visible { opacity: 1; transform: translateY(0); }
+  .history-hover-info strong { display: block; font-size: 11px; margin-bottom: 5px; color: var(--text-primary); }
+  .history-hover-info span { display: flex; justify-content: space-between; gap: 14px; padding: 2px 0; font-variant-numeric: tabular-nums; }
+  .history-hover-info em { color: var(--text-tertiary); font-style: normal; }
+  .history-hover-info b { color: var(--text-primary); font-weight: 600; text-align: right; }
+  .history-hover-info small { display: block; margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border-light); color: #fbbf24; }
   .history-summary { border-top: 1px solid var(--border-light); padding-top: 12px; }
   .history-quality-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 10px; font-size: 10px; color: var(--text-secondary); }
   .history-quality-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; border: 1px solid var(--border); background: var(--bg-secondary); font-weight: 600; cursor: pointer; user-select: none; }
@@ -5907,6 +5915,71 @@ function renderChartFallback(canvas, points, valueKey, opts) {
   note.textContent = 'Fallback-Chart aktiv';
   wrap.appendChild(svg);
   wrap.appendChild(note);
+  attachFallbackChartHover(wrap, svg, rows, valueKey);
+}
+
+function ensureHistoryHoverInfo(wrap) {
+  if (!wrap) return null;
+  let box = wrap.querySelector('.history-hover-info');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'history-hover-info';
+    wrap.appendChild(box);
+  }
+  return box;
+}
+
+function chartPointChangeText(points, index, key) {
+  const current = Number(points?.[index]?.[key]);
+  const previous = Number(points?.[Math.max(0, index - 1)]?.[key]);
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || index <= 0) return '';
+  const diff = current - previous;
+  const pct = previous > 0 ? (diff / previous) * 100 : 0;
+  return `${diff >= 0 ? '+' : ''}${fmt.format(diff)} (${diff >= 0 ? '+' : ''}${fmtNum(pct, 2)} %)`;
+}
+
+function historyHoverHtml(point, points, index, valueKey) {
+  if (!point) return '';
+  const changeText = chartPointChangeText(points, index, valueKey);
+  const rows = [
+    ['Depotwert', fmt.format(Number(point[valueKey]) || 0)],
+    point.invested != null ? ['Einstand', fmt.format(point.invested)] : null,
+    point.cash != null ? ['Cash', fmt.format(point.cash)] : null,
+    changeText ? ['Bewegung', changeText] : null,
+    point.quality?.label ? ['Kursbasis', point.quality.label] : null
+  ].filter(Boolean);
+  const events = (point.events || []).slice(0, 3);
+  return `
+    <strong>${svgEscape(point.labelLong || point.label || 'Chartpunkt')}</strong>
+    ${rows.map(([label, value]) => `<span><em>${svgEscape(label)}</em><b>${svgEscape(value)}</b></span>`).join('')}
+    ${events.length ? `<small>${svgEscape(events.join(' · '))}</small>` : ''}
+  `;
+}
+
+function showHistoryHoverInfo(wrap, point, points, index, valueKey, clientX) {
+  const box = ensureHistoryHoverInfo(wrap);
+  if (!box || !point) return;
+  box.innerHTML = historyHoverHtml(point, points, index, valueKey);
+  const rect = wrap.getBoundingClientRect();
+  const x = Number.isFinite(clientX) ? clientX - rect.left : rect.width / 2;
+  box.style.left = `${Math.max(8, Math.min(rect.width - 210, x + 10))}px`;
+  box.classList.add('visible');
+}
+
+function hideHistoryHoverInfo(wrap) {
+  const box = wrap?.querySelector('.history-hover-info');
+  if (box) box.classList.remove('visible');
+}
+
+function attachFallbackChartHover(wrap, svg, rows, valueKey) {
+  if (!wrap || !svg || !rows?.length) return;
+  svg.addEventListener('pointermove', (event) => {
+    const rect = svg.getBoundingClientRect();
+    const pct = rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0;
+    const index = Math.max(0, Math.min(rows.length - 1, Math.round(pct * (rows.length - 1))));
+    showHistoryHoverInfo(wrap, rows[index].point, rows.map(r => r.point), index, valueKey, event.clientX);
+  });
+  svg.addEventListener('pointerleave', () => hideHistoryHoverInfo(wrap));
 }
 
 function renderChart(canvasId, points, valueKey, opts) {
@@ -5920,6 +5993,8 @@ function renderChart(canvasId, points, valueKey, opts) {
     return;
   }
   clearChartFallback(canvas);
+  const wrap = canvas.parentElement;
+  canvas.onmouseleave = () => hideHistoryHoverInfo(wrap);
   const existing = Chart.getChart && Chart.getChart(canvas);
   if (existing) existing.destroy();
   const theme = getThemeColors();
@@ -5961,7 +6036,11 @@ function renderChart(canvasId, points, valueKey, opts) {
   new Chart(canvas, {
     type: 'line',
     data: { labels: points.map(p => p.label || p.date), datasets },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => {
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, onHover: (event, active) => {
+      const hit = active && active[0];
+      if (!hit) { hideHistoryHoverInfo(wrap); return; }
+      showHistoryHoverInfo(wrap, points[hit.index], points, hit.index, valueKey, event?.native?.clientX);
+    }, plugins: { legend: { display: false }, tooltip: { enabled: false, backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => {
           const point = points[items[0].dataIndex];
           const lines = [];
           if (point.cash != null) lines.push(`Cash: ${fmt.format(point.cash)}`);
