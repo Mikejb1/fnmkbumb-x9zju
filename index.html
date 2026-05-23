@@ -276,6 +276,38 @@
   .quality-issue.info .ico { color: var(--text-tertiary); }
   .quality-issue.good .ico { color: var(--positive); }
   .quality-issue.error .ico { color: var(--negative); }
+  .daily-check-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .daily-check-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .daily-check-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin: 0; }
+  .daily-check-title svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .daily-check-sub { color: var(--text-tertiary); font-size: 10px; line-height: 1.45; margin-top: 3px; }
+  .daily-check-score { border: 1px solid var(--border-light); background: var(--bg-secondary); border-radius: 999px; color: var(--text-secondary); padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .daily-check-score.good { color: var(--positive); border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
+  .daily-check-score.warn { color: #fbbf24; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.10); }
+  .daily-check-score.critical { color: var(--negative); border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.10); }
+  .daily-status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-bottom: 10px; }
+  .daily-status-card { border: 1px solid var(--border-light); background: var(--bg-secondary); border-radius: 9px; padding: 8px 9px; min-width: 0; }
+  .daily-status-card .label { color: var(--text-tertiary); font-size: 9px; text-transform: uppercase; letter-spacing: 0.35px; margin-bottom: 3px; }
+  .daily-status-card .value { color: var(--text-primary); font-size: 12px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+  .daily-status-card.good .value { color: var(--positive); }
+  .daily-status-card.warn .value { color: #fbbf24; }
+  .daily-status-card.critical .value { color: var(--negative); }
+  .daily-task-list { display: grid; gap: 6px; }
+  .daily-task { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; border-top: 1px solid var(--border-light); padding: 8px 0 2px; font-size: 11px; }
+  .daily-task:first-child { border-top: 0; padding-top: 0; }
+  .daily-task .ico { width: 18px; height: 18px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-secondary); color: var(--text-tertiary); font-size: 11px; font-weight: 700; }
+  .daily-task.good .ico { color: var(--positive); background: rgba(34,197,94,0.10); }
+  .daily-task.warn .ico { color: #fbbf24; background: rgba(245,158,11,0.10); }
+  .daily-task.critical .ico { color: var(--negative); background: rgba(248,113,113,0.10); }
+  .daily-task strong { display: block; color: var(--text-primary); font-size: 12px; margin-bottom: 2px; }
+  .daily-task span { color: var(--text-tertiary); line-height: 1.4; }
+  .daily-action-btn { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 7px; color: var(--text-primary); cursor: pointer; font: inherit; font-size: 10px; font-weight: 650; padding: 6px 8px; white-space: nowrap; }
+  .daily-action-btn:hover { background: var(--bg-track); }
+  @media (max-width: 700px) {
+    .daily-status-grid { grid-template-columns: 1fr 1fr; }
+    .daily-task { grid-template-columns: 18px minmax(0, 1fr); }
+    .daily-action-btn { grid-column: 2; justify-self: start; }
+  }
   .backup-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
   .backup-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
   .backup-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
@@ -1075,6 +1107,21 @@
     <div id="qualityIssues"></div>
   </div>
 
+  <section class="daily-check-section" id="dailyCheckSection">
+    <div class="daily-check-head">
+      <div>
+        <h2 class="daily-check-title">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Heute prüfen</span>
+        </h2>
+        <div class="daily-check-sub" id="dailyCheckSub">—</div>
+      </div>
+      <span class="daily-check-score" id="dailyCheckScore">—</span>
+    </div>
+    <div class="daily-status-grid" id="dailyStatusGrid"></div>
+    <div class="daily-task-list" id="dailyTaskList"></div>
+  </section>
+
   <span id="anchor-alerts"></span>
   <details class="strat-section" id="alertsSection" open>
     <summary>
@@ -1846,6 +1893,7 @@ const LAYOUT_SECTIONS = [
   { key: 'allocation', label: 'Asset-Allokation', meta: 'Aufteilung und Diversifikation', selectors: ['.alloc-section'] },
   { key: 'riskRules', label: 'Risiko-Regeln', meta: 'Grenzen und Hinweise', selectors: ['#riskRulesSection'] },
   { key: 'quality', label: 'Datenqualität', meta: 'Prüfung der Eingaben', selectors: ['#qualitySection'] },
+  { key: 'dailyCheck', label: 'Heute prüfen', meta: 'Tages-Check und To-dos', selectors: ['#dailyCheckSection'] },
   { key: 'alerts', label: 'Hinweise', meta: 'Lokale Warnungen und Aufgaben', selectors: ['#anchor-alerts', '#alertsSection'], nav: 'anchor-alerts' },
   { key: 'positions', label: 'Positionen', meta: 'Aktien, ETF und Krypto', selectors: ['#anchor-positions'], nav: 'anchor-positions' },
   { key: 'metalsCard', label: 'Edelmetalle', meta: 'Karte innerhalb Positionen', selectors: ['#card-metals'] },
@@ -4566,6 +4614,113 @@ function renderPortfolioAlerts(totals, goal, alloc) {
     <strong>${escapeHtml(item.title)}</strong>
     <p>${escapeHtml(item.text)}</p>
   </div>`).join('');
+}
+
+function buildDailyCheck(totals, goal, alloc) {
+  const positions = currentPortfolioPositions();
+  const quality = computeDataQuality(totals);
+  const liveCount = positions.filter(pos => currentPrices[pos.id]?.live || isManualQuoteOverrideActive(pos)).length;
+  const missingLive = positions.filter(pos => !currentPrices[pos.id]?.live && !isManualQuoteOverrideActive(pos));
+  const staleLive = positions.filter(pos => {
+    const live = currentPrices[pos.id];
+    const age = quoteAgeMinutes(live);
+    return live?.live && age != null && age > Math.max(45, quoteCadenceMinutes(pos, live) * 3);
+  });
+  const suspiciousMoves = positions.filter(pos => {
+    const live = currentPrices[pos.id];
+    const move = getPositionTodayChange(pos, live);
+    if (!move || !Number.isFinite(move.pct)) return false;
+    const limit = isCryptoPos(pos) ? 25 : 12;
+    return Math.abs(move.pct) >= limit;
+  });
+  const dueJournal = ensureJournal().filter(entry => entry.status !== 'done' && entry.reviewDate && entry.reviewDate <= new Date().toISOString().slice(0, 10));
+  const cash = currentCashValue();
+  const backupAge = backupAgeDays();
+  const tasks = [];
+
+  if (positions.length === 0) {
+    tasks.push({ level: 'warn', title: 'Portfolio starten', text: 'Lege Positionen manuell an oder importiere deine Depotumsätze.', action: 'import', label: 'Import öffnen' });
+  }
+  if (missingLive.length) {
+    tasks.push({ level: 'warn', title: 'Kursquellen prüfen', text: `${missingLive.slice(0, 3).map(p => p.name).join(', ')}${missingLive.length > 3 ? ' …' : ''} nutzt keine Live-Daten.`, action: 'quality', label: 'Datenqualität' });
+  } else if (staleLive.length) {
+    tasks.push({ level: 'warn', title: 'Kurse wirken alt', text: `${staleLive.slice(0, 3).map(p => p.name).join(', ')}${staleLive.length > 3 ? ' …' : ''} ist deutlich verzögert.`, action: 'refresh', label: 'Aktualisieren' });
+  }
+  if (suspiciousMoves.length) {
+    tasks.push({ level: 'warn', title: 'Tagesbewegung plausibilisieren', text: `${suspiciousMoves.slice(0, 3).map(p => p.name).join(', ')} hat heute eine ungewöhnlich starke Bewegung.`, action: 'positions', label: 'Positionen' });
+  }
+  if (quality.score < 100) {
+    tasks.push({ level: quality.score < 80 ? 'warn' : 'info', title: `Datenqualität ${quality.score}/100`, text: quality.score < 80 ? 'Einige Auswertungen nutzen Ersatzwerte oder unvollständige Eingaben.' : 'Die App ist nutzbar, aber ein paar optionale Details fehlen noch.', action: 'quality', label: 'Verbessern' });
+  }
+  if (cash < -0.01) {
+    tasks.push({ level: 'critical', title: 'Cash-Saldo negativ', text: `${fmt.format(cash)}. Prüfe Kontoumsätze, Order-Cashwerte oder Einzahlungen.`, action: 'cash', label: 'Bewegungen' });
+  }
+  if (goal?.amount && goal?.monthsToGoal) {
+    const projected = futureValueWithMonthlySavings(totals.totalCur, goal.savingsRate || 0, goal.monthsToGoal, goal.annualReturnPct || 0);
+    const gap = (goal.planAmount || goal.amount) - projected;
+    if (gap > 0) {
+      tasks.push({ level: 'info', title: 'Zielpfad prüfen', text: `Zum Planziel fehlen rechnerisch ${fmt.format(gap)}.`, action: 'goal', label: 'Ziel öffnen' });
+    }
+  }
+  if (dueJournal.length) {
+    tasks.push({ level: 'info', title: 'Journal-Review fällig', text: `${dueJournal.length} Entscheidung${dueJournal.length === 1 ? '' : 'en'} sollte überprüft werden.`, action: 'journal', label: 'Journal' });
+  }
+  if (backupAge == null) {
+    tasks.push({ level: 'warn', title: 'Backup fehlt', text: 'Erstelle vor größeren Änderungen ein JSON-Backup.', action: 'backup', label: 'Backup' });
+  } else if (backupAge > 30) {
+    tasks.push({ level: 'info', title: 'Backup auffrischen', text: `Das letzte erkannte Backup ist ca. ${Math.floor(backupAge)} Tage alt.`, action: 'backup', label: 'Backup' });
+  }
+
+  const statuses = [
+    { label: 'Kurse', value: positions.length ? `${liveCount}/${positions.length} aktuell` : 'keine Titel', level: missingLive.length ? 'warn' : 'good' },
+    { label: 'Daten', value: `${quality.score}/100`, level: quality.score >= 90 ? 'good' : (quality.score >= 70 ? 'warn' : 'critical') },
+    { label: 'Cash', value: fmt.format(cash), level: cash < -0.01 ? 'critical' : 'good' },
+    { label: 'Backup', value: backupAge == null ? 'fehlt' : (backupAge < 1 ? 'heute' : `${Math.floor(backupAge)} Tage`), level: backupAge == null || backupAge > 30 ? 'warn' : 'good' }
+  ];
+
+  if (!tasks.length) {
+    tasks.push({ level: 'good', title: 'Alles erledigt', text: 'Für den heutigen Kurzcheck gibt es keine offenen Punkte.', action: '', label: '' });
+  }
+
+  const openTasks = tasks.filter(task => task.level !== 'good').length;
+  const worst = tasks.some(t => t.level === 'critical') ? 'critical' : (tasks.some(t => t.level === 'warn') ? 'warn' : 'good');
+  return { statuses, tasks: tasks.slice(0, 6), openTasks, worst };
+}
+
+function renderDailyCheck(totals, goal, alloc) {
+  const section = document.getElementById('dailyCheckSection');
+  const statusGrid = document.getElementById('dailyStatusGrid');
+  const taskList = document.getElementById('dailyTaskList');
+  const sub = document.getElementById('dailyCheckSub');
+  const score = document.getElementById('dailyCheckScore');
+  if (!section || !statusGrid || !taskList) return;
+  const check = buildDailyCheck(totals, goal, alloc);
+  if (sub) sub.textContent = check.openTasks ? `${check.openTasks} Punkt${check.openTasks === 1 ? '' : 'e'} brauchen Aufmerksamkeit.` : 'Alles Wichtige wirkt heute plausibel.';
+  if (score) {
+    score.textContent = check.openTasks ? `${check.openTasks} offen` : 'OK';
+    score.className = `daily-check-score ${check.worst}`;
+  }
+  section.classList.toggle('has-open-tasks', check.openTasks > 0);
+  statusGrid.innerHTML = check.statuses.map(item => `<div class="daily-status-card ${item.level}">
+    <div class="label">${escapeHtml(item.label)}</div>
+    <div class="value">${escapeHtml(item.value)}</div>
+  </div>`).join('');
+  taskList.innerHTML = check.tasks.map(task => `<div class="daily-task ${task.level}">
+    <span class="ico">${task.level === 'good' ? '✓' : task.level === 'critical' ? '!' : 'i'}</span>
+    <div><strong>${escapeHtml(task.title)}</strong><span>${escapeHtml(task.text)}</span></div>
+    ${task.action ? `<button type="button" class="daily-action-btn" data-daily-action="${escapeHtml(task.action)}">${escapeHtml(task.label || 'Öffnen')}</button>` : ''}
+  </div>`).join('');
+}
+
+function runDailyAction(action) {
+  if (action === 'refresh') return refreshLiveValuesOnly();
+  if (action === 'quality') return scrollQualityTarget('qualitySection');
+  if (action === 'backup') return backupJson();
+  if (action === 'cash') return openCashTxList();
+  if (action === 'goal') return scrollQualityTarget('anchor-goal');
+  if (action === 'journal') return scrollQualityTarget('anchor-journal');
+  if (action === 'positions') return scrollQualityTarget('anchor-positions');
+  if (action === 'import') return scrollQualityTarget('.add-position-section');
 }
 
 // Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
@@ -7294,6 +7449,7 @@ async function refreshUI(opts = {}) {
   renderHistory();
   const goal = renderGoal(totals);
   renderPortfolioAlerts(totals, goal, alloc);
+  renderDailyCheck(totals, goal, alloc);
   renderSavingsSim(totals, goal);
   if (alloc) renderRebalancing(totals, alloc);
   if (alloc) renderScenario(totals, alloc);
@@ -7596,6 +7752,10 @@ function wireEvents() {
   document.getElementById('qualityIssues').addEventListener('click', e => {
     const actionBtn = e.target.closest('[data-quality-action]');
     if (actionBtn) runQualityAction(actionBtn.dataset.qualityAction);
+  });
+  document.getElementById('dailyTaskList')?.addEventListener('click', e => {
+    const actionBtn = e.target.closest('[data-daily-action]');
+    if (actionBtn) runDailyAction(actionBtn.dataset.dailyAction);
   });
   document.getElementById('qualityActionClose').addEventListener('click', closeQualityActionModal);
   document.getElementById('qualityActionModal').addEventListener('click', e => {
