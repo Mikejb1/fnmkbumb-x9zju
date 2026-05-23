@@ -24,10 +24,8 @@ function renderBackupStatus() {
   el.textContent = `Letztes JSON-Backup: ${new Date(ts).toLocaleString('de-AT')} · ${ageDays === 0 ? 'heute' : ageDays + ' Tag' + (ageDays === 1 ? '' : 'e') + ' alt'}.`;
   el.className = 'backup-status' + (ageDays >= 30 ? ' warn' : '');
 }
-function backupJson(reason = '') {
-  if (!appData) return;
-  const today = new Date().toISOString().slice(0, 10);
-  const payload = {
+function buildBackupPayload() {
+  return {
     exportedAt: new Date().toISOString(),
     schemaVersion: appData.schemaVersion || 1,
     user: typeof USER_KEY !== 'undefined' ? USER_KEY : 'unknown',
@@ -41,14 +39,41 @@ function backupJson(reason = '') {
     layout: appData.layout || null,
     chatMemorySummary: typeof chatMemorySummary === 'string' ? chatMemorySummary : ''
   };
-  const account = typeof USER_KEY !== 'undefined' ? USER_KEY : 'portfolio';
-  const suffix = reason ? '-' + String(reason).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase() : '';
-  downloadBlob(JSON.stringify(payload, null, 2), `portfolio-${account}-backup${suffix}-${today}.json`, 'application/json');
+}
+function markBackupDone() {
   try { localStorage.setItem(BACKUP_TS_KEY, String(Date.now())); } catch (e) {}
   renderBackupStatus();
   if (typeof renderDataQuality === 'function') {
     try { renderDataQuality(); } catch (e) {}
   }
+  if (typeof renderSecurityStatus === 'function') {
+    try { renderSecurityStatus(); } catch (e) {}
+  }
+}
+function backupJson(reason = '') {
+  if (!appData) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const payload = buildBackupPayload();
+  const account = typeof USER_KEY !== 'undefined' ? USER_KEY : 'portfolio';
+  const suffix = reason ? '-' + String(reason).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase() : '';
+  downloadBlob(JSON.stringify(payload, null, 2), `portfolio-${account}-backup${suffix}-${today}.json`, 'application/json');
+  markBackupDone();
+}
+async function backupEncryptedJson(reason = '') {
+  if (!appData || !appPassword) return backupJson(reason);
+  const today = new Date().toISOString().slice(0, 10);
+  const account = typeof USER_KEY !== 'undefined' ? USER_KEY : 'portfolio';
+  const suffix = reason ? '-' + String(reason).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase() : '';
+  const encrypted = await ENC.encrypt(buildBackupPayload(), appPassword);
+  const wrapper = {
+    encrypted: true,
+    format: 'portfolio-encrypted-backup-v1',
+    exportedAt: new Date().toISOString(),
+    user: account,
+    data: encrypted,
+  };
+  downloadBlob(JSON.stringify(wrapper, null, 2), `portfolio-${account}-backup-verschluesselt${suffix}-${today}.json`, 'application/json');
+  markBackupDone();
 }
 function backupCsv() {
   if (!appData) return;
@@ -109,7 +134,11 @@ async function importJson(file) {
   if (!file) return;
   try {
     const text = await file.text();
-    const data = JSON.parse(text);
+    let data = JSON.parse(text);
+    if (data?.encrypted === true && data?.data) {
+      if (!appPassword) throw new Error('Verschlüsseltes Backup kann nur nach dem Entsperren importiert werden.');
+      data = await ENC.decrypt(data.data, appPassword);
+    }
     // Schema validieren (wirft bei Fehler)
     const warnings = validateBackupSchema(data);
     // Vorschau + Bestätigung
@@ -136,7 +165,7 @@ async function importJson(file) {
     }
     const ok = confirm(`Backup importieren? Dies überschreibt deine aktuellen Daten. Vorher wird automatisch ein Sicherheitsbackup des jetzigen Stands heruntergeladen.\n\n${lines.join('\n')}\n\nFortfahren?`);
     if (!ok) return;
-    backupJson('vor-import');
+    await backupEncryptedJson('vor-import');
     if (Array.isArray(data.positions)) appData.positions = data.positions;
     if (data.goal) appData.goal = data.goal;
     if (Array.isArray(data.transactions)) appData.transactions = data.transactions;

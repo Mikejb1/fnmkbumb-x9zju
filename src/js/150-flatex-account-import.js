@@ -131,6 +131,14 @@ function analyzeFlatexAccountCsvText(text) {
 }
 function renderFlatexAccountCsvAnalysis(analysis) {
   flatexAccountCsvAnalysis = analysis;
+  const accountImpact = `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Cash-Zeilen</div><div class="value">${analysis.entries.length}</div></div>
+    <div class="import-impact-card"><div class="label">Einzahlungen</div><div class="value">${fmt.format(analysis.totals.deposits)}</div></div>
+    <div class="import-impact-card"><div class="label">Erträge</div><div class="value">${fmt.format(analysis.totals.income)}</div></div>
+    <div class="import-impact-card"><div class="label">Abzüge</div><div class="value">${fmt.format(analysis.totals.debits)}</div></div>
+    <div class="import-impact-card"><div class="label">Orders erkannt</div><div class="value">${analysis.orders.length}</div></div>
+    <div class="import-impact-card"><div class="label">Orders gepaart</div><div class="value">${analysis.matchedOrders.length}</div></div>
+  </div>`;
   const items = [
     { kind: 'info', text: `${analysis.entries.length} Kontobewegungen erkannt · ${analysis.counts.deposit || 0} Einzahlung${analysis.counts.deposit === 1 ? '' : 'en'} (${fmt.format(analysis.totals.deposits)}) · ${analysis.counts.dividend || 0} Dividende${analysis.counts.dividend === 1 ? '' : 'n'} · ${analysis.counts.interest || 0} Zinsgutschrift${analysis.counts.interest === 1 ? '' : 'en'}.` },
     { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen Depotumsätzen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depotumsätze-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
@@ -141,7 +149,7 @@ function renderFlatexAccountCsvAnalysis(analysis) {
   }
   if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} werden ausgelassen: 0-EUR-Zeilen oder nicht eindeutig erkannte Kontobewegungen.` });
   items.push({ kind: 'warn', text: 'Importmodus: Frühere Kontoumsatz-Importspuren werden ersetzt. Manuell gepflegte Cash-Bewegungen bleiben erhalten und können zusätzlich wirken.' });
-  document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('') + accountImpact;
   const previewEntries = analysis.entries.filter(entry => entry.kind !== 'order-buy' && entry.kind !== 'order-sell').slice(0, 24)
     .concat(analysis.orders.slice(0, 24));
   document.getElementById('flatexAccountCsvPreview').innerHTML = previewEntries.map(entry => {
@@ -257,7 +265,7 @@ async function importFlatexAccountCsvAnalysis() {
   const matched = flatexAccountCsvAnalysis.matchedOrders.length;
   const ok = confirm(`Flatex Kontoumsätze wirklich übernehmen?\n\nEinzahlungen, Erträge und Sonder-Cash-Bewegungen werden in dein Cash-Kassenbuch geschrieben. ${matched} Order-Kontobewegungen werden mit vorhandenen Depotumsätzen abgeglichen. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
   if (!ok) return;
-  backupJson('vor-flatex-kontoumsaetze');
+  await backupEncryptedJson('vor-flatex-kontoumsaetze');
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
   ensureIncome();
   clearFlatexAccountCsvImports();
@@ -381,6 +389,50 @@ function findMatchingPosition(name, symbol) {
     return pn === nName || pn.includes(nName) || nName.includes(pn);
   });
 }
+
+function summarizeBatchImportImpact(rows) {
+  const importable = (rows || []).filter(r => r.txType === 'buy' || r.txType === 'sell' || r.txType === 'fusion');
+  const byKey = new Map();
+  importable.forEach(row => {
+    const key = row.symbol || row.isin || row.name;
+    if (!byKey.has(key)) byKey.set(key, { name: row.name, buys: 0, sells: 0, buyValue: 0, sellValue: 0 });
+    const item = byKey.get(key);
+    const qty = Number(row.quantity) || 0;
+    const value = Number(row.amount) || qty * (Number(row.price) || 0);
+    const isSell = row.txType === 'sell' || (row.txType === 'fusion' && Number(row.signedQuantity) < 0);
+    if (isSell) {
+      item.sells += qty;
+      item.sellValue += value;
+    } else {
+      item.buys += qty;
+      item.buyValue += value;
+    }
+  });
+  const closing = [...byKey.values()].filter(item => item.buys > 0 && item.sells >= item.buys - 1e-8);
+  const netNew = [...byKey.values()].filter(item => item.buys > item.sells + 1e-8);
+  const buyValue = importable.reduce((sum, row) => {
+    const isBuy = row.txType === 'buy' || (row.txType === 'fusion' && Number(row.signedQuantity) > 0);
+    return sum + (isBuy ? (Number(row.amount) || (Number(row.quantity) || 0) * (Number(row.price) || 0)) : 0);
+  }, 0);
+  const sellValue = importable.reduce((sum, row) => {
+    const isSell = row.txType === 'sell' || (row.txType === 'fusion' && Number(row.signedQuantity) < 0);
+    return sum + (isSell ? (Number(row.amount) || (Number(row.quantity) || 0) * (Number(row.price) || 0)) : 0);
+  }, 0);
+  return { importable: importable.length, titles: byKey.size, netNew: netNew.length, closing: closing.length, buyValue, sellValue };
+}
+
+function renderImportImpactCards(summary) {
+  if (!summary) return '';
+  return `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Buchungen</div><div class="value">${summary.importable}</div></div>
+    <div class="import-impact-card"><div class="label">Titel</div><div class="value">${summary.titles}</div></div>
+    <div class="import-impact-card"><div class="label">Netto offen</div><div class="value">${summary.netNew}</div></div>
+    <div class="import-impact-card"><div class="label">geschlossen</div><div class="value">${summary.closing}</div></div>
+    <div class="import-impact-card"><div class="label">Käufe</div><div class="value">${fmt.format(summary.buyValue)}</div></div>
+    <div class="import-impact-card"><div class="label">Verkäufe</div><div class="value">${fmt.format(summary.sellValue)}</div></div>
+  </div>`;
+}
+
 function openScreenshotPreviewModal(data) {
   ssBatchRows = null;
   ssPreviewMatchedPosId = null;
@@ -441,10 +493,12 @@ function openScreenshotBatchPreviewModal(rows) {
   const items = [
     { kind: 'info', text: `${importable.length} echte Depotbuchungen erkannt. Käufe/Verkäufe werden als Transaktionen gebucht und Positionen zusammengeführt.` }
   ];
+  const impact = summarizeBatchImportImpact(rows);
+  items.push({ kind: 'info', text: `Import-Vorschau: ${impact.titles} Titel, davon voraussichtlich ${impact.netNew} mit offenem Bestand und ${impact.closing} vollständig geschlossene Historienpositionen.` });
   if (ignored > 0) items.push({ kind: 'warn', text: `${ignored} Thesaurierungs-/Steuer-/Infozeilen werden bewusst ignoriert, damit keine künstlichen Käufe oder Verkäufe entstehen.` });
   const unmatchedSells = importable.filter(r => (r.txType === 'sell' || (r.txType === 'fusion' && r.signedQuantity < 0)) && !findMatchingPosition(r.name, r.symbol || r.isin));
   if (unmatchedSells.length > 0) items.push({ kind: 'warn', text: `${unmatchedSells.length} Verkauf/Abgang ohne bestehende Position erkannt. Diese Zeilen werden beim Speichern übersprungen.` });
-  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
+  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('') + renderImportImpactCards(impact);
   batchEl.innerHTML = rows.map(row => {
     const action = row.txType === 'ignore' ? 'IGNOR' : row.txType === 'sell' || (row.txType === 'fusion' && row.signedQuantity < 0) ? 'VERK.' : row.txType === 'fusion' ? 'FUSION' : 'KAUF';
     return `<div class="ss-batch-row ${row.txType === 'ignore' ? 'ignore' : (action === 'VERK.' ? 'sell' : 'buy')}">

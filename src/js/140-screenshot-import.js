@@ -260,6 +260,16 @@ function renderFlatexCsvAnalysis(analysis) {
   const archived = analysis.groups.filter(group => !group.open);
   const matches = open.filter(group => group.matchesCurrent).length;
   const mismatches = open.filter(group => group.currentQuantity != null && !group.matchesCurrent);
+  const buyValue = analysis.entries.filter(entry => entry.txType === 'buy').reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
+  const sellValue = analysis.entries.filter(entry => entry.txType === 'sell').reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
+  const impactCards = `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Buchungen</div><div class="value">${analysis.entries.length}</div></div>
+    <div class="import-impact-card"><div class="label">Aktuelle Titel</div><div class="value">${open.length}</div></div>
+    <div class="import-impact-card"><div class="label">Historisch 0</div><div class="value">${archived.length}</div></div>
+    <div class="import-impact-card"><div class="label">Stück passt</div><div class="value">${matches}/${open.length}</div></div>
+    <div class="import-impact-card"><div class="label">Käufe</div><div class="value">${fmt.format(buyValue)}</div></div>
+    <div class="import-impact-card"><div class="label">Verkäufe</div><div class="value">${fmt.format(sellValue)}</div></div>
+  </div>`;
   const items = [
     { kind: 'info', text: `${analysis.entries.length} Flatex-Buchungen erkannt · ${open.length} heutige Position${open.length === 1 ? '' : 'en'} · ${archived.length} vollständig verkaufte historische Titel.` },
     { kind: mismatches.length ? 'warn' : 'info', text: `${matches} offene CSV-Bestände passen bereits zur aktuellen App. ${mismatches.length ? mismatches.length + ' Abweichung' + (mismatches.length === 1 ? '' : 'en') + ' bitte in der Vorschau prüfen.' : 'Keine Stückzahl-Abweichung bei erkannten Beständen.'}` },
@@ -267,7 +277,7 @@ function renderFlatexCsvAnalysis(analysis) {
   ];
   if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} wurden nicht importiert, weil Buchungsart oder Werte fehlen.` });
   items.push({ kind: 'warn', text: 'Importmodus: Bestehende Aktien/ETF/Krypto-Positionen und deren Wertpapier-Transaktionen werden nach Sicherheitsbackup aus dieser CSV neu aufgebaut. Cash, Ziele, Edelmetalle, Watchlist, Journal und KI-Gedächtnis bleiben erhalten.' });
-  document.getElementById('flatexCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  document.getElementById('flatexCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('') + impactCards;
   document.getElementById('flatexCsvPreview').innerHTML = analysis.groups.map(group => {
     const current = group.currentQuantity == null ? 'nicht in App' : `${fmtNum(group.currentQuantity, group.currentQuantity % 1 ? 6 : 0)} Stk`;
     const result = group.open ? `${fmtNum(group.netQuantity, group.netQuantity % 1 ? 6 : 0)} Stk offen` : 'Endbestand 0 · nur Verlauf';
@@ -351,7 +361,7 @@ async function importFlatexCsvAnalysis() {
   const openCount = flatexCsvAnalysis.groups.filter(group => group.open).length;
   const ok = confirm(`Flatex CSV wirklich übernehmen?\n\n${openCount} heutige Positionen werden aus der CSV neu aufgebaut. Vollständig verkaufte Titel bleiben nur im Verlauf. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
   if (!ok) return;
-  backupJson('vor-flatex-csv');
+  await backupEncryptedJson('vor-flatex-csv');
   const built = buildFlatexPositionsAndTransactions(flatexCsvAnalysis);
   const keepTransactions = (appData.transactions || []).filter(tx => tx.assetType === 'cash' || tx.assetType === 'metal' || String(tx.assetId || '').startsWith('metal_'));
   appData.positions = built.positions;

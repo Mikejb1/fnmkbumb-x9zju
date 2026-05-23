@@ -8,13 +8,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="__WEB_APP_TITLE__">
 <meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://morning-tree-9bb.michael-bummer.workers.dev; img-src 'self' data: blob: https:; font-src 'self'; manifest-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>__DOCUMENT_TITLE__</title>
 <style>
 __APP_CSS__
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+<script src="chart.umd.js"></script>
 </head>
 <body>
 
@@ -42,6 +43,12 @@ __APP_CSS__
       <button class="icon-btn" id="layoutEditBtn" title="Ansicht bearbeiten" aria-label="Ansicht bearbeiten">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg>
       </button>
+      <button class="icon-btn" id="modeToggleBtn" title="Einfach-Modus" aria-label="Einfach-/Experte-Modus">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M12 2v2"/><path d="M8 14a5 5 0 1 1 8 0c-.7.8-1 1.5-1 2H9c0-.5-.3-1.2-1-2z"/></svg>
+      </button>
+      <button class="icon-btn" id="themePickerBtn" title="Theme wählen" aria-label="Theme wählen">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H12a2 2 0 0 1 0-4h1a8 8 0 0 0 7.7-5.9A9 9 0 0 0 12 3z"/></svg>
+      </button>
       <button class="icon-btn" id="themeToggleBtn" title="Hell/Dunkel">
         <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -63,9 +70,12 @@ __APP_CSS__
     <button class="mini-nav-btn" data-jump="anchor-goal">Ziel</button>
     <button class="mini-nav-btn" data-jump="anchor-rebalancing">Rebalancing</button>
     <button class="mini-nav-btn" data-jump="anchor-scenario">Szenario</button>
+    <button class="mini-nav-btn" data-jump="anchor-alerts">Hinweise</button>
+    <button class="mini-nav-btn" data-jump="anchor-news">News</button>
     <button class="mini-nav-btn" data-jump="anchor-watchlist">Watchlist</button>
     <button class="mini-nav-btn" data-jump="anchor-journal">Journal</button>
     <button class="mini-nav-btn" data-jump="anchor-income">Erträge</button>
+    <button class="mini-nav-btn" data-jump="anchor-tax">Steuern</button>
     <button class="mini-nav-btn" data-jump="anchor-chat">KI</button>
   </nav>
   <div class="total-bar" id="anchor-top">
@@ -178,6 +188,36 @@ __APP_CSS__
     <div class="quality-breakdown" id="qualityBreakdown"></div>
     <div id="qualityIssues"></div>
   </div>
+
+  <section class="daily-check-section" id="dailyCheckSection">
+    <div class="daily-check-head">
+      <div>
+        <h2 class="daily-check-title">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Heute prüfen</span>
+        </h2>
+        <div class="daily-check-sub" id="dailyCheckSub">—</div>
+      </div>
+      <span class="daily-check-score" id="dailyCheckScore">—</span>
+    </div>
+    <div class="daily-status-grid" id="dailyStatusGrid"></div>
+    <div class="daily-task-list" id="dailyTaskList"></div>
+  </section>
+
+  <span id="anchor-alerts"></span>
+  <details class="strat-section" id="alertsSection" open>
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <span>Hinweise &amp; Benachrichtigungen</span>
+      </span>
+      <span class="count-badge" id="alertsCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <div class="alerts-list" id="alertsList"></div>
+    </div>
+  </details>
+
   <details class="positions-section" id="anchor-positions" open>
     <summary>
       <span class="positions-summary-left">
@@ -206,6 +246,7 @@ __APP_CSS__
     <div class="history-head">
       <h2 class="history-title">Depot-Entwicklung</h2>
       <div class="history-tabs">
+        <button class="history-tab" data-history="TODAY">Heute</button>
         <button class="history-tab" data-history="1W">1W</button>
         <button class="history-tab" data-history="6M">6M</button>
         <button class="history-tab active" data-history="12M">12M</button>
@@ -371,9 +412,38 @@ __APP_CSS__
         <div class="scenario-slider-row"><span class="lbl">Aktien</span><input type="range" min="-30" max="30" step="1" value="0" data-scenario="aktie"><span class="pct" data-pct="aktie">±0 %</span></div>
         <div class="scenario-slider-row"><span class="lbl">Krypto</span><input type="range" min="-60" max="60" step="2" value="0" data-scenario="crypto"><span class="pct" data-pct="crypto">±0 %</span></div>
         <div class="scenario-slider-row"><span class="lbl">Edelmetalle</span><input type="range" min="-20" max="20" step="1" value="0" data-scenario="gold"><span class="pct" data-pct="gold">±0 %</span></div>
+        <div class="scenario-slider-row scenario-extra"><span class="lbl">Sparrate</span><input type="range" min="-500" max="1000" step="25" value="0" data-scenario="savings"><span class="pct" data-pct="savings">±0 €/Mo</span></div>
+        <div class="scenario-slider-row scenario-extra"><span class="lbl">Rendite</span><input type="range" min="-10" max="20" step="0.5" value="0" data-scenario="return"><span class="pct" data-pct="return">±0 % p.a.</span></div>
       </div>
       <div style="display:flex; justify-content:flex-end; margin-top:8px;"><button class="scenario-reset-btn" id="scenarioResetBtn" type="button">Zurücksetzen</button></div>
       <div class="scenario-result" id="scenarioResult"></div>
+    </div>
+  </details>
+
+  <span id="anchor-news"></span>
+  <details class="strat-section" id="newsSection" open>
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v18z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+        <span>Depot-News</span>
+      </span>
+      <span class="count-badge" id="newsCount">0</span>
+    </summary>
+    <div class="strat-body news-body">
+      <div class="news-toolbar">
+        <div class="news-filter-row" id="newsFilterRow">
+          <button class="news-filter active" data-news-filter="all" type="button">Alle</button>
+          <button class="news-filter" data-news-filter="important" type="button">Wichtig</button>
+          <button class="news-filter" data-news-filter="securities" type="button">Aktien/ETF</button>
+          <button class="news-filter" data-news-filter="crypto" type="button">Krypto</button>
+        </div>
+        <button class="news-refresh-btn" id="newsRefreshBtn" type="button">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
+          Aktualisieren
+        </button>
+      </div>
+      <div class="news-status" id="newsStatus">Noch keine News geladen.</div>
+      <div class="news-list" id="newsList"></div>
     </div>
   </details>
 
@@ -423,6 +493,20 @@ __APP_CSS__
     </div>
   </details>
 
+  <span id="anchor-tax"></span>
+  <details class="strat-section" id="taxPerformanceSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        <span>Steuer &amp; Performance</span>
+      </span>
+      <span class="count-badge" id="taxPerformanceStatus">—</span>
+    </summary>
+    <div class="strat-body">
+      <div class="tax-perf-body" id="taxPerformanceBody"></div>
+    </div>
+  </details>
+
   <details class="privacy-section" id="privacySection">
     <summary>
       <span class="privacy-head">
@@ -443,18 +527,56 @@ __APP_CSS__
     </div>
   </details>
 
+  <details class="security-section" id="securitySection">
+    <summary>
+      <span class="security-head">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-5"/></svg>
+        <span>Sicherheitsstatus</span>
+      </span>
+      <span class="security-score" id="securityScore">—</span>
+    </summary>
+    <div class="security-body">
+      <div class="security-status-grid" id="securityStatusGrid"></div>
+      <div class="security-control-grid">
+        <div class="security-control-card">
+          <label for="aiPrivacyMode">KI-Datenschutzmodus</label>
+          <select id="aiPrivacyMode" class="security-select">
+            <option value="full">Vollständig: beste Antworten</option>
+            <option value="summary">Zusammenfassung: weniger Details</option>
+            <option value="minimal">Minimal: nur grobe Werte</option>
+          </select>
+          <div class="security-control-hint" id="aiPrivacyHint">—</div>
+        </div>
+        <div class="security-control-card">
+          <label for="sessionTimeoutSelect">Automatische Abmeldung</label>
+          <select id="sessionTimeoutSelect" class="security-select">
+            <option value="5">nach 5 Minuten</option>
+            <option value="15">nach 15 Minuten</option>
+            <option value="30">nach 30 Minuten</option>
+            <option value="60">nach 60 Minuten</option>
+          </select>
+          <div class="security-session-row">
+            <span id="sessionCountdown">—</span>
+            <button class="security-mini-btn" id="sessionExtendBtn" type="button">verlängern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
   <div class="backup-section">
     <div class="backup-head">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span>Backup &amp; Export</span>
     </div>
     <div class="backup-buttons">
-      <button class="backup-btn" id="backupJsonBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>JSON-Backup</button>
+      <button class="backup-btn primary" id="backupEncryptedBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V8a5 5 0 0 1 10 0v3"/></svg>Verschlüsseltes Backup</button>
+      <button class="backup-btn" id="backupJsonBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>JSON unverschlüsselt</button>
       <button class="backup-btn" id="backupCsvBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Transaktionen CSV</button>
       <button class="backup-btn" id="backupImportBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>JSON importieren</button>
       <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
     </div>
-    <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import zeigt die App eine Vorschau und lädt ein Sicherheitsbackup des aktuellen Stands herunter.</div>
+    <div class="backup-hint">Das verschlüsselte Backup ist empfohlen und kann nur mit deinem aktuellen Master-Code wieder gelesen werden. Das unverschlüsselte JSON ist nur für manuelle Kontrolle oder Fehlersuche gedacht.</div>
     <div class="backup-status warn" id="backupStatus">Noch kein JSON-Backup in diesem Browser erkannt.</div>
     <details class="danger-zone">
       <summary class="danger-zone-summary">
@@ -649,6 +771,41 @@ __APP_CSS__
   </div>
 </div>
 
+<div class="modal-backdrop" id="themeModal">
+  <div class="modal theme-modal">
+    <h3>Theme wählen</h3>
+    <div class="theme-note">Das aktuelle Design bleibt als Standard erhalten. Wähle hier nur die visuelle Hülle, alle Berechnungen und Daten bleiben unverändert.</div>
+    <div class="theme-grid">
+      <button class="theme-card" data-theme-choice="classic" type="button">
+        <span class="theme-preview preview-classic"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Classic Dark</span>
+        <span class="theme-card-sub">Aktuelles Design</span>
+      </button>
+      <button class="theme-card" data-theme-choice="light" type="button">
+        <span class="theme-preview preview-light"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Clean Light</span>
+        <span class="theme-card-sub">Hell und ruhig</span>
+      </button>
+      <button class="theme-card" data-theme-choice="graphite" type="button">
+        <span class="theme-preview preview-graphite"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Graphite Pro</span>
+        <span class="theme-card-sub">Broker-Look</span>
+      </button>
+      <button class="theme-card" data-theme-choice="aurum" type="button">
+        <span class="theme-preview preview-aurum"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Gold Premium</span>
+        <span class="theme-card-sub">Warme Akzente</span>
+      </button>
+      <button class="theme-card" data-theme-choice="emerald" type="button">
+        <span class="theme-preview preview-emerald"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Emerald Focus</span>
+        <span class="theme-card-sub">Konzentriert grün</span>
+      </button>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="themeCloseBtn" type="button">Schließen</button></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="layoutModal">
   <div class="modal layout-modal">
     <h3>Ansicht bearbeiten</h3>
@@ -683,6 +840,11 @@ __APP_CSS__
   <div class="modal">
     <h3>KI-Vorschau prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Haiku hat aus deinem Screenshot folgende Daten ausgelesen. Bitte prüfen und korrigieren, dann übernehmen.</p>
+    <div class="import-steps" data-import-steps="screenshot">
+      <span class="import-step done">1 Bild gelesen</span>
+      <span class="import-step active">2 Daten prüfen</span>
+      <span class="import-step">3 Übernehmen</span>
+    </div>
     <div class="ss-conflicts" id="ssConflicts"></div>
     <div class="ss-batch-preview" id="ssBatchPreview"></div>
     <div id="ssSingleFields">
@@ -715,6 +877,11 @@ __APP_CSS__
   <div class="modal">
     <h3>Flatex CSV prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Die Vorschau rechnet die Endbestände aus der Depotumsatzliste nach. Aktuelle Positionen entstehen nur bei positivem Endbestand; verkaufte Titel bleiben für die Depot-Entwicklung historisch erhalten.</p>
+    <div class="import-steps" data-import-steps="flatexCsv">
+      <span class="import-step done">1 Datei gewählt</span>
+      <span class="import-step active">2 Vorschau prüfen</span>
+      <span class="import-step">3 Übernehmen</span>
+    </div>
     <div class="ss-conflicts" id="flatexCsvSummary"></div>
     <div class="ss-batch-preview" id="flatexCsvPreview"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Historie neu aufbauen</button></div>
@@ -725,6 +892,11 @@ __APP_CSS__
   <div class="modal">
     <h3>Flatex Kontoumsätze prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Diese Liste ergänzt den Cash-Verlauf. Einzahlungen und Erträge werden übernommen; Käufe und Verkäufe werden über ISIN und Ordernummer mit bestehenden Depotumsätzen verknüpft.</p>
+    <div class="import-steps" data-import-steps="flatexAccountCsv">
+      <span class="import-step done">1 Datei gewählt</span>
+      <span class="import-step active">2 Vorschau prüfen</span>
+      <span class="import-step">3 Übernehmen</span>
+    </div>
     <div class="ss-conflicts" id="flatexAccountCsvSummary"></div>
     <div class="ss-batch-preview" id="flatexAccountCsvPreview"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="flatexAccountCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexAccountCsvImport" disabled>Kontoumsätze übernehmen</button></div>

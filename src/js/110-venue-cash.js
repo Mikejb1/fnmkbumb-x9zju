@@ -338,21 +338,205 @@ function loadManualPrices() {
   });
 }
 
+function clearChartFallback(canvas) {
+  const wrap = canvas?.parentElement;
+  if (!wrap) return;
+  wrap.querySelectorAll('.history-svg-fallback, .history-chart-fallback-note').forEach(el => el.remove());
+  canvas.style.display = '';
+}
+
+function svgEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderChartFallback(canvas, points, valueKey, opts) {
+  const wrap = canvas?.parentElement;
+  if (!wrap) return;
+  clearChartFallback(canvas);
+  const rows = (points || []).map((p, index) => ({ point: p, index }));
+  const mainValues = rows.map(row => Number(row.point?.[valueKey])).filter(Number.isFinite);
+  if (rows.length < 2 || mainValues.length < 2) return;
+  canvas.style.display = 'none';
+
+  const width = 640;
+  const height = 180;
+  const pad = { left: 58, right: 16, top: 16, bottom: 30 };
+  const allSeries = [
+    { key: valueKey, label: opts?.mainLabel || 'Depotwert', color: mainValues[mainValues.length - 1] >= mainValues[0] ? '#22c55e' : '#f87171', dashed: !!opts?.mainDashed, fill: true },
+    ...(opts?.extraSeries || []).filter(s => !s.hidden)
+  ];
+  const allValues = allSeries.flatMap(series => rows.map(row => Number(row.point?.[series.key])).filter(Number.isFinite));
+  let min = Math.min(...allValues);
+  let max = Math.max(...allValues);
+  if (min === max) {
+    const spread = Math.max(1, Math.abs(max) * 0.01);
+    min -= spread;
+    max += spread;
+  }
+  const xFor = (rowIndex) => pad.left + (rowIndex / Math.max(1, rows.length - 1)) * (width - pad.left - pad.right);
+  const yFor = (value) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
+  const pathForSeries = (key) => {
+    let drawing = false;
+    return rows.map((row, i) => {
+      const value = Number(row.point?.[key]);
+      if (!Number.isFinite(value)) { drawing = false; return ''; }
+      const cmd = drawing ? 'L' : 'M';
+      drawing = true;
+      return `${cmd} ${xFor(i).toFixed(1)} ${yFor(value).toFixed(1)}`;
+    }).filter(Boolean).join(' ');
+  };
+  const mainPath = pathForSeries(valueKey);
+  const baseY = height - pad.bottom;
+  const mainRows = rows.filter(row => Number.isFinite(Number(row.point?.[valueKey])));
+  const areaPath = `${mainRows.map((row, idx) => `${idx ? 'L' : 'M'} ${xFor(row.index).toFixed(1)} ${yFor(Number(row.point[valueKey])).toFixed(1)}`).join(' ')} L ${xFor(mainRows[mainRows.length - 1].index).toFixed(1)} ${baseY} L ${xFor(mainRows[0].index).toFixed(1)} ${baseY} Z`;
+  const isUp = mainValues[mainValues.length - 1] >= mainValues[0];
+  const color = isUp ? '#22c55e' : '#f87171';
+  const grid = [0, 0.5, 1].map(t => {
+    const value = max - (max - min) * t;
+    const y = pad.top + (height - pad.top - pad.bottom) * t;
+    return `<line class="grid" x1="${pad.left}" y1="${y.toFixed(1)}" x2="${width - pad.right}" y2="${y.toFixed(1)}"></line><text x="4" y="${(y + 4).toFixed(1)}">${svgEscape(fmtNoCent.format(value))}</text>`;
+  }).join('');
+  const labels = [0, Math.floor((rows.length - 1) / 2), rows.length - 1]
+    .filter((value, index, arr) => arr.indexOf(value) === index)
+    .map(i => `<text x="${xFor(i).toFixed(1)}" y="${height - 8}" text-anchor="${i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle'}">${svgEscape(rows[i].point?.label || '')}</text>`)
+    .join('');
+  const markers = rows.map((row, i) => {
+    const isEdge = i === 0 || i === rows.length - 1;
+    const isEvent = !!(row.point?.events && row.point.events.length);
+    if (!isEdge && !isEvent && !opts?.bigPoints) return '';
+    const value = Number(row.point?.[valueKey]);
+    if (!Number.isFinite(value)) return '';
+    return `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(value).toFixed(1)}" r="${isEvent ? 3.5 : 2.8}" fill="${isEvent ? '#fbbf24' : color}"></circle>`;
+  }).join('');
+  const extraPaths = allSeries.slice(1).map(series => {
+    const path = pathForSeries(series.key);
+    if (!path) return '';
+    return `<path class="line extra" d="${path}" stroke="${series.color || '#888'}" ${series.dashed ? 'stroke-dasharray="6 4"' : ''}></path>`;
+  }).join('');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'history-svg-fallback');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', opts?.mainLabel || 'Depotchart');
+  svg.innerHTML = `
+    ${grid}
+    <path class="area" d="${areaPath}" fill="${color}"></path>
+    ${extraPaths}
+    <path class="line main" d="${mainPath}" stroke="${color}" ${opts?.mainDashed ? 'stroke-dasharray="6 4"' : ''}></path>
+    ${markers}
+    ${labels}
+  `;
+  const note = document.createElement('div');
+  note.className = 'history-chart-fallback-note';
+  note.textContent = 'Fallback-Chart aktiv';
+  wrap.appendChild(svg);
+  wrap.appendChild(note);
+  attachFallbackChartHover(wrap, svg, rows, valueKey);
+}
+
+function ensureHistoryHoverInfo(wrap) {
+  if (!wrap) return null;
+  let box = wrap.querySelector('.history-hover-info');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'history-hover-info';
+    wrap.appendChild(box);
+  }
+  return box;
+}
+
+function chartPointChangeText(points, index, key) {
+  const current = Number(points?.[index]?.[key]);
+  const previous = Number(points?.[Math.max(0, index - 1)]?.[key]);
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || index <= 0) return '';
+  const diff = current - previous;
+  const pct = previous > 0 ? (diff / previous) * 100 : 0;
+  return `${diff >= 0 ? '+' : ''}${fmt.format(diff)} (${diff >= 0 ? '+' : ''}${fmtNum(pct, 2)} %)`;
+}
+
+function historyHoverHtml(point, points, index, valueKey) {
+  if (!point) return '';
+  const changeText = chartPointChangeText(points, index, valueKey);
+  const rows = [
+    ['Depotwert', fmt.format(Number(point[valueKey]) || 0)],
+    point.invested != null ? ['Einstand', fmt.format(point.invested)] : null,
+    point.cash != null ? ['Cash', fmt.format(point.cash)] : null,
+    changeText ? ['Bewegung', changeText] : null,
+    point.quality?.label ? ['Kursbasis', point.quality.label] : null
+  ].filter(Boolean);
+  const events = (point.events || []).slice(0, 3);
+  return `
+    <strong>${svgEscape(point.labelLong || point.label || 'Chartpunkt')}</strong>
+    ${rows.map(([label, value]) => `<span><em>${svgEscape(label)}</em><b>${svgEscape(value)}</b></span>`).join('')}
+    ${events.length ? `<small>${svgEscape(events.join(' · '))}</small>` : ''}
+  `;
+}
+
+function showHistoryHoverInfo(wrap, point, points, index, valueKey, clientX) {
+  const box = ensureHistoryHoverInfo(wrap);
+  if (!box || !point) return;
+  box.innerHTML = historyHoverHtml(point, points, index, valueKey);
+  const rect = wrap.getBoundingClientRect();
+  const x = Number.isFinite(clientX) ? clientX - rect.left : rect.width / 2;
+  box.style.left = `${Math.max(8, Math.min(rect.width - 210, x + 10))}px`;
+  box.classList.add('visible');
+}
+
+function hideHistoryHoverInfo(wrap) {
+  const box = wrap?.querySelector('.history-hover-info');
+  if (box) box.classList.remove('visible');
+}
+
+function syncHistoryLegendControls(intraday) {
+  document.querySelectorAll('.history-legend-toggle').forEach(btn => {
+    const key = btn.dataset.series;
+    const unavailable = intraday && (key === 'pnl' || key === 'goal');
+    btn.disabled = unavailable;
+    btn.classList.toggle('unavailable', unavailable);
+    btn.classList.toggle('active', !unavailable && !!historyVisibleSeries[key]);
+    if (unavailable) btn.title = 'In der Heute-Ansicht nicht sinnvoll, weil es nur um die Tagesbewegung geht.';
+    else btn.removeAttribute('title');
+  });
+}
+
+function attachFallbackChartHover(wrap, svg, rows, valueKey) {
+  if (!wrap || !svg || !rows?.length) return;
+  svg.addEventListener('pointermove', (event) => {
+    const rect = svg.getBoundingClientRect();
+    const pct = rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0;
+    const index = Math.max(0, Math.min(rows.length - 1, Math.round(pct * (rows.length - 1))));
+    showHistoryHoverInfo(wrap, rows[index].point, rows.map(r => r.point), index, valueKey, event.clientX);
+  });
+  svg.addEventListener('pointerleave', () => hideHistoryHoverInfo(wrap));
+}
+
 function renderChart(canvasId, points, valueKey, opts) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !points || points.length < 2 || typeof Chart === 'undefined') return;
+  if (!canvas || !points || points.length < 2) return;
   chartRegistry[canvasId] = { points, valueKey, opts: opts || {} };
+  const values = points.map(p => Number(p[valueKey]));
+  if (values.filter(Number.isFinite).length < 2) return;
+  if (typeof Chart === 'undefined') {
+    renderChartFallback(canvas, points, valueKey, opts || {});
+    return;
+  }
+  clearChartFallback(canvas);
+  const wrap = canvas.parentElement;
+  canvas.onmouseleave = () => hideHistoryHoverInfo(wrap);
   const existing = Chart.getChart && Chart.getChart(canvas);
   if (existing) existing.destroy();
   const theme = getThemeColors();
-  const values = points.map(p => p[valueKey]);
   const isUp = values[values.length - 1] >= values[0];
   const color = isUp ? '#22c55e' : '#f87171';
   const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
   const useEventMarkers = !!opts?.eventMarkers;
   const markerRadius = useEventMarkers
     ? points.map(p => (p.events && p.events.length) ? 3.5 : (p.quality?.level === 'weak' ? 2 : 0))
-    : (opts?.daily ? 0 : opts?.bigPoints ? 3 : 2);
+    : (opts?.bigPoints ? 3 : opts?.daily ? 0 : 2);
   const markerColors = useEventMarkers
     ? points.map(p => (p.events && p.events.length) ? '#fbbf24' : (p.quality?.level === 'weak' ? '#f87171' : color))
     : color;
@@ -384,7 +568,11 @@ function renderChart(canvasId, points, valueKey, opts) {
   new Chart(canvas, {
     type: 'line',
     data: { labels: points.map(p => p.label || p.date), datasets },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => {
+    options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, onHover: (event, active) => {
+      const hit = active && active[0];
+      if (!hit) { hideHistoryHoverInfo(wrap); return; }
+      showHistoryHoverInfo(wrap, points[hit.index], points, hit.index, valueKey, event?.native?.clientX);
+    }, plugins: { legend: { display: false }, tooltip: { enabled: false, backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => {
           const point = points[items[0].dataIndex];
           const lines = [];
           if (point.cash != null) lines.push(`Cash: ${fmt.format(point.cash)}`);
@@ -1176,6 +1364,19 @@ function renderPositions(totals) {
   }
   const alloc = getCategoryAllocation(totals.totalCur);
   const current = currentPortfolioPositions();
+  if (current.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state positions-empty-state';
+    empty.innerHTML = `
+      <strong>Noch keine Wertpapier-Positionen</strong>
+      <p>Starte mit einer manuellen Position, einem Screenshot oder einer Flatex-Depotumsatz-CSV. Edelmetalle und Cash bleiben darunter separat verfügbar.</p>
+      <div class="empty-actions">
+        <button type="button" class="empty-action-btn" data-empty-action="manual">Manuell eingeben</button>
+        <button type="button" class="empty-action-btn primary" data-empty-action="screenshot">Screenshot &amp; KI</button>
+        <button type="button" class="empty-action-btn" data-empty-action="depotCsv">Depotumsätze CSV</button>
+      </div>`;
+    container.appendChild(empty);
+  }
   current.forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
   // Edelmetalle + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
   container.appendChild(buildSpecialCard('metals', totals));
@@ -1319,6 +1520,10 @@ async function refreshLiveValuesOnly() {
     const totals = renderTotals();
     renderPositions(totals);
     renderHistory();
+    const alloc = renderAllocation(totals);
+    const goal = renderGoal(totals);
+    renderPortfolioAlerts(totals, goal, alloc);
+    renderTaxPerformance(totals);
     applyLayoutSettings();
     await savePositionsToKV(800);
     completeRefreshProgress(true);
@@ -1343,6 +1548,7 @@ function historyStartDate(period, today) {
   else start.setMonth(today.getMonth() - 12);
   return start;
 }
+function isTodayHistoryPeriod(period) { return period === 'TODAY'; }
 function isFutureHistoryPeriod(period) { return period === '+1W' || period === '+1M' || period === '+1J'; }
 function currentPortfolioHistoryTotal() {
   let total = 0;
@@ -1388,6 +1594,108 @@ function buildPortfolioProjection(period) {
       quality: historyDataQualityForDate(date, step === 0, true),
       events: step === 0 ? ['Start der Projektion'] : [],
       historyNote: `Sparpfad-Projektion mit ${fmt.format(savingsRate)}/Monat und ${fmtNum(annualReturnPct, 1)}% p.a. Zielannahme`
+    });
+  }
+  return points;
+}
+function quoteUpdateDateForToday(live, fallbackDate) {
+  const todayIso = toIsoDate(new Date());
+  const parsed = live?.updatedAt ? new Date(live.updatedAt) : null;
+  if (parsed && !isNaN(parsed.getTime()) && toIsoDate(parsed) === todayIso) return parsed;
+  return fallbackDate || new Date();
+}
+function buildTodayPortfolioHistory() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const invested = getInvestedCapital(now);
+  const netContributions = getNetExternalContributions(now);
+  const cash = currentCashValue();
+  let baseValue = metalsTotalValue() + cash;
+  const changes = [];
+  currentPortfolioPositions().forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
+    const valuation = getPositionValuation(pos, live);
+    const move = getPositionTodayChange(pos, live);
+    if (move && Number.isFinite(move.eur)) {
+      baseValue += valuation.currentValue - move.eur;
+      changes.push({
+        time: quoteUpdateDateForToday(live, now),
+        eur: move.eur,
+        name: pos.name,
+        pct: move.pct,
+      });
+    } else {
+      baseValue += valuation.currentValue;
+    }
+  });
+
+  const quality = {
+    level: 'exact',
+    label: 'Heute',
+    score: 1,
+    note: 'Tagesbewegung aus aktuellem Kurs und Previous-Close/24h-Wert',
+  };
+  const points = [{
+    date: start,
+    label: 'Start',
+    labelLong: 'Heute Start / Vortagswert',
+    value: baseValue,
+    invested,
+    netContributions,
+    cash,
+    pnl: baseValue - invested,
+    quality,
+    events: [],
+    intraday: true,
+    historyNote: 'Startwert aus Vortagsschluss beziehungsweise 24h-Ausgangswert'
+  }];
+
+  changes
+    .sort((a, b) => a.time.getTime() - b.time.getTime())
+    .reduce((groups, item) => {
+      const key = `${String(item.time.getHours()).padStart(2, '0')}:${String(item.time.getMinutes()).padStart(2, '0')}`;
+      if (!groups.has(key)) groups.set(key, { time: item.time, items: [] });
+      groups.get(key).items.push(item);
+      return groups;
+    }, new Map())
+    .forEach(group => {
+      const delta = group.items.reduce((sum, item) => sum + item.eur, 0);
+      baseValue += delta;
+      const label = `${String(group.time.getHours()).padStart(2, '0')}:${String(group.time.getMinutes()).padStart(2, '0')}`;
+      const shown = group.items
+        .sort((a, b) => Math.abs(b.eur) - Math.abs(a.eur))
+        .slice(0, 3)
+        .map(item => `${item.name}: ${item.eur >= 0 ? '+' : ''}${fmt.format(item.eur)}`);
+      points.push({
+        date: new Date(group.time),
+        label,
+        labelLong: `Heute ${label}`,
+        value: baseValue,
+        invested,
+        netContributions,
+        cash,
+        pnl: baseValue - invested,
+        quality,
+        events: shown,
+        intraday: true,
+        historyNote: `${group.items.length} Kursbewegung${group.items.length === 1 ? '' : 'en'} eingerechnet`
+      });
+    });
+
+  if (points.length === 1 || points[points.length - 1].date.getTime() !== now.getTime()) {
+    points.push({
+      date: now,
+      label: 'Jetzt',
+      labelLong: `Heute ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} (jetzt)`,
+      value: currentPortfolioHistoryTotal(),
+      invested,
+      netContributions,
+      cash,
+      pnl: currentPortfolioHistoryTotal() - invested,
+      quality,
+      events: [],
+      intraday: true,
+      historyNote: 'Aktueller Depotstand'
     });
   }
   return points;
@@ -1483,6 +1791,15 @@ function historyDataQualityForDate(date, isToday, futureProjection = false) {
 }
 function summarizeHistoryQuality(points, futureProjection) {
   if (!points || points.length === 0) return { level: 'weak', pct: 0, text: 'Datenqualität: —', basis: 'Keine Verlaufspunkte verfügbar', events: 0 };
+  if (points[0]?.intraday) {
+    return {
+      level: 'exact',
+      pct: 100,
+      text: 'Heute',
+      basis: 'Tagesbewegung aus aktuellen Kursen und Previous-Close/24h-Werten',
+      events: points.reduce((s, p) => s + ((p.events || []).length), 0)
+    };
+  }
   if (futureProjection) {
     return {
       level: 'projection',
@@ -1514,6 +1831,12 @@ function summarizeHistoryQuality(points, futureProjection) {
   return { level, pct, text, basis, events };
 }
 function buildHistoryQualityRows(points, summary, futureProjection) {
+  if (points?.[0]?.intraday) {
+    return [
+      { title: 'Heute-Ansicht', text: 'Die App nimmt den Vortags- beziehungsweise 24h-Ausgangswert als Start und rechnet danach die heute bekannten Kursbewegungen der aktuellen Positionen in den Depotwert ein.' },
+      { title: 'Wichtig zur Genauigkeit', text: 'Das ist keine tickgenaue Intraday-Kurve vom Broker. Sie zeigt die heute bekannte Depotbewegung anhand der Livequelle, Previous-Close-Werte und Aktualisierungszeitpunkte.' }
+    ];
+  }
   if (futureProjection) {
     return [
       { title: 'Zukunftsansicht', text: 'Diese Ansicht ist eine Sparpfad-Projektion. Sie nutzt deine aktuelle Sparrate und die Renditeannahme aus dem Zielbereich. Das ist ein Planungsszenario, keine Kursvorhersage.' },
@@ -1627,6 +1950,7 @@ function purchaseEventsForDate(date) {
   return events;
 }
 function buildPortfolioHistory(period) {
+  if (isTodayHistoryPeriod(period)) return buildTodayPortfolioHistory();
   if (isFutureHistoryPeriod(period)) return buildPortfolioProjection(period);
   const today = new Date();
   const start = historyStartDate(period, today);
@@ -1657,8 +1981,10 @@ function renderHistory() {
   const points = buildPortfolioHistory(currentHistoryPeriod);
   if (points.length < 2) return;
   const futureProjection = isFutureHistoryPeriod(currentHistoryPeriod);
+  const intraday = points[0]?.intraday === true;
+  syncHistoryLegendControls(intraday);
   // Zielpfad: linear interpolation vom Startpunkt bis zum Ziel-Enddatum
-  if (historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
+  if (!intraday && historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
     const goalEnd = endOfGoalMonth(appData.goal.year, appData.goal.month || 12);
     const startVal = points[0].value;
     const goalVal = goalPlanAmount(appData.goal.amount, appData.goal.bufferPct || 0);
@@ -1674,11 +2000,15 @@ function renderHistory() {
   }
   const extraSeries = [];
   if (historyVisibleSeries.invested) extraSeries.push({ key: 'invested', label: 'Einstand', color: '#888', dashed: false });
-  if (historyVisibleSeries.pnl) extraSeries.push({ key: 'pnl', label: 'G/V', color: '#3b82f6', dashed: false });
-  if (historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
+  if (!intraday && historyVisibleSeries.pnl) extraSeries.push({ key: 'pnl', label: 'G/V', color: '#3b82f6', dashed: false });
+  if (!intraday && historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
   // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
+  if (!historyVisibleSeries.value && !extraSeries.length) {
+    historyVisibleSeries.value = true;
+    syncHistoryLegendControls(intraday);
+  }
   const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
-  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, eventMarkers: true, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
+  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, bigPoints: intraday, eventMarkers: !intraday, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : intraday ? 'Depotwert heute' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
   const qualitySummary = summarizeHistoryQuality(points, futureProjection);
   const qualityBadge = document.getElementById('historyQualityBadge');
   if (qualityBadge) {
@@ -1692,13 +2022,15 @@ function renderHistory() {
   const first = points[0], last = points[points.length - 1];
   const delta = last.value - first.value;
   const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
-  document.getElementById('historyPeriodLabel').textContent = `${futureProjection ? 'Projektion: ' : ''}${first.labelLong.replace(' (heute)', '')} – ${last.labelLong.replace(' (heute)', '').replace(' (Projektion)', '')}`;
+  document.getElementById('historyPeriodLabel').textContent = intraday
+    ? `Heute · ${first.labelLong} – ${last.labelLong.replace(' (jetzt)', '')}`
+    : `${futureProjection ? 'Projektion: ' : ''}${first.labelLong.replace(' (heute)', '')} – ${last.labelLong.replace(' (heute)', '').replace(' (Projektion)', '')}`;
   const deltaEl = document.getElementById('historyDelta');
   deltaEl.textContent = `${delta >= 0 ? '+' : ''}${fmt.format(delta)} (${delta >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} %)`;
   deltaEl.className = 'history-delta ' + (delta >= 0 ? 'positive' : 'negative');
-  document.getElementById('historyStartLabel').textContent = `Depot Stand ${first.labelLong.replace(' (heute)', '')}`;
+  document.getElementById('historyStartLabel').textContent = intraday ? 'Startwert heute' : `Depot Stand ${first.labelLong.replace(' (heute)', '')}`;
   document.getElementById('historyStartValue').textContent = fmt.format(first.value);
-  document.getElementById('historyEndLabel').textContent = futureProjection ? `Sparpfad am ${last.labelLong.replace(' (Projektion)', '')}` : last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
+  document.getElementById('historyEndLabel').textContent = intraday ? `Depot Stand aktuell (${String(last.date.getHours()).padStart(2, '0')}:${String(last.date.getMinutes()).padStart(2, '0')})` : futureProjection ? `Sparpfad am ${last.labelLong.replace(' (Projektion)', '')}` : last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
   // Performance-Kennzahlen
   const invested = last.invested;
@@ -1707,8 +2039,11 @@ function renderHistory() {
   const basisLabelEl = document.getElementById('historyCapitalBasisLabel');
   if (grossEl) {
     const base = netContributions > 0 ? netContributions : invested;
-    if (basisLabelEl) basisLabelEl.textContent = netContributions > 0 ? 'Wert ggü. Netto-Einzahlungen' : 'Wert ggü. Einstand';
-    if (futureProjection) {
+    if (basisLabelEl) basisLabelEl.textContent = intraday ? 'Veränderung heute' : netContributions > 0 ? 'Wert ggü. Netto-Einzahlungen' : 'Wert ggü. Einstand';
+    if (intraday) {
+      grossEl.textContent = `${delta >= 0 ? '+' : ''}${fmtNum(deltaPct, 2)} % · ${delta >= 0 ? '+' : ''}${fmt.format(delta)}`;
+      grossEl.className = delta >= 0 ? 'positive' : 'negative';
+    } else if (futureProjection) {
       grossEl.textContent = 'Zukunftsansicht';
       grossEl.className = '';
     } else if (base > 0) {
@@ -1719,8 +2054,11 @@ function renderHistory() {
   }
   const mwrEl = document.getElementById('historyReturnMwr');
   if (mwrEl) {
-    const mwrPct = futureProjection ? null : plausiblePerformancePct(computeMWR(last.value));
-    if (futureProjection) {
+    const mwrPct = (futureProjection || intraday) ? null : plausiblePerformancePct(computeMWR(last.value));
+    if (intraday) {
+      mwrEl.textContent = 'nicht für Intraday';
+      mwrEl.className = '';
+    } else if (futureProjection) {
       mwrEl.textContent = 'keine Renditeprognose';
       mwrEl.className = '';
     } else if (mwrPct != null) {
@@ -1733,8 +2071,11 @@ function renderHistory() {
   }
   const twrEl = document.getElementById('historyReturnTwr');
   if (twrEl) {
-    const twrPct = futureProjection ? null : plausiblePerformancePct(computeTWR(points));
-    if (futureProjection) {
+    const twrPct = (futureProjection || intraday) ? null : plausiblePerformancePct(computeTWR(points));
+    if (intraday) {
+      twrEl.textContent = 'nicht für Intraday';
+      twrEl.className = '';
+    } else if (futureProjection) {
       twrEl.textContent = 'keine Renditeprognose';
       twrEl.className = '';
     } else if (twrPct != null) {
@@ -1752,12 +2093,13 @@ function renderHistory() {
     const hasCash = currentCashValue() > 0 || getNetExternalContributions() !== 0;
     const hasCashTx = hasCashTransactions();
     const hasFallbackHistory = (appData.positions || []).some(pos => !pos.cgId && !Array.isArray(pos.monthlyHistory));
+    if (intraday) notes.push('Heute-Ansicht: zeigt die bekannte Tagesbewegung aus aktuellen Kursen und Previous-Close/24h-Werten; keine tickgenaue Broker-Intraday-Historie.');
     if (futureProjection) notes.push('Zukunftsansicht: gestrichelter Sparpfad mit aktueller Sparrate, ohne Renditeannahme und ohne künftige Kursprognose. Den Zielpfad kannst du über die Legende einblenden.');
-    if (!futureProjection && hasCash && !hasCashTx) notes.push('Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.');
-    if (!futureProjection && !hasCashTx) notes.push('MWR wird erst belastbar, wenn Einzahlungen und Auszahlungen als Cash-Bewegungen erfasst sind.');
+    if (!futureProjection && !intraday && hasCash && !hasCashTx) notes.push('Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.');
+    if (!futureProjection && !intraday && !hasCashTx) notes.push('MWR wird erst belastbar, wenn Einzahlungen und Auszahlungen als Cash-Bewegungen erfasst sind.');
     const accountStats = accountImportCashStats();
     if (accountStats.cashRows || accountStats.orderRows) notes.push(`Kontoumsätze CSV fließen ein: ${accountStats.cashRows} Cash-Bewegungen und ${accountStats.orderRows} echte Order-Cashwerte sind im Verlauf berücksichtigt.`);
-    if (!futureProjection && hasFallbackHistory) notes.push('Bei Titeln ohne historische Kursreihe verwendet die App ersatzweise aktuelle oder monatliche Kurse.');
+    if (!futureProjection && !intraday && hasFallbackHistory) notes.push('Bei Titeln ohne historische Kursreihe verwendet die App ersatzweise aktuelle oder monatliche Kurse.');
     cashNoteEl.textContent = notes.join(' ');
     cashNoteEl.style.display = notes.length ? '' : 'none';
   }
@@ -2125,13 +2467,18 @@ async function refreshUI(opts = {}) {
   const alloc = renderAllocation(totals);
   renderHistory();
   const goal = renderGoal(totals);
+  renderPortfolioAlerts(totals, goal, alloc);
+  renderDailyCheck(totals, goal, alloc);
   renderSavingsSim(totals, goal);
   if (alloc) renderRebalancing(totals, alloc);
   if (alloc) renderScenario(totals, alloc);
+  renderPortfolioNews();
   renderWatchlist();
   renderJournal();
   renderIncome();
+  renderTaxPerformance(totals);
   renderBackupStatus();
+  if (typeof renderSecurityStatus === 'function') renderSecurityStatus();
   applyLayoutSettings();
   if (opts.skipAI) {
     renderAnalysisLocal(totals, goal);
@@ -2219,6 +2566,7 @@ async function initApp() {
   await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370), fetchMarketPrices(), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
+  maybeFetchPortfolioNews();
 }
 
 function wireEvents() {
@@ -2226,6 +2574,27 @@ function wireEvents() {
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+  document.getElementById('themePickerBtn')?.addEventListener('click', openThemeModal);
+  document.getElementById('themeCloseBtn')?.addEventListener('click', closeThemeModal);
+  document.getElementById('themeModal')?.addEventListener('click', e => { if (e.target.id === 'themeModal') closeThemeModal(); });
+  document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.themeChoice || 'classic');
+      closeThemeModal();
+    });
+  });
+  document.getElementById('modeToggleBtn').addEventListener('click', toggleViewMode);
+  document.getElementById('aiPrivacyMode')?.addEventListener('change', e => {
+    setAIPrivacyMode(e.target.value);
+    renderSecurityStatus();
+    if (appData) refreshUI({ skipAI: true });
+  });
+  document.getElementById('sessionTimeoutSelect')?.addEventListener('change', e => {
+    setSessionTimeoutMinutes(e.target.value);
+    resetAutoLogout();
+    renderSecurityStatus();
+  });
+  document.getElementById('sessionExtendBtn')?.addEventListener('click', resetAutoLogout);
   document.getElementById('refreshBtn').addEventListener('click', refreshLiveValuesOnly);
   document.getElementById('layoutEditBtn').addEventListener('click', openLayoutModal);
   document.getElementById('layoutCancelBtn').addEventListener('click', closeLayoutModal);
@@ -2233,6 +2602,10 @@ function wireEvents() {
   document.getElementById('layoutResetBtn').addEventListener('click', resetLayoutModal);
   document.getElementById('layoutModal').addEventListener('click', e => { if (e.target.id === 'layoutModal') closeLayoutModal(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
+  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => fetchPortfolioNews({ forceRefresh: true }));
+  document.querySelectorAll('[data-news-filter]').forEach(btn => {
+    btn.addEventListener('click', () => setNewsFilter(btn.dataset.newsFilter || 'all'));
+  });
   document.getElementById('goalApplyBtn').addEventListener('click', applyGoalSettingsUpdate);
   ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk', 'goalType', 'goalPriority', 'goalMonth', 'goalMinSavings', 'goalMaxSavings', 'goalBuffer', 'goalReturn'].forEach(id => {
     const goalInputEl = document.getElementById(id);
@@ -2272,6 +2645,7 @@ function wireEvents() {
   // Legenden-Toggles für Depotchart-Serien
   document.querySelectorAll('.history-legend-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       const key = btn.dataset.series;
       if (!key) return;
       historyVisibleSeries[key] = !historyVisibleSeries[key];
@@ -2426,6 +2800,10 @@ function wireEvents() {
     const actionBtn = e.target.closest('[data-quality-action]');
     if (actionBtn) runQualityAction(actionBtn.dataset.qualityAction);
   });
+  document.getElementById('dailyTaskList')?.addEventListener('click', e => {
+    const actionBtn = e.target.closest('[data-daily-action]');
+    if (actionBtn) runDailyAction(actionBtn.dataset.dailyAction);
+  });
   document.getElementById('qualityActionClose').addEventListener('click', closeQualityActionModal);
   document.getElementById('qualityActionModal').addEventListener('click', e => {
     if (e.target.id === 'qualityActionModal') return closeQualityActionModal();
@@ -2489,6 +2867,7 @@ function wireEvents() {
     });
   });
   // Backup / Export / Import
+  document.getElementById('backupEncryptedBtn')?.addEventListener('click', () => backupEncryptedJson());
   document.getElementById('backupJsonBtn').addEventListener('click', backupJson);
   document.getElementById('backupCsvBtn').addEventListener('click', backupCsv);
   document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFileInput').click());
@@ -2497,7 +2876,7 @@ function wireEvents() {
   document.getElementById('resetPortfolioBtn').addEventListener('click', openResetModal);
   document.getElementById('resetCancel').addEventListener('click', closeResetModal);
   document.getElementById('resetConfirm').addEventListener('click', confirmResetPortfolio);
-  document.getElementById('resetBackupBtn').addEventListener('click', backupJson);
+  document.getElementById('resetBackupBtn').addEventListener('click', () => backupEncryptedJson('vor-reset'));
   document.getElementById('resetModal').addEventListener('click', e => { if (e.target.id === 'resetModal') closeResetModal(); });
   document.getElementById('resetMasterCode').addEventListener('keydown', e => { if (e.key === 'Enter' && !document.getElementById('resetConfirm').disabled) confirmResetPortfolio(); });
   // Szenario-Rechner
@@ -2585,6 +2964,17 @@ function wireEvents() {
   document.getElementById('flatexAccountCsvCancel').addEventListener('click', closeFlatexAccountCsvModal);
   document.getElementById('flatexAccountCsvImport').addEventListener('click', importFlatexAccountCsvAnalysis);
   document.getElementById('flatexAccountCsvModal').addEventListener('click', e => { if (e.target.id === 'flatexAccountCsvModal') closeFlatexAccountCsvModal(); });
+  document.addEventListener('click', e => {
+    const emptyAction = e.target.closest('[data-empty-action]');
+    if (!emptyAction) return;
+    const action = emptyAction.dataset.emptyAction;
+    if (action === 'manual') document.getElementById('addPosManualBtn')?.click();
+    if (action === 'screenshot') document.getElementById('addPosScreenshotBtn')?.click();
+    if (action === 'depotCsv') document.getElementById('addPosFlatexCsvBtn')?.click();
+    if (action === 'watch') document.getElementById('watchAddBtn')?.click();
+    if (action === 'journal') document.getElementById('journalAddBtn')?.click();
+    if (action === 'income') document.getElementById('incomeAddBtn')?.click();
+  });
   document.getElementById('apType').addEventListener('change', updateAddPosTypeFields);
   document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
   document.getElementById('apSave').addEventListener('click', saveNewPosition);

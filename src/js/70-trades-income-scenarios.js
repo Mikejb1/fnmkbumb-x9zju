@@ -300,7 +300,7 @@ function renderIncome() {
   const breakdown = Object.entries(byKind).map(([k, v]) => `${INCOME_KIND_LABELS[k] || k}: ${fmt.format(v)}`).join(' · ');
   summaryEl.innerHTML = `<div>Erträge ${thisYear}</div><div class="big">${fmt.format(totalYear)}</div>${breakdown ? `<div class="breakdown">${breakdown}</div>` : ''}`;
   if (list.length === 0) {
-    listEl.innerHTML = '<div class="strat-empty">Noch keine Erträge erfasst.</div>';
+    listEl.innerHTML = '<div class="empty-state"><strong>Noch keine Erträge erfasst</strong><p>Erfasse Dividenden, Zinsen oder Staking-Erträge. Importierte Kontoumsätze können hier ebenfalls landen.</p><div class="empty-actions"><button type="button" class="empty-action-btn primary" data-empty-action="income">Ertrag erfassen</button></div></div>';
     return;
   }
   const newestFirst = list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -331,7 +331,7 @@ function renderIncome() {
 
 // ===== SZENARIO-RECHNER =====
 function getScenarioDeltas() {
-  const d = { etf: 0, aktie: 0, crypto: 0, gold: 0 };
+  const d = { etf: 0, aktie: 0, crypto: 0, gold: 0, savings: 0, return: 0 };
   document.querySelectorAll('[data-scenario]').forEach(inp => {
     const k = inp.dataset.scenario;
     if (k in d) d[k] = parseFloat(inp.value) || 0;
@@ -364,13 +364,17 @@ function renderScenario(totals, alloc) {
   document.querySelectorAll('[data-pct]').forEach(el => {
     const k = el.dataset.pct;
     const v = deltas[k] || 0;
-    el.textContent = (v >= 0 ? '+' : '') + v + ' %';
+    if (k === 'savings') el.textContent = `${v >= 0 ? '+' : ''}${fmtNoCent.format(v)}/Mo`;
+    else if (k === 'return') el.textContent = `${v >= 0 ? '+' : ''}${fmtNum(v, 1)} % p.a.`;
+    else el.textContent = (v >= 0 ? '+' : '') + v + ' %';
     el.classList.toggle('up', v > 0);
     el.classList.toggle('down', v < 0);
   });
   // Status-Badge im Sektions-Header
   const statusEl = document.getElementById('scenarioStatus');
-  const absSum = Math.abs(deltas.etf) + Math.abs(deltas.aktie) + Math.abs(deltas.crypto) + Math.abs(deltas.gold);
+  const marketAbsSum = Math.abs(deltas.etf) + Math.abs(deltas.aktie) + Math.abs(deltas.crypto) + Math.abs(deltas.gold);
+  const planAbsSum = Math.abs(deltas.savings) + Math.abs(deltas.return);
+  const absSum = marketAbsSum + planAbsSum;
   if (statusEl) statusEl.textContent = absSum === 0 ? '±0' : `Δ ${absSum}`;
   const result = applyScenario(totals, alloc, deltas);
   const resEl = document.getElementById('scenarioResult');
@@ -384,14 +388,19 @@ function renderScenario(totals, alloc) {
   const fakeAlloc = { pcts: result.newAlloc, abs: result.newEur };
   const newRules = evaluateRiskRules(fakeTotals, fakeAlloc);
   const violations = newRules.filter(r => r.violated);
-  // Ziel-Berechnung
+  // Ziel-Berechnung mit optionalem Sparraten- und Rendite-Hebel
   const goal = appData?.goal || {};
   let goalText = '';
+  let projectionText = '';
   if (goal.amount && goal.year) {
-    const gap = goal.amount - result.newTotal;
+    const scenarioSavings = Math.max(0, (Number(goal.savingsRate) || 0) + (Number(deltas.savings) || 0));
+    const scenarioReturn = (Number(goal.annualReturnPct) || 0) + (Number(deltas.return) || 0);
     const today = new Date();
-    const endDate = new Date(goal.year, 11, 31);
+    const endDate = new Date(goal.year, (goal.month || 12) - 1, 28);
     const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
+    const projected = futureValueWithMonthlySavings(result.newTotal, scenarioSavings, monthsToGoal, scenarioReturn);
+    const gap = goal.amount - projected;
+    projectionText = `Mit ${fmtNoCent.format(scenarioSavings)}/Mo und ${fmtNum(scenarioReturn, 1)}% p.a.: <strong>${fmt.format(projected)}</strong>`;
     if (gap <= 0) {
       goalText = `Ziel <strong>bereits übertroffen</strong> (Puffer ${fmt.format(-gap)})`;
     } else {
@@ -404,6 +413,7 @@ function renderScenario(totals, alloc) {
     <div class="scenario-result-row"><span class="lbl">Neuer Depotwert</span><span class="val">${fmt.format(result.newTotal)}</span></div>
     <div class="scenario-result-row"><span class="lbl">Veränderung</span><span class="val ${cls}">${result.change >= 0 ? '+' : ''}${fmt.format(result.change)} (${result.changePct >= 0 ? '+' : ''}${fmtNum(result.changePct, 1)} %)</span></div>
     <div class="scenario-result-row"><span class="lbl">Allokation neu</span><span class="val" style="font-size:11px;font-weight:400;color:var(--text-secondary);">ETF ${fmtNum(result.newAlloc.etf, 0)} % · Aktie ${fmtNum(result.newAlloc.aktie, 0)} % · Krypto ${fmtNum(result.newAlloc.crypto, 0)} % · Gold ${fmtNum(result.newAlloc.gold, 0)} % · Cash ${fmtNum(result.newAlloc.cash, 0)} %</span></div>
+    ${projectionText ? `<div class="scenario-result-row"><span class="lbl">Ziel-Projektion</span><span class="val" style="font-weight:400;font-size:12px;">${projectionText}</span></div>` : ''}
     ${goalText ? `<div class="scenario-result-row"><span class="lbl">Ziel-Status</span><span class="val" style="font-weight:400;font-size:12px;">${goalText}</span></div>` : ''}
     ${violations.length > 0 ? `<div class="scenario-violations"><strong>Neue Regel-Verletzungen:</strong><br>${violations.map(v => '· ' + v.label + ': ' + v.value).join('<br>')}</div>` : ''}
   `;

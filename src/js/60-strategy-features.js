@@ -122,7 +122,7 @@ function renderWatchlist() {
   const wl = ensureWatchlist();
   if (count) count.textContent = String(wl.length);
   if (wl.length === 0) {
-    list.innerHTML = '<div class="strat-empty">Noch keine Watchlist-Einträge. Tap "Eintrag hinzufügen".</div>';
+    list.innerHTML = '<div class="empty-state"><strong>Noch keine Watchlist-Einträge</strong><p>Lege Kandidaten an, die du beobachten möchtest, inklusive Einstiegsidee, Risiko und geplanter Größe.</p><div class="empty-actions"><button type="button" class="empty-action-btn primary" data-empty-action="watch">Eintrag hinzufügen</button></div></div>';
     return;
   }
   list.innerHTML = wl.map(w => `
@@ -201,7 +201,7 @@ function renderJournal() {
   const j = ensureJournal();
   if (count) count.textContent = String(j.length);
   if (j.length === 0) {
-    list.innerHTML = '<div class="strat-empty">Noch keine Journal-Einträge. Halte Entscheidungen mit Begründung und Review-Datum fest.</div>';
+    list.innerHTML = '<div class="empty-state"><strong>Noch keine Journal-Einträge</strong><p>Halte Käufe, Verkäufe und wichtige Gedanken mit Begründung und Review-Datum fest.</p><div class="empty-actions"><button type="button" class="empty-action-btn primary" data-empty-action="journal">Journal-Eintrag erstellen</button></div></div>';
     return;
   }
   const today = new Date().toISOString().slice(0, 10);

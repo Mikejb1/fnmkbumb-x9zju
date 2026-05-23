@@ -170,6 +170,7 @@ function chatRemoveTyping() {
 
 function buildChatSystemPrompt() {
   if (!appData) return 'Du bist ein intelligenter, hilfreicher KI-Chat fuer komplexe Fragen. Antworte auf Deutsch, klar, tiefgehend und praktisch. Nutze vorhandenes Gedaechtnis, wenn es relevant ist.';
+  const privacyMode = getAIPrivacyMode();
   let totalCur = 0, totalCost = 0;
   getAllPositions().forEach(pos => {
     const live = currentPrices[pos.id] || { price: pos.manualPrice ?? pos.costPrice };
@@ -179,14 +180,6 @@ function buildChatSystemPrompt() {
   });
   const totalPnl = totalCur - totalCost;
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
-  const positions = getAllPositions().map(pos => {
-    const live = currentPrices[pos.id] || { price: pos.costPrice };
-    const valuation = getPositionValuation(pos, live);
-    const value = valuation.currentValue;
-    const pct = totalCur > 0 ? (value / totalCur) * 100 : 0;
-    const pnlPct = valuation.pnlPct;
-    return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${valuation.shares} Stk × ${fmtNum(live.price, priceDecimalsForPosition(pos, live.price))} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
-  }).join('\n');
   const goal = appData.goal || { year: 2026, month: 12, amount: 15000, bufferPct: 0, minSavingsRate: 0, maxSavingsRate: 0, annualReturnPct: 0, type: 'wealth', priority: 'medium' };
   const strategy = getGoalStrategy(goal);
   // Faktenblatt + abgeleitete Goal-Daten für Tiefe
@@ -195,10 +188,26 @@ function buildChatSystemPrompt() {
   const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
   const planAmount = goalPlanAmount(goal.amount, goal.bufferPct || 0);
   const goalEnriched = { ...goal, ...strategy, planAmount, typeLabel: GOAL_TYPE_LABELS[goal.type] || 'Vermögen', priorityLabel: GOAL_PRIORITY_LABELS[goal.priority] || 'Mittel', monthsToGoal, gap: planAmount - totalCur, monthlyNeeded: (planAmount - totalCur) / monthsToGoal, requiredReturnPct: totalCur > 0 ? ((planAmount / totalCur) - 1) * 100 : 0, projectedWithReturn: futureValueWithMonthlySavings(totalCur, goal.savingsRate || 0, monthsToGoal, goal.annualReturnPct || 0) };
-  const factSheet = buildFactSheet({ totalCur, totalCost, totalPnl, totalPnlPct }, goalEnriched);
+  const totalsForPrompt = { totalCur, totalCost, totalPnl, totalPnlPct };
+  const factSheet = buildPrivacyAwareFactSheet(totalsForPrompt, goalEnriched);
+  const positions = privacyMode === 'full'
+    ? getAllPositions().map(pos => {
+      const live = currentPrices[pos.id] || { price: pos.costPrice };
+      const valuation = getPositionValuation(pos, live);
+      const value = valuation.currentValue;
+      const pct = totalCur > 0 ? (value / totalCur) * 100 : 0;
+      const pnlPct = valuation.pnlPct;
+      return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${valuation.shares} Stk × ${fmtNum(live.price, priceDecimalsForPosition(pos, live.price))} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
+    }).join('\n')
+    : buildPrivacyAwarePositionContext(totalsForPrompt);
+  const memoryForPrompt = privacyMode === 'minimal'
+    ? '(Im minimalen KI-Datenschutzmodus nicht freigegeben.)'
+    : (chatMemorySummary || '(Noch keine dauerhafte Zusammenfassung vorhanden.)');
   return `Du bist ein intelligenter KI-Chat fuer dieses Portfolio und fuer komplexe Fragen des Nutzers. Sprache: Deutsch.
 
 ${factSheet}
+
+KI-DATENSCHUTZMODUS: ${AI_PRIVACY_MODES[privacyMode].label}. Nutze nur die freigegebenen Daten; erfinde keine ausgeblendeten Positionsdetails.
 
 Arbeitsweise:
 - Antworte nicht kuenstlich knapp. Wenn die Frage komplex ist, gib eine strukturierte, gruendlich durchdachte Antwort.
@@ -209,7 +218,7 @@ Arbeitsweise:
 - Bei Anlageentscheidungen gib keine verbindliche Finanzberatung, sondern Optionen, Risiken und Rechenwege.
 
 LANGZEITGEDAECHTNIS:
-${chatMemorySummary || '(Noch keine dauerhafte Zusammenfassung vorhanden.)'}
+${memoryForPrompt}
 
 AKTUELLES PORTFOLIO:
 ${positions}
