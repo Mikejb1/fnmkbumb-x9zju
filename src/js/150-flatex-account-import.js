@@ -1,0 +1,591 @@
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
+// ===== FLATEX KONTOUMSAETZE CSV — Cash-Verlauf + Orderabgleich =====
+const FLATEX_ACCOUNT_SOURCE = 'flatex-account-csv';
+function accountOrderParts(info) {
+  const raw = String(info || '').toUpperCase();
+  const isin = raw.match(/\b([A-Z]{2}[A-Z0-9]{10})\b/)?.[1] || '';
+  const number = raw.match(/\bORDER\s+(?:KAUF|VERKAUF)\s+[A-Z0-9]{12}\s+(\d{6,})\b/)?.[1] || '';
+  return { isin, number };
+}
+function flatexAccountKind(recipient, info, amount) {
+  const text = normalizeText(`${recipient || ''} ${info || ''}`).replace(/�/g, '');
+  if (text.includes('einzahlung auf das verrechnungskonto')) return 'deposit';
+  if (text.includes('order kauf')) return 'order-buy';
+  if (text.includes('order verkauf')) return 'order-sell';
+  if (text.includes('dividendenzahlung') || text.includes('dividende')) return 'dividend';
+  if (text.includes('zinsabschluss')) return amount > 0 ? 'interest' : amount < 0 ? 'interest-fee' : 'zero';
+  if (text.includes('storno') && text.includes('thesaur')) return 'refund';
+  if (text.includes('thesaur')) return 'tax';
+  if (!amount) return 'zero';
+  return amount > 0 ? 'other-credit' : 'other-debit';
+}
+function accountKindLabel(kind) {
+  return ({
+    deposit: 'Einzahlung',
+    'order-buy': 'Order Kauf',
+    'order-sell': 'Order Verkauf',
+    dividend: 'Dividende',
+    interest: 'Zinsen',
+    'interest-fee': 'Zinsbelastung',
+    tax: 'Thesaurierung/Steuer',
+    refund: 'Erstattung/Storno',
+    zero: '0-EUR-Zeile',
+    'other-credit': 'unbekannter Zufluss',
+    'other-debit': 'unbekannter Abfluss'
+  })[kind] || kind;
+}
+function flatexAccountImportKey(entry) {
+  return `flatex-account:${[entry.rowIndex, entry.date, entry.valuta, entry.kind, entry.orderNumber || entry.info, entry.amount].join('|')}`;
+}
+function positionIsinForTransaction(tx) {
+  const pos = (appData?.positions || []).find(item => item.id === tx?.assetId);
+  return String(metaValueForQuality(pos, 'isin') || pos?.isin || '').trim().toUpperCase();
+}
+function noteHasFlatexOrderNumber(tx, number) {
+  if (!number) return false;
+  return String(tx?.flatexTaNumber || '') === number || String(tx?.note || '').includes(number);
+}
+function findFlatexAccountOrderTransaction(entry) {
+  if (!entry?.orderNumber && !entry?.isin) return null;
+  const txType = entry.kind === 'order-sell' ? 'sell' : 'buy';
+  const orderDate = entry.valuta || entry.date;
+  const candidates = (appData?.transactions || []).filter(tx => {
+    if (!tx || tx.assetType === 'cash' || tx.assetType === 'metal' || tx.txType !== txType || tx.cashNeutral) return false;
+    return true;
+  });
+  const exactOrder = candidates.find(tx => noteHasFlatexOrderNumber(tx, entry.orderNumber));
+  if (exactOrder) return exactOrder;
+  return candidates.find(tx => {
+    const sameIsin = entry.isin && positionIsinForTransaction(tx) === entry.isin;
+    const sameDate = orderDate && (tx.valuta === orderDate || tx.date === orderDate);
+    return sameIsin && sameDate && String(tx.note || '').includes('Flatex CSV');
+  }) || null;
+}
+function roundImportMoney(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+function analyzeFlatexAccountCsvText(text) {
+  const parsed = parseSemicolonCsv(text);
+  if (parsed.length < 2) throw new Error('Kontoumsatz-CSV enthält keine Buchungszeilen.');
+  const columns = {};
+  parsed[0].forEach((header, index) => { columns[flatexHeaderKey(header)] = index; });
+  if (columns.buchungstag == null || columns.betragineuro == null) {
+    throw new Error('Flatex-Kontospalten nicht erkannt. Erwartet werden Buchungstag und Betrag in Euro.');
+  }
+  const entries = [];
+  const ignored = [];
+  parsed.slice(1).forEach((row, rowOffset) => {
+    const date = normalizeImportDate(flatexRowValue(row, columns, ['Buchungstag']));
+    const valuta = normalizeImportDate(flatexRowValue(row, columns, ['Valuta']));
+    // Flatex-Kontoumsaetze koennen den Empfaenger-Header als defektes Sonderzeichen exportieren.
+    // Bei diesem CSV-Format ist die Spaltenfolge stabil, daher bleibt Index 2 ein sicherer Fallback.
+    const recipient = (flatexRowValue(row, columns, ['Empfänger', 'Empfaenger', 'Empfnger', 'EmpfŠnger']) || row[2] || '').trim();
+    const info = (flatexRowValue(row, columns, ['Buchungsinformationen', 'Buchungsinformation']) || row[3] || '').trim();
+    const amount = parseImportNumber(flatexRowValue(row, columns, ['Betrag in Euro', 'Betrag']) || row[4]);
+    if (!recipient && !info && amount == null) return;
+    const kind = flatexAccountKind(recipient, info, Number(amount) || 0);
+    const order = accountOrderParts(info);
+    const entry = {
+      rowIndex: rowOffset + 2,
+      date,
+      valuta,
+      ledgerDate: valuta || date,
+      recipient,
+      info,
+      amount: Number(amount) || 0,
+      kind,
+      isin: order.isin,
+      orderNumber: order.number
+    };
+    entry.importKey = flatexAccountImportKey(entry);
+    if (kind === 'zero') {
+      ignored.push({ ...entry, reason: '0-EUR-Zeile' });
+      return;
+    }
+    if (kind === 'other-credit' || kind === 'other-debit') {
+      ignored.push({ ...entry, reason: 'Buchungsart nicht automatisch zugeordnet' });
+      return;
+    }
+    if ((kind === 'order-buy' || kind === 'order-sell') && !(entry.orderNumber || entry.isin)) {
+      ignored.push({ ...entry, reason: 'Orderkennung fehlt' });
+      return;
+    }
+    entry.matchId = (kind === 'order-buy' || kind === 'order-sell') ? findFlatexAccountOrderTransaction(entry)?.id || '' : '';
+    entries.push(entry);
+  });
+  if (entries.length === 0) throw new Error('Keine importierbaren Flatex-Kontoumsätze erkannt.');
+  const counts = entries.reduce((acc, entry) => {
+    acc[entry.kind] = (acc[entry.kind] || 0) + 1;
+    return acc;
+  }, {});
+  const totals = entries.reduce((acc, entry) => {
+    if (entry.kind === 'deposit') acc.deposits += Math.max(0, entry.amount);
+    if (entry.kind === 'dividend' || entry.kind === 'interest') acc.income += Math.max(0, entry.amount);
+    if (entry.kind === 'tax' || entry.kind === 'interest-fee') acc.debits += Math.abs(entry.amount);
+    if (entry.kind === 'refund') acc.refunds += Math.max(0, entry.amount);
+    if (entry.kind === 'order-buy' || entry.kind === 'order-sell') acc.orderCash += Math.abs(entry.amount);
+    return acc;
+  }, { deposits: 0, income: 0, debits: 0, refunds: 0, orderCash: 0 });
+  const orders = entries.filter(entry => entry.kind === 'order-buy' || entry.kind === 'order-sell');
+  return { entries, ignored, counts, totals, orders, matchedOrders: orders.filter(entry => entry.matchId), unmatchedOrders: orders.filter(entry => !entry.matchId) };
+}
+function renderFlatexAccountCsvAnalysis(analysis) {
+  flatexAccountCsvAnalysis = analysis;
+  const items = [
+    { kind: 'info', text: `${analysis.entries.length} Kontobewegungen erkannt · ${analysis.counts.deposit || 0} Einzahlung${analysis.counts.deposit === 1 ? '' : 'en'} (${fmt.format(analysis.totals.deposits)}) · ${analysis.counts.dividend || 0} Dividende${analysis.counts.dividend === 1 ? '' : 'n'} · ${analysis.counts.interest || 0} Zinsgutschrift${analysis.counts.interest === 1 ? '' : 'en'}.` },
+    { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen Depotumsätzen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depotumsätze-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
+    { kind: 'info', text: `Sonder-Cash: ${analysis.counts.tax || 0} Thesaurierung/Steuer · ${analysis.counts.refund || 0} Storno/Erstattung · ${analysis.counts['interest-fee'] || 0} Zinsbelastung. Wertpapier-Stückzahlen werden durch diesen Import nicht verändert.` }
+  ];
+  if (analysis.orders.length && !(analysis.counts.deposit > 0)) {
+    items.push({ kind: 'warn', text: 'Es wurden Orders, aber keine Einzahlungen erkannt. Wenn deine Kontoliste Einzahlungen enthält, Import abbrechen und die CSV prüfen; sonst würde der Cash-Saldo zu stark negativ werden.' });
+  }
+  if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} werden ausgelassen: 0-EUR-Zeilen oder nicht eindeutig erkannte Kontobewegungen.` });
+  items.push({ kind: 'warn', text: 'Importmodus: Frühere Kontoumsatz-Importspuren werden ersetzt. Manuell gepflegte Cash-Bewegungen bleiben erhalten und können zusätzlich wirken.' });
+  document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  const previewEntries = analysis.entries.filter(entry => entry.kind !== 'order-buy' && entry.kind !== 'order-sell').slice(0, 24)
+    .concat(analysis.orders.slice(0, 24));
+  document.getElementById('flatexAccountCsvPreview').innerHTML = previewEntries.map(entry => {
+    const isOrder = entry.kind === 'order-buy' || entry.kind === 'order-sell';
+    const cls = isOrder ? (entry.matchId ? 'buy' : 'sell') : entry.amount < 0 ? 'sell' : 'buy';
+    const detail = isOrder
+      ? `${entry.isin || 'ISIN fehlt'} · Order ${entry.orderNumber || 'ohne Nummer'} · ${entry.matchId ? 'Depotumsatz gefunden' : 'kein Depotumsatz gefunden'}`
+      : `${accountKindLabel(entry.kind)} · ${entry.info || entry.recipient || 'Kontobewegung'}`;
+    return `<div class="ss-batch-row ${cls}">
+      <div class="date">${formatDateAT(entry.ledgerDate)}</div>
+      <div><div class="name">${accountKindLabel(entry.kind)}</div><div class="meta">${escapeHtml(detail)}</div></div>
+      <div class="type">${entry.amount >= 0 ? '+' : '−'}${fmt.format(Math.abs(entry.amount))}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('flatexAccountCsvImport').disabled = false;
+  document.getElementById('flatexAccountCsvModal').classList.add('active');
+}
+async function handleFlatexAccountCsvFile(file) {
+  if (!file) return;
+  try {
+    renderFlatexAccountCsvAnalysis(analyzeFlatexAccountCsvText(await readFlatexCsvFile(file)));
+  } catch (e) {
+    flatexAccountCsvAnalysis = null;
+    alert('Flatex Kontoumsätze konnten nicht gelesen werden: ' + (e.message || e));
+  }
+}
+function closeFlatexAccountCsvModal() {
+  document.getElementById('flatexAccountCsvModal').classList.remove('active');
+  document.getElementById('flatexAccountCsvImport').disabled = true;
+  flatexAccountCsvAnalysis = null;
+  const input = document.getElementById('flatexAccountCsvFileInput');
+  if (input) input.value = '';
+}
+function clearFlatexAccountCsvImports() {
+  const importedIncomeIds = new Set((appData.income || []).filter(entry => entry.accountImportSource === FLATEX_ACCOUNT_SOURCE).map(entry => entry.id));
+  appData.income = (appData.income || []).filter(entry => entry.accountImportSource !== FLATEX_ACCOUNT_SOURCE);
+  appData.transactions = (appData.transactions || []).filter(tx => {
+    if (tx.accountImportSource === FLATEX_ACCOUNT_SOURCE) return false;
+    if (importedIncomeIds.has(tx.sourceIncomeId)) return false;
+    return !(tx.assetType === 'cash' && String(tx.note || '').startsWith('Automatische Initial-Einzahlung'));
+  });
+  appData.transactions.forEach(tx => {
+    if (tx.accountOrderSource !== FLATEX_ACCOUNT_SOURCE) return;
+    if (Object.prototype.hasOwnProperty.call(tx, 'accountOriginalFees')) tx.fees = tx.accountOriginalFees;
+    delete tx.accountOriginalFees;
+    delete tx.accountCashValue;
+    delete tx.accountOrderSource;
+    delete tx.accountImportKey;
+    delete tx.accountBookingDate;
+    delete tx.accountValuta;
+    delete tx.accountOrderNumber;
+  });
+}
+function pushFlatexAccountCashTx(entry, txType, value, note) {
+  const amount = roundImportMoney(Math.abs(value));
+  if (!(amount > 0)) return;
+  appData.transactions.push({
+    id: makeTxId(),
+    date: entry.ledgerDate,
+    assetId: 'cash',
+    assetType: 'cash',
+    txType,
+    quantity: amount,
+    price: 1,
+    value: amount,
+    fees: 0,
+    accountImportSource: FLATEX_ACCOUNT_SOURCE,
+    accountImportKey: entry.importKey,
+    note
+  });
+}
+function pushFlatexAccountIncome(entry) {
+  const amount = roundImportMoney(Math.abs(entry.amount));
+  if (!(amount > 0)) return;
+  const kind = entry.kind === 'interest' ? 'interest' : 'dividend';
+  const income = {
+    id: 'inc_flatex_account_' + String(entry.importKey).replace(/[^a-z0-9]+/gi, '').slice(-36),
+    date: entry.ledgerDate,
+    kind,
+    gross: amount,
+    tax: 0,
+    net: amount,
+    note: `Flatex Kontoumsätze · ${entry.info || accountKindLabel(entry.kind)} · Betrag aus Kontoauszug`,
+    accountImportSource: FLATEX_ACCOUNT_SOURCE,
+    accountImportKey: entry.importKey
+  };
+  appData.income.push(income);
+  upsertIncomeCashTransactions(income);
+  (appData.transactions || []).filter(tx => tx.sourceIncomeId === income.id).forEach(tx => {
+    tx.accountImportSource = FLATEX_ACCOUNT_SOURCE;
+    tx.accountImportKey = entry.importKey;
+  });
+}
+function applyFlatexAccountOrder(entry) {
+  const tx = (appData.transactions || []).find(item => item.id === entry.matchId) || findFlatexAccountOrderTransaction(entry);
+  if (!tx) return false;
+  const actualCash = roundImportMoney(Math.abs(entry.amount));
+  if (!(actualCash > 0)) return false;
+  if (tx.accountOrderSource !== FLATEX_ACCOUNT_SOURCE) tx.accountOriginalFees = Number(tx.fees) || 0;
+  const baseValue = Number(tx.value) || ((Number(tx.quantity) || 0) * (Number(tx.price) || 0));
+  const feeEstimate = tx.txType === 'buy' ? actualCash - baseValue : baseValue - actualCash;
+  tx.fees = feeEstimate > 0 ? roundImportMoney(feeEstimate) : Number(tx.accountOriginalFees) || 0;
+  tx.accountCashValue = actualCash;
+  tx.accountOrderSource = FLATEX_ACCOUNT_SOURCE;
+  tx.accountImportKey = entry.importKey;
+  tx.accountBookingDate = entry.date;
+  tx.accountValuta = entry.valuta;
+  tx.accountOrderNumber = entry.orderNumber;
+  return true;
+}
+async function importFlatexAccountCsvAnalysis() {
+  if (!flatexAccountCsvAnalysis) return;
+  const matched = flatexAccountCsvAnalysis.matchedOrders.length;
+  const ok = confirm(`Flatex Kontoumsätze wirklich übernehmen?\n\nEinzahlungen, Erträge und Sonder-Cash-Bewegungen werden in dein Cash-Kassenbuch geschrieben. ${matched} Order-Kontobewegungen werden mit vorhandenen Depotumsätzen abgeglichen. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
+  if (!ok) return;
+  backupJson('vor-flatex-kontoumsaetze');
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  ensureIncome();
+  clearFlatexAccountCsvImports();
+  let orderMatches = 0;
+  flatexAccountCsvAnalysis.entries.forEach(entry => {
+    if (entry.kind === 'deposit') pushFlatexAccountCashTx(entry, 'deposit', entry.amount, 'Flatex Kontoumsätze · Einzahlung Verrechnungskonto');
+    else if (entry.kind === 'dividend' || entry.kind === 'interest') pushFlatexAccountIncome(entry);
+    else if (entry.kind === 'tax') pushFlatexAccountCashTx(entry, 'tax', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Thesaurierung'}`);
+    else if (entry.kind === 'interest-fee') pushFlatexAccountCashTx(entry, 'fee', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Zinsbelastung'}`);
+    else if (entry.kind === 'refund') pushFlatexAccountCashTx(entry, 'refund', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Erstattung'}`);
+    else if ((entry.kind === 'order-buy' || entry.kind === 'order-sell') && applyFlatexAccountOrder(entry)) orderMatches++;
+  });
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeFlatexAccountCsvModal();
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+  alert(`Kontoumsätze übernommen. Cash-Verlauf ergänzt; ${orderMatches} Depotumsatz-Order${orderMatches === 1 ? '' : 's'} mit echter Kontobelastung abgeglichen.`);
+}
+
+function parseImportNumber(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  let cleaned = raw
+    .replace(/\s/g, '')
+    .replace(/St(?:ück|k)?\.?/gi, '')
+    .replace(/EUR|€/gi, '')
+    .replace(/[^\d,.-]/g, '');
+  if (!cleaned) return null;
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+  if (hasComma && hasDot) cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  else if (hasComma) cleaned = cleaned.replace(',', '.');
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : null;
+}
+
+function normalizeImportDate(value) {
+  const raw = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/);
+  if (m) {
+    const year = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+    return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return toIsoDate(new Date());
+}
+
+function inferImportType(row) {
+  const explicit = String(row.type || '').trim();
+  if (/^etf$/i.test(explicit)) return 'ETF';
+  if (/^aktie$/i.test(explicit)) return 'Aktie';
+  if (/^crypto$/i.test(explicit)) return 'Crypto';
+  const name = normalizeText(row.name || row.bezeichnung || '');
+  const isin = String(row.isin || row.symbol || '').toUpperCase();
+  if (/etf|msci|fonds|fund|acc|dist/.test(name) || /^(IE|LU)/.test(isin)) return 'ETF';
+  return 'Aktie';
+}
+
+function inferImportTxType(row, quantity, amount) {
+  const explicit = String(row.txType || row.action || '').toLowerCase();
+  const note = normalizeText(row.note || row.bookingInfo || row.buchungsinformation || '');
+  if (explicit.includes('buy') || explicit.includes('kauf')) return 'buy';
+  if (explicit.includes('sell') || explicit.includes('verkauf')) return 'sell';
+  if (explicit.includes('fusion')) return 'fusion';
+  if (explicit.includes('distribution') || explicit.includes('thesaur')) return 'ignore';
+  if (/thesaur|steuer|gebuhr|gebühr|dividend|ausschutt|ausschütt/.test(note)) return 'ignore';
+  if (/fusion|umtausch/.test(note)) return 'fusion';
+  if (/verkauf/.test(note) || quantity < 0 || amount < 0) return 'sell';
+  if (/kauf/.test(note) || quantity > 0 || amount > 0) return 'buy';
+  return 'ignore';
+}
+
+function normalizeScreenshotTransactions(data) {
+  const rows = Array.isArray(data?.transactions) ? data.transactions : Array.isArray(data?.rows) ? data.rows : Array.isArray(data?.buchungen) ? data.buchungen : [];
+  return rows.map((row, idx) => {
+    const quantity = parseImportNumber(row.quantity ?? row.shares ?? row.nominal ?? row.stueck ?? row.stück);
+    const amount = parseImportNumber(row.amount ?? row.value ?? row.betrag);
+    const price = parseImportNumber(row.price ?? row.kurs ?? row.costPrice);
+    const name = String(row.name || row.bezeichnung || row.title || '').trim();
+    const isin = String(row.isin || '').trim().toUpperCase();
+    const symbol = String(row.symbol || row.ticker || row.wkn || isin || '').trim().toUpperCase();
+    const date = normalizeImportDate(row.date || row.datum);
+    const note = String(row.note || row.bookingInfo || row.buchungsinformation || '').trim();
+    const txType = inferImportTxType(row, quantity || 0, amount || 0);
+    const qtyAbs = Math.abs(quantity || 0);
+    const valueAbs = Math.abs(amount || 0);
+    const px = price && price > 0 ? price : (qtyAbs > 0 && valueAbs > 0 ? valueAbs / qtyAbs : null);
+    const type = inferImportType({ ...row, name, isin, symbol });
+    return {
+      rowIndex: idx + 1,
+      date, name, isin, symbol, type,
+      quantity: qtyAbs,
+      signedQuantity: quantity || 0,
+      amount: valueAbs,
+      signedAmount: amount || 0,
+      price: px,
+      txType,
+      note
+    };
+  }).filter(row => row.name && row.quantity > 0 && row.price > 0);
+}
+
+function importRowKey(row) {
+  return [row.date, row.symbol || row.isin, row.name, row.txType, row.signedQuantity, row.signedAmount, row.price].join('|');
+}
+
+function findMatchingPosition(name, symbol) {
+  if (!Array.isArray(appData?.positions)) return null;
+  const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const nName = normalize(name);
+  const nSym = normalize(symbol);
+  // 1) Exakter Symbol-Match (wenn vorhanden)
+  if (nSym) {
+    const bySym = appData.positions.find(p => normalize(p.symbol) === nSym);
+    if (bySym) return bySym;
+  }
+  // 2) Name-Substring-Match
+  return appData.positions.find(p => {
+    const pn = normalize(p.name);
+    return pn === nName || pn.includes(nName) || nName.includes(pn);
+  });
+}
+function openScreenshotPreviewModal(data) {
+  ssBatchRows = null;
+  ssPreviewMatchedPosId = null;
+  document.getElementById('ssSingleFields').style.display = '';
+  document.getElementById('ssBatchPreview').style.display = 'none';
+  document.getElementById('ssBatchPreview').innerHTML = '';
+  document.getElementById('sspSave').textContent = 'Übernehmen';
+  document.getElementById('sspName').value = data.name || '';
+  document.getElementById('sspSymbol').value = data.symbol || '';
+  document.getElementById('sspType').value = data.type || 'Aktie';
+  document.getElementById('sspShares').value = data.shares != null ? data.shares : '';
+  document.getElementById('sspCost').value = data.costPrice != null ? data.costPrice : '';
+  document.getElementById('sspPrice').value = data.manualPrice != null ? data.manualPrice : '';
+  document.getElementById('sspDate').value = new Date().toISOString().slice(0, 10);
+  // Konflikterkennung
+  const conflictsEl = document.getElementById('ssConflicts');
+  const existingWrap = document.getElementById('sspExistingWrap');
+  const items = [];
+  const matched = findMatchingPosition(data.name, data.symbol);
+  if (matched) {
+    ssPreviewMatchedPosId = matched.id;
+    items.push({ kind: 'warn', text: `Position <strong>${escapeHtml(matched.name)}</strong> existiert bereits (${matched.shares} Stk @ ${fmtNum(matched.costPrice)} €). Standard: als Nachkauf-Transaktion hinzufügen.` });
+    existingWrap.style.display = '';
+    document.getElementById('sspMergeMode').value = 'addTx';
+  } else {
+    existingWrap.style.display = 'none';
+  }
+  // Plausibilitäts-Checks
+  if (data.manualPrice && data.costPrice) {
+    const diffPct = ((data.manualPrice - data.costPrice) / data.costPrice) * 100;
+    if (Math.abs(diffPct) > 80) {
+      items.push({ kind: 'warn', text: `Großer Unterschied zwischen Kurs (${fmtPrice(data, data.manualPrice)}) und Einstand (${fmtPrice(data, data.costPrice)}) — ${fmtNum(diffPct, 0)} %. Bitte verifizieren.` });
+    }
+  }
+  if (data.shares && data.shares > 100000) {
+    items.push({ kind: 'warn', text: `Sehr hohe Stückzahl erkannt (${data.shares}). Bitte verifizieren.` });
+  }
+  if (data.costPrice && data.costPrice > 100000) {
+    items.push({ kind: 'warn', text: `Sehr hoher Einstandspreis (${fmtPrice(data, data.costPrice)}). Bitte verifizieren.` });
+  }
+  if (items.length === 0) {
+    items.push({ kind: 'info', text: 'Alle Werte plausibel. Tap "Übernehmen" zum Speichern.' });
+  }
+  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
+  document.getElementById('ssPreviewModal').classList.add('active');
+}
+
+function openScreenshotBatchPreviewModal(rows) {
+  ssPreviewMatchedPosId = null;
+  ssBatchRows = rows;
+  const importable = rows.filter(r => r.txType === 'buy' || r.txType === 'sell' || r.txType === 'fusion');
+  const ignored = rows.length - importable.length;
+  const conflictsEl = document.getElementById('ssConflicts');
+  const batchEl = document.getElementById('ssBatchPreview');
+  document.getElementById('ssSingleFields').style.display = 'none';
+  batchEl.style.display = 'block';
+  document.getElementById('sspSave').textContent = `${importable.length} Buchungen übernehmen`;
+  const items = [
+    { kind: 'info', text: `${importable.length} echte Depotbuchungen erkannt. Käufe/Verkäufe werden als Transaktionen gebucht und Positionen zusammengeführt.` }
+  ];
+  if (ignored > 0) items.push({ kind: 'warn', text: `${ignored} Thesaurierungs-/Steuer-/Infozeilen werden bewusst ignoriert, damit keine künstlichen Käufe oder Verkäufe entstehen.` });
+  const unmatchedSells = importable.filter(r => (r.txType === 'sell' || (r.txType === 'fusion' && r.signedQuantity < 0)) && !findMatchingPosition(r.name, r.symbol || r.isin));
+  if (unmatchedSells.length > 0) items.push({ kind: 'warn', text: `${unmatchedSells.length} Verkauf/Abgang ohne bestehende Position erkannt. Diese Zeilen werden beim Speichern übersprungen.` });
+  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
+  batchEl.innerHTML = rows.map(row => {
+    const action = row.txType === 'ignore' ? 'IGNOR' : row.txType === 'sell' || (row.txType === 'fusion' && row.signedQuantity < 0) ? 'VERK.' : row.txType === 'fusion' ? 'FUSION' : 'KAUF';
+    return `<div class="ss-batch-row ${row.txType === 'ignore' ? 'ignore' : (action === 'VERK.' ? 'sell' : 'buy')}">
+      <div class="date">${formatDateAT(row.date)}</div>
+      <div>
+        <div class="name">${escapeHtml(row.name)}</div>
+        <div class="meta">${escapeHtml(row.symbol || row.isin || '')} · ${fmtNum(row.quantity, row.quantity % 1 ? 6 : 0)} Stk · ${fmtPrice(row, row.price)} · ${fmt.format(row.amount || row.quantity * row.price)}</div>
+        ${row.note ? `<div class="meta">${escapeHtml(row.note.slice(0, 90))}</div>` : ''}
+      </div>
+      <div class="type">${action}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('ssPreviewModal').classList.add('active');
+}
+
+function closeScreenshotPreviewModal() {
+  document.getElementById('ssPreviewModal').classList.remove('active');
+  ssPreviewMatchedPosId = null;
+  ssBatchRows = null;
+  document.getElementById('sspSave').textContent = 'Übernehmen';
+}
+async function saveScreenshotPreview() {
+  if (Array.isArray(ssBatchRows) && ssBatchRows.length > 0) {
+    await saveScreenshotBatchPreview();
+    return;
+  }
+  const name = document.getElementById('sspName').value.trim();
+  const symbol = document.getElementById('sspSymbol').value.trim();
+  const type = document.getElementById('sspType').value;
+  const shares = parseFloat(document.getElementById('sspShares').value);
+  const costPrice = parseFloat(document.getElementById('sspCost').value);
+  const priceStr = document.getElementById('sspPrice').value;
+  const manualPrice = priceStr ? parseFloat(priceStr) : costPrice;
+  const date = document.getElementById('sspDate').value || new Date().toISOString().slice(0, 10);
+  const mergeMode = ssPreviewMatchedPosId ? document.getElementById('sspMergeMode').value : 'newPos';
+  if (!name || !isFinite(shares) || !isFinite(costPrice) || shares <= 0 || costPrice <= 0) {
+    alert('Bitte Name, Stück und Einstand korrekt prüfen.');
+    return;
+  }
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  if (ssPreviewMatchedPosId && mergeMode === 'addTx') {
+    // Nachkauf zu existierender Position: avg-Cost neu berechnen, Tx anlegen
+    const pos = appData.positions.find(p => p.id === ssPreviewMatchedPosId);
+    if (!pos) { alert('Position nicht mehr gefunden.'); return; }
+    const newTotalShares = pos.shares + shares;
+    const newCostBasis = pos.costPrice * pos.shares + costPrice * shares;
+    pos.shares = newTotalShares;
+    pos.costPrice = newCostBasis / newTotalShares;
+    if (!pos.cgId) pos.manualPrice = manualPrice;
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: pos.id, assetType: assetTypeOf(pos),
+      txType: 'buy', quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
+      note: 'Per Screenshot-Import'
+    });
+  } else {
+    // Neue Position + Tx
+    const id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const newPos = { id, name, symbol, type, shares, costPrice };
+    if (type !== 'Crypto') newPos.manualPrice = manualPrice;
+    appData.positions.push(newPos);
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: id, assetType: assetTypeOf(newPos),
+      txType: 'buy', quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
+      note: 'Per Screenshot-Import (neue Position)'
+    });
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeScreenshotPreviewModal();
+  await savePositionsToKV();
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]);
+  await fetchAllWeeklyCharts();
+  await refreshUI();
+}
+
+function upsertImportedPosition(row, asBuy) {
+  let pos = findMatchingPosition(row.name, row.symbol || row.isin);
+  if (!pos && asBuy) {
+    pos = {
+      id: 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      name: row.name,
+      symbol: row.symbol || row.isin || '',
+      type: row.type,
+      shares: 0,
+      costPrice: row.price,
+      manualPrice: row.price
+    };
+    if (row.isin) pos.stammdaten = { isin: row.isin };
+    appData.positions.push(pos);
+  }
+  return pos;
+}
+
+async function saveScreenshotBatchPreview() {
+  if (!Array.isArray(ssBatchRows) || ssBatchRows.length === 0) return;
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  const existingKeys = new Set(appData.transactions.map(t => t.importKey).filter(Boolean));
+  let booked = 0, skipped = 0;
+  for (const row of ssBatchRows) {
+    if (row.txType === 'ignore') { skipped++; continue; }
+    const isSell = row.txType === 'sell' || (row.txType === 'fusion' && row.signedQuantity < 0);
+    const isBuy = row.txType === 'buy' || (row.txType === 'fusion' && row.signedQuantity > 0);
+    if (!isSell && !isBuy) { skipped++; continue; }
+    const key = importRowKey(row);
+    if (existingKeys.has(key)) { skipped++; continue; }
+    const pos = upsertImportedPosition(row, isBuy);
+    if (!pos) { skipped++; continue; }
+    const value = row.amount || row.quantity * row.price;
+    if (isBuy) {
+      const newShares = pos.shares + row.quantity;
+      const newCostBasis = pos.costPrice * pos.shares + value;
+      pos.shares = newShares;
+      pos.costPrice = newShares > 0 ? newCostBasis / newShares : row.price;
+      if (!pos.cgId) pos.manualPrice = row.price;
+      appData.transactions.push({
+        id: makeTxId(), date: row.date, assetId: pos.id, assetType: assetTypeOf(pos),
+        txType: 'buy', quantity: row.quantity, price: row.price, value, fees: 0,
+        importKey: key,
+        note: `${row.txType === 'fusion' ? 'Fusion/Umtausch' : 'Per Screenshot-Tabellenimport'}${row.note ? ' · ' + row.note : ''}`
+      });
+      booked++;
+    } else if (isSell) {
+      const sellQty = Math.min(row.quantity, pos.shares);
+      if (sellQty <= 0) { skipped++; continue; }
+      pos.shares = Math.max(0, pos.shares - sellQty);
+      if (!pos.cgId) pos.manualPrice = row.price;
+      appData.transactions.push({
+        id: makeTxId(), date: row.date, assetId: pos.id, assetType: assetTypeOf(pos),
+        txType: 'sell', quantity: sellQty, price: row.price, value: sellQty * row.price, fees: 0,
+        importKey: key,
+        note: `${row.txType === 'fusion' ? 'Fusion/Umtausch' : 'Per Screenshot-Tabellenimport'}${row.note ? ' · ' + row.note : ''}`
+      });
+      if (pos.shares <= 1e-9) appData.positions = appData.positions.filter(p => p.id !== pos.id);
+      booked++;
+    }
+    existingKeys.add(key);
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  closeScreenshotPreviewModal();
+  await savePositionsToKV();
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]);
+  await fetchAllWeeklyCharts();
+  await refreshUI();
+  alert(`${booked} Buchungen übernommen.${skipped ? ` ${skipped} Zeilen übersprungen/ignoriert.` : ''}`);
+}

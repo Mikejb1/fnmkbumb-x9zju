@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="__WEB_APP_TITLE__">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>__DOCUMENT_TITLE__</title>
+<style>
+__APP_CSS__
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+</head>
+<body>
+
+<div id="gateScreen">
+  <div class="auth-card">
+    <h1>__GATE_TITLE__</h1>
+    <div class="subtitle">Bitte Zugangscode eingeben um deine Daten zu entschlüsseln.</div>
+    <div class="auth-step">
+      <label>Zugangscode</label>
+      <input type="password" class="auth-input" id="gatePw" placeholder="Code" autocomplete="current-password" autofocus>
+    </div>
+    <button class="auth-btn" id="gateBtn">Entsperren</button>
+    <div class="auth-error" id="gateError"></div>
+  </div>
+</div>
+
+<div id="appScreen" class="screen">
+  <div class="header">
+    <div>
+      <h1>__HEADER_TITLE__</h1>
+      <div class="subtitle" id="lastUpdate">Lade Daten…</div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="refreshBtn" title="Live-Kurse holen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg></button>
+      <button class="icon-btn" id="layoutEditBtn" title="Ansicht bearbeiten" aria-label="Ansicht bearbeiten">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg>
+      </button>
+      <button class="icon-btn" id="themeToggleBtn" title="Hell/Dunkel">
+        <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="icon-btn" id="logoutBtn" title="Abmelden"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    </div>
+  </div>
+  <div class="refresh-progress" id="refreshProgress" aria-live="polite">
+    <div class="refresh-progress-row">
+      <span id="refreshProgressText">Live-Werte werden aktualisiert…</span>
+      <span class="refresh-progress-eta" id="refreshProgressEta">—</span>
+    </div>
+    <div class="refresh-progress-bar"><div class="refresh-progress-fill" id="refreshProgressFill"></div></div>
+  </div>
+  <nav class="mini-nav">
+    <button class="mini-nav-btn" data-jump="anchor-top">Übersicht</button>
+    <button class="mini-nav-btn" data-jump="anchor-positions">Positionen</button>
+    <button class="mini-nav-btn" data-jump="anchor-history">Verlauf</button>
+    <button class="mini-nav-btn" data-jump="anchor-goal">Ziel</button>
+    <button class="mini-nav-btn" data-jump="anchor-rebalancing">Rebalancing</button>
+    <button class="mini-nav-btn" data-jump="anchor-scenario">Szenario</button>
+    <button class="mini-nav-btn" data-jump="anchor-watchlist">Watchlist</button>
+    <button class="mini-nav-btn" data-jump="anchor-journal">Journal</button>
+    <button class="mini-nav-btn" data-jump="anchor-income">Erträge</button>
+    <button class="mini-nav-btn" data-jump="anchor-chat">KI</button>
+  </nav>
+  <div class="total-bar" id="anchor-top">
+    <div class="total-bar-head">
+      <div><div class="total-label">Depot Stand</div><div style="font-size:11px; color:var(--text-tertiary);" id="costSummary">—</div></div>
+      <div class="total-value-group">
+        <div class="market-value-line" title="Aktien, ETF und Krypto ohne Edelmetalle">
+          <div class="total-mini-label">Geld an der Börse</div>
+          <div class="market-value" id="marketValue">—</div>
+          <div class="market-pnl" id="marketPnl">—</div>
+        </div>
+        <div class="total-value-line" title="Gesamtwert inklusive Edelmetalle und Cash">
+          <div class="total-mini-label">Gesamt</div>
+          <div class="total-value" id="totalValue">—</div>
+          <div class="total-pnl" id="totalPnl">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="total-stats">
+      <div class="stat-tile neutral" id="statToday" title="Tagesveränderung: Wertänderung gegenüber gestern. Bei Krypto brokerähnliche EUR-Tagesbasis über den Worker. Bei manuellen Positionen ggf. nicht verfügbar.">
+        <div class="stat-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          <span>Heute</span>
+        </div>
+        <div class="stat-value" id="statTodayValue">—</div>
+        <div class="stat-sub" id="statTodaySub">&nbsp;</div>
+      </div>
+      <div class="stat-tile neutral" id="statDrawdown" title="Drawdown: aktuelle Abweichung vom historischen Höchststand (ATH). 0 % bedeutet aktuelles Hoch, negativ = Korrektur. Hilft bei Risikoeinschätzung.">
+        <div class="stat-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+          <span>Drawdown</span>
+        </div>
+        <div class="stat-value" id="statDrawdownValue">—</div>
+        <div class="stat-sub" id="statDrawdownSub">&nbsp;</div>
+      </div>
+      <button class="stat-tile tappable" id="statSavings" type="button">
+        <div class="stat-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5h-2V3H7v2H5a2 2 0 0 0-2 2v3a4 4 0 0 0 4 4h.5"/><path d="M16 8a5 5 0 0 1 5 5v5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-5a5 5 0 0 1 5-5h5z"/><line x1="13" y1="14" x2="13" y2="17"/></svg>
+          <span>Sparrate</span>
+        </div>
+        <div class="stat-value" id="statSavingsValue">—</div>
+        <div class="stat-sub stat-edit-hint">
+          <span>pro Monat</span>
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+      </button>
+    </div>
+  </div>
+  <div class="add-position-section">
+    <div class="add-pos-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Position hinzufügen</span>
+    </div>
+    <div class="add-pos-buttons">
+      <button class="add-pos-btn" id="addPosManualBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Manuell eingeben</span>
+      </button>
+      <button class="add-pos-btn primary" id="addPosScreenshotBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Per Screenshot &amp; KI</span>
+      </button>
+      <button class="add-pos-btn" id="addPosFlatexCsvBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        <span>Depotumsätze CSV</span>
+      </button>
+      <input type="file" id="flatexCsvFileInput" accept=".csv,text/csv" style="display:none;">
+      <button class="add-pos-btn" id="flatexAccountCsvBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M7 15h4"/><path d="M16 14v4"/><path d="M14 16h4"/></svg>
+        <span>Kontoumsätze CSV</span>
+      </button>
+      <input type="file" id="flatexAccountCsvFileInput" accept=".csv,text/csv" style="display:none;">
+    </div>
+    <div class="add-pos-hint">Depotumsätze rekonstruieren Titel und Stückzahlen. Kontoumsätze ergänzen Einzahlungen, Erträge und die echte Cash-Belastung passender Orders.</div>
+  </div>
+  <div class="alloc-section">
+    <div class="alloc-head">
+      <h2 class="alloc-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        <span>Asset-Allokation</span>
+      </h2>
+      <div class="alloc-score-wrap" title="Diversifikations-Score (0–100): bewertet Anzahl Positionen, max Einzelposition, ETF-Anteil, Cash/Gold-Stabilisator und Krypto-Anteil. Höher = besser gestreut.">
+        <div class="alloc-score-label">Diversifikation</div>
+        <div class="alloc-score-value" id="allocScore">—<span class="denom">/100</span></div>
+      </div>
+    </div>
+    <div class="alloc-bar" id="allocBar"></div>
+    <div class="alloc-legend" id="allocLegend"></div>
+    <div class="alloc-crypto-drill" id="allocCryptoDrill" style="display:none;">
+      <div class="alloc-crypto-title" id="allocCryptoTitle">Krypto-Aufteilung</div>
+      <div class="alloc-crypto-tags" id="allocCryptoTags"></div>
+    </div>
+  </div>
+  <div class="risk-rules-section" id="riskRulesSection">
+    <div class="risk-rules-head" id="riskRulesHead">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s-8-4.5-8-11.8V5l8-3 8 3v5.2C20 17.5 12 22 12 22z"/></svg>
+      <span>Risiko-Regeln</span>
+    </div>
+    <div id="riskRulesList"></div>
+  </div>
+  <div class="quality-section" id="qualitySection">
+    <div class="quality-head">
+      <h2 class="quality-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Datenqualität</span>
+      </h2>
+      <div class="quality-score" id="qualityScoreVal">—<span class="denom">/100</span></div>
+    </div>
+    <div class="quality-bar"><div class="quality-bar-fill" id="qualityBarFill" style="width:0%"></div></div>
+    <div class="quality-breakdown" id="qualityBreakdown"></div>
+    <div id="qualityIssues"></div>
+  </div>
+  <details class="positions-section" id="anchor-positions" open>
+    <summary>
+      <span class="positions-summary-left">
+        <span>Positionen</span>
+        <span class="positions-summary-meta" id="positionsSummaryMeta">—</span>
+      </span>
+      <svg class="positions-summary-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="positions-head-label">
+      <span>
+        <span class="positions-size-tools" role="group" aria-label="Positionsfenster Höhe">
+          <button type="button" class="positions-size-btn" data-pos-size="down" title="Positionsfenster kleiner" aria-label="Positionsfenster kleiner">−</button>
+          <span class="positions-size-label" id="positionsSizeLabel">3 Karten</span>
+          <button type="button" class="positions-size-btn" data-pos-size="up" title="Positionsfenster größer" aria-label="Positionsfenster größer">+</button>
+          <button type="button" class="positions-size-btn" data-pos-size="reset" title="Standardhöhe" aria-label="Standardhöhe">↺</button>
+        </span>
+      </span>
+      <span class="positions-toggle" role="group" aria-label="Ansicht">
+        <button type="button" class="positions-toggle-btn active" data-view="details">Details</button>
+        <button type="button" class="positions-toggle-btn" data-view="compact">Kompakt</button>
+      </span>
+    </div>
+    <div class="positions" id="positions"></div>
+  </details>
+  <div class="history-section" id="anchor-history">
+    <div class="history-head">
+      <h2 class="history-title">Depot-Entwicklung</h2>
+      <div class="history-tabs">
+        <button class="history-tab" data-history="1W">1W</button>
+        <button class="history-tab" data-history="6M">6M</button>
+        <button class="history-tab active" data-history="12M">12M</button>
+        <button class="history-tab" data-history="+1W">+1W</button>
+        <button class="history-tab" data-history="+1M">+1M</button>
+        <button class="history-tab" data-history="+1J">+1J</button>
+      </div>
+    </div>
+    <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
+    <div class="history-quality-strip">
+      <span class="history-quality-badge" id="historyQualityBadge" tabindex="0" role="button" title="Erklärung zur Verlauf-Datenqualität anzeigen">Datenqualität: —</span>
+      <span class="history-event-badge" id="historyEventBadge">Ereignisse: —</span>
+      <span class="history-basis-text" id="historyBasisText">—</span>
+    </div>
+    <div class="history-legend" id="historyLegend">
+      <button class="history-legend-toggle active" data-series="value" type="button"><span class="dot" style="background:#22c55e"></span>Depotwert</button>
+      <button class="history-legend-toggle active" data-series="invested" type="button"><span class="dot" style="background:#888"></span>Einstand</button>
+      <button class="history-legend-toggle" data-series="pnl" type="button"><span class="dot" style="background:#3b82f6"></span>G/V</button>
+      <button class="history-legend-toggle" data-series="goal" type="button"><span class="dot" style="background:#fbbf24"></span>Zielpfad</button>
+    </div>
+    <div class="history-summary">
+      <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
+      <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
+      <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
+      <div class="history-balance-row" title="Wert abzüglich Kapitalbasis. Mit erfassten Einzahlungen nutzt die App Netto-Einzahlungen, sonst den Einstand als Näherung."><span id="historyCapitalBasisLabel">Wert ggü. Kapitalbasis</span><strong id="historyReturnGross">—</strong></div>
+      <div class="history-balance-row" title="Geldgewichtete Rendite (MWR): berücksichtigt Zeitpunkt und Höhe externer Ein- und Auszahlungen. Nur belastbar, wenn Cashflows gepflegt sind."><span>Rendite mit Cashflows (MWR)</span><strong id="historyReturnMwr">—</strong></div>
+      <div class="history-balance-row" title="Zeitgewichtete Rendite (TWR): trennt Anlageentwicklung möglichst von externen Ein- und Auszahlungen. Ersatzkurse schränken die Aussagekraft ein."><span>Anlageentwicklung (TWR)</span><strong id="historyReturnTwr">—</strong></div>
+      <div class="history-disclaimer">Depotwert zeigt Vermögensstand. Einstand zeigt Anschaffungskosten. MWR/TWR sind Renditekennzahlen und werden bei unvollständigen Cashflows oder Ersatzkursen bewusst eingeschränkt.</div>
+      <div class="history-disclaimer" id="cashHistoryNote" style="display:none;">Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.</div>
+    </div>
+  </div>
+  <div class="goal-section" id="anchor-goal">
+    <div class="goal-head"><span class="goal-title" id="goalTitle">Ziel</span><span class="goal-pct" id="goalPct">—</span></div>
+    <div class="goal-bar"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
+    <div class="goal-sliders">
+      <div class="slider-row"><label for="goalYear">Zieljahr</label><input type="range" id="goalYear" min="2026" max="2040" step="1" value="2026"><span class="slider-value" id="goalYearVal">2026</span></div>
+      <div class="slider-row"><label for="goalAmount">Zielbetrag</label><input type="range" id="goalAmount" min="5000" max="500000" step="500" value="15000"><span class="slider-value" id="goalAmountVal">15.000 €</span></div>
+      <div class="slider-row"><label for="goalSavings">Sparrate</label><input type="range" id="goalSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalSavingsVal">0 €</span></div>
+      <div class="slider-row"><label for="goalPath">Zielweg</label><input type="range" id="goalPath" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalPathVal">50% / 50%</span></div>
+      <div class="slider-row"><label for="goalRisk">Risiko</label><input type="range" id="goalRisk" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalRiskVal">Ausgewogen</span></div>
+      <details class="goal-details" id="goalDetails">
+        <summary>Planungsdetails</summary>
+        <div class="goal-sliders" style="border-top:0;margin:0;padding:0;">
+          <div class="slider-row"><label for="goalType">Zielart</label><select id="goalType"><option value="wealth">Vermögensziel</option><option value="reserve">Sicherheitsreserve</option><option value="purchase">Kaufziel</option><option value="retirement">Langfristig</option><option value="free">Freies Ziel</option></select><span class="slider-value" id="goalTypeVal">Vermögen</span></div>
+          <div class="slider-row"><label for="goalPriority">Priorität</label><select id="goalPriority"><option value="medium">Mittel</option><option value="high">Hoch</option><option value="critical">Sehr wichtig</option><option value="low">Niedrig</option></select><span class="slider-value" id="goalPriorityVal">Mittel</span></div>
+          <div class="slider-row"><label for="goalMonth">Zielmonat</label><select id="goalMonth"><option value="1">Jänner</option><option value="2">Februar</option><option value="3">März</option><option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option></select><span class="slider-value" id="goalMonthVal">Dezember</span></div>
+          <div class="slider-row"><label for="goalMinSavings">Min. Rate</label><input type="range" id="goalMinSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalMinSavingsVal">0 €</span></div>
+          <div class="slider-row"><label for="goalMaxSavings">Max. Rate</label><input type="range" id="goalMaxSavings" min="0" max="3000" step="20" value="1000"><span class="slider-value" id="goalMaxSavingsVal">1.000 €</span></div>
+          <div class="slider-row"><label for="goalBuffer">Puffer</label><input type="range" id="goalBuffer" min="0" max="30" step="5" value="10"><span class="slider-value" id="goalBufferVal">10 %</span></div>
+          <div class="slider-row"><label for="goalReturn">Rendite</label><input type="range" id="goalReturn" min="-5" max="12" step="0.5" value="4"><span class="slider-value" id="goalReturnVal">4,0 % p.a.</span></div>
+        </div>
+      </details>
+    </div>
+    <div class="goal-meta" id="goalMeta">—</div>
+    <div class="strategy-note" id="strategyNote">—</div>
+    <div class="goal-update-row">
+      <button class="goal-update-btn" id="goalApplyBtn" type="button">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        <span>Alle Werte & Simulationen aktualisieren</span>
+      </button>
+      <div class="goal-update-status" id="goalApplyStatus">Aktuell</div>
+    </div>
+  </div>
+  <div class="savings-sim-section">
+    <h2 class="savings-sim-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="12" y1="10" x2="14" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="12" y1="18" x2="14" y2="18"/></svg>
+      <span>Sparplan-Simulation</span>
+    </h2>
+    <div class="savings-sim-sub" id="savingsSimSub">—</div>
+    <div class="savings-sim-grid" id="savingsSimGrid"></div>
+    <div class="savings-sim-note" id="savingsSimNote">—</div>
+  </div>
+  <div class="analysis-section">
+    <div class="analysis-head">
+      <h2>Analyse & Tipps<span class="ai-source-badge ai-source-local" id="aiSourceBadge">lokal</span></h2>
+      <button class="ai-refresh-btn" id="aiRefreshBtn" title="Neue KI-Analyse erstellen">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
+      </button>
+    </div>
+    <div class="ai-progress" id="aiProgress">
+      <div class="ai-progress-row"><span id="aiProgressText">KI-Analyse wird erstellt…</span><span class="ai-progress-eta" id="aiProgressEta">—</span></div>
+      <div class="ai-progress-bar"><div class="ai-progress-fill" id="aiProgressFill"></div></div>
+    </div>
+    <div class="analysis-text" id="analysisText">—</div>
+    <div class="analysis-disclaimer">Keine Finanzberatung. Eigenrecherche oder Fachperson für Investmentempfehlungen.</div>
+  </div>
+  <div class="usage-section">
+    <div class="usage-head">
+      <h2 class="usage-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>API-Nutzung</span>
+      </h2>
+      <span class="usage-spent" id="usageSpent">— € verbraucht</span>
+    </div>
+    <div class="usage-bar-wrap">
+      <div class="usage-bar-meta">
+        <span>Guthaben (Anthropic-Topup)</span>
+        <span class="pct" id="usagePct">—</span>
+      </div>
+      <div class="usage-bar"><div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div></div>
+      <div class="usage-budget-row">
+        <span class="usage-budget-label">Verbleibend</span>
+        <span class="usage-budget-value" id="usageRemaining">—</span>
+      </div>
+    </div>
+    <div class="usage-stats">
+      <div class="usage-metric">
+        <div class="usage-metric-label">Heute</div>
+        <div class="usage-metric-value" id="usageToday">0</div>
+        <div class="usage-metric-unit">Aufrufe</div>
+        <div class="usage-metric-reset" id="usageTodayReset">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>—</span>
+        </div>
+      </div>
+      <div class="usage-metric">
+        <div class="usage-metric-label">Diese Woche</div>
+        <div class="usage-metric-value" id="usageWeek">0</div>
+        <div class="usage-metric-unit">Aufrufe</div>
+        <div class="usage-metric-reset" id="usageWeekReset">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>—</span>
+        </div>
+      </div>
+      <div class="usage-metric">
+        <div class="usage-metric-label">Ø Kosten</div>
+        <div class="usage-metric-value" id="usageAvg">—</div>
+        <div class="usage-metric-unit">€/Aufruf</div>
+        <div class="usage-metric-reset" style="visibility:hidden;">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>
+          <span>—</span>
+        </div>
+      </div>
+    </div>
+    <div class="usage-hint">Schätzung basiert auf lokalem Zähler · genaue Werte siehe console.anthropic.com/settings/usage</div>
+  </div>
+
+  <span id="anchor-rebalancing"></span>
+  <details class="strat-section" id="rebalSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 21"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 3"/><polyline points="21 3 21 9 15 9"/><polyline points="3 21 3 15 9 15"/></svg>
+        <span>Rebalancing-Simulator</span>
+      </span>
+      <span class="count-badge" id="rebStatus">—</span>
+    </summary>
+    <div class="strat-body" id="rebalBody"></div>
+  </details>
+
+  <span id="anchor-scenario"></span>
+  <details class="strat-section" id="scenarioSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 17l4-4 4 4 5-5"/></svg>
+        <span>Szenario-Rechner (Was-wäre-wenn)</span>
+      </span>
+      <span class="count-badge" id="scenarioStatus">±0</span>
+    </summary>
+    <div class="strat-body">
+      <p style="font-size:11px; color:var(--text-tertiary); margin:0 0 10px 0; line-height:1.5;">Verschiebe die Regler, um zu sehen, wie dein Depot bei verschiedenen Marktentwicklungen aussehen würde. Cash bleibt unverändert.</p>
+      <div id="scenarioSliders">
+        <div class="scenario-slider-row"><span class="lbl">ETF</span><input type="range" min="-20" max="20" step="1" value="0" data-scenario="etf"><span class="pct" data-pct="etf">±0 %</span></div>
+        <div class="scenario-slider-row"><span class="lbl">Aktien</span><input type="range" min="-30" max="30" step="1" value="0" data-scenario="aktie"><span class="pct" data-pct="aktie">±0 %</span></div>
+        <div class="scenario-slider-row"><span class="lbl">Krypto</span><input type="range" min="-60" max="60" step="2" value="0" data-scenario="crypto"><span class="pct" data-pct="crypto">±0 %</span></div>
+        <div class="scenario-slider-row"><span class="lbl">Edelmetalle</span><input type="range" min="-20" max="20" step="1" value="0" data-scenario="gold"><span class="pct" data-pct="gold">±0 %</span></div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;"><button class="scenario-reset-btn" id="scenarioResetBtn" type="button">Zurücksetzen</button></div>
+      <div class="scenario-result" id="scenarioResult"></div>
+    </div>
+  </details>
+
+  <span id="anchor-watchlist"></span>
+  <details class="strat-section" id="watchlistSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Watchlist</span>
+      </span>
+      <span class="count-badge" id="watchlistCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <button class="strat-add-btn" id="watchAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
+      <div id="watchlistList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <span id="anchor-journal"></span>
+  <details class="strat-section" id="journalSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/></svg>
+        <span>Entscheidungs-Journal</span>
+      </span>
+      <span class="count-badge" id="journalCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <button class="strat-add-btn" id="journalAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Eintrag hinzufügen</button>
+      <div id="journalList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <span id="anchor-income"></span>
+  <details class="strat-section" id="incomeSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Erträge (Dividenden, Zinsen, Staking)</span>
+      </span>
+      <span class="count-badge" id="incomeCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <div class="income-summary" id="incomeSummary"></div>
+      <button class="strat-add-btn" id="incomeAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ertrag erfassen</button>
+      <div id="incomeList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <details class="privacy-section" id="privacySection">
+    <summary>
+      <span class="privacy-head">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Datenschutz</span>
+      </span>
+      <svg class="privacy-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="privacy-body">
+      <ul>
+        <li>Portfolio-Daten werden clientseitig mit AES-GCM (PBKDF2 150k Iterationen) verschlüsselt; der Worker speichert den verschlüsselten Blob in Cloudflare KV.</li>
+        <li>Der Master-Code bleibt im Browser. Die Entschlüsselung gespeicherter Portfolio- und Chat-Daten passiert dort.</li>
+        <li>KI-Anfragen senden den nötigen Portfolio-Kontext über den Cloudflare Worker an die Anthropic API.</li>
+        <li>Chat-Gedächtnis und Zusammenfassung werden bei neuer Speicherung clientseitig verschlüsselt; ältere Legacy-Daten können beim Laden noch erkannt werden.</li>
+        <li>Kursabfragen laufen über den Worker und externe Kursquellen; Krypto und Edelmetalle werden dabei als EUR-Werte verarbeitet.</li>
+        <li>Lokale Ansichtseinstellungen und API-Nutzungszähler werden im Browser gespeichert.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="backup-section">
+    <div class="backup-head">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Backup &amp; Export</span>
+    </div>
+    <div class="backup-buttons">
+      <button class="backup-btn" id="backupJsonBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>JSON-Backup</button>
+      <button class="backup-btn" id="backupCsvBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Transaktionen CSV</button>
+      <button class="backup-btn" id="backupImportBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>JSON importieren</button>
+      <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none;">
+    </div>
+    <div class="backup-hint">Backup enthält Positionen, Transaktionen, Ziele, Edelmetalle und KI-Gedächtnis. Vor jedem Import zeigt die App eine Vorschau und lädt ein Sicherheitsbackup des aktuellen Stands herunter.</div>
+    <div class="backup-status warn" id="backupStatus">Noch kein JSON-Backup in diesem Browser erkannt.</div>
+    <details class="danger-zone">
+      <summary class="danger-zone-summary">
+        <span class="danger-zone-title">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <span>Weitere Aktionen</span>
+        </span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="danger-zone-note">Zurücksetzen</span>
+          <svg class="danger-zone-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </summary>
+      <div class="danger-zone-body">
+        <div class="danger-zone-hint">Setzt dein komplettes Portfolio unwiderruflich auf Null zurück — inklusive KI-Gedächtnis. Sichere vorher unbedingt ein JSON-Backup.</div>
+        <button class="danger-reset-btn" id="resetPortfolioBtn" type="button">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <span>Portfolio zurücksetzen</span>
+        </button>
+      </div>
+    </details>
+  </div>
+
+  <details class="chat-section" id="anchor-chat" open>
+    <summary>
+      <h2 class="chat-title">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>KI-Chat</span>
+        <span class="badge badge-live">Haiku</span>
+      </h2>
+      <svg class="chat-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="chat-body">
+    <div class="chat-head">
+      <div class="chat-head-actions">
+        <button class="chat-clear" id="chatClearBtn" title="Chat leeren (Gedächtnis bleibt)" aria-label="Chat leeren">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        <button class="chat-clear chat-wipe" id="chatWipeBtn" title="Gedächtnis wirklich löschen" aria-label="Gedächtnis löschen">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="chat-memory-status" id="chatMemoryStatus">Gedächtnis aktiv</div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" class="chat-input" placeholder="Frage zu deinem Portfolio…" autocomplete="off">
+      <button id="chatSendBtn" class="chat-send" aria-label="Senden">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="chat-hint">Antworten kosten ~0,002 € via Anthropic API · keine Anlageberatung</div>
+    </div>
+  </details>
+
+  <div class="footer">Portfolio-Tracker · Daten verschlüsselt lokal · Krypto-Preise via Worker</div>
+</div>
+
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <h3 id="editTitle">Position bearbeiten</h3>
+    <div class="modal-field"><label>Fallback-Kurs (EUR, dauerhaft)</label><input type="number" step="0.01" class="auth-input" id="editPrice"></div>
+    <div class="modal-field"><label>Live-Symbol / Handelsplatz</label><input type="text" class="auth-input" id="editQuoteSymbol" placeholder="z.B. 4S0.DE, NVD.DE, P911.DE"></div>
+    <div class="modal-field"><label>Handelsplatz für Live-Kurs</label>
+      <select id="editVenue" class="auth-input">
+        <option value="auto">Auto (Hauptbörse)</option>
+        <option value="tradegate">Tradegate</option>
+        <option value="lus">Lang & Schwarz</option>
+        <option value="xetra">XETRA</option>
+        <option value="frankfurt">Frankfurt</option>
+        <option value="muenchen">München</option>
+        <option value="stuttgart">Stuttgart</option>
+        <option value="duesseldorf">Düsseldorf</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
+    <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
+    <div class="modal-field"><label>Risiko-Level</label>
+      <select id="editRisk" class="auth-input">
+        <option value="">Automatisch (basierend auf Typ)</option>
+        <option value="low">Niedrig</option>
+        <option value="medium">Mittel</option>
+        <option value="high">Hoch</option>
+        <option value="very-high">Sehr hoch</option>
+      </select>
+    </div>
+    <details id="editStammdatenDetails" style="margin-top:12px;">
+      <summary style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;padding:6px 0;">Stammdaten (optional)</summary>
+      <div class="modal-field"><label>Lagerstelle / Custodian</label><input type="text" class="auth-input" id="editCustodian" placeholder="z.B. Clearstream Lux."></div>
+      <div class="modal-field"><label>Verwahrart</label><input type="text" class="auth-input" id="editCustodyType" placeholder="z.B. Wertpapierrechnung"></div>
+      <div class="modal-field"><label>ISIN</label><input type="text" class="auth-input" id="editIsin" placeholder="z.B. LU1681043599"></div>
+      <div class="modal-field"><label>WKN</label><input type="text" class="auth-input" id="editWkn" placeholder="z.B. A2H59X"></div>
+      <div class="modal-field"><label>Land / Region</label><input type="text" class="auth-input" id="editLand" placeholder="z.B. USA"></div>
+      <div class="modal-field"><label>Sektor</label><input type="text" class="auth-input" id="editSektor" placeholder="z.B. Technology"></div>
+    </details>
+    <div class="modal-actions"><button class="auth-btn secondary" id="editCancel">Abbrechen</button><button class="auth-btn" id="editSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="qualityActionModal">
+  <div class="modal">
+    <h3 id="qualityActionTitle">Datenqualität verbessern</h3>
+    <p class="quality-task-hint" id="qualityActionHint"></p>
+    <div class="quality-task-list" id="qualityActionList"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="qualityActionClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="historyQualityModal">
+  <div class="modal">
+    <h3>Verlauf-Datenqualität</h3>
+    <p class="quality-task-hint" id="historyQualityIntro"></p>
+    <div class="history-quality-detail-list" id="historyQualityDetails"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="historyQualityClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="addPosModal">
+  <div class="modal">
+    <h3 id="addPosTitle">Position hinzufügen</h3>
+    <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="apName" placeholder="z.B. Apple Inc"></div>
+    <div class="modal-field"><label>Symbol / Ticker (optional)</label><input type="text" class="auth-input" id="apSymbol" placeholder="z.B. AAPL"></div>
+    <div class="modal-field"><label>Handelsplatz für Live-Kurs</label>
+      <select id="apVenue" class="auth-input">
+        <option value="auto">Auto (Hauptbörse)</option>
+        <option value="tradegate">Tradegate</option>
+        <option value="lus">Lang & Schwarz</option>
+        <option value="xetra">XETRA</option>
+        <option value="frankfurt">Frankfurt</option>
+        <option value="muenchen">München</option>
+        <option value="stuttgart">Stuttgart</option>
+        <option value="duesseldorf">Düsseldorf</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Typ</label>
+      <select id="apType" class="auth-input">
+        <option value="ETF">ETF</option>
+        <option value="Aktie">Aktie</option>
+        <option value="Crypto">Crypto</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="apShares" placeholder="z.B. 25"></div>
+    <div class="modal-field"><label>Einstandspreis € pro Stück</label><input type="number" step="0.01" class="auth-input" id="apCost" placeholder="z.B. 145.50"></div>
+    <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
+    <div class="modal-field" id="apCgIdField" style="display:none;"><label>Krypto-ID (optional für Charts)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
+    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="apDate"><span style="font-size:10px;color:var(--text-muted);">Für Käufe in der Vergangenheit ein älteres Datum wählen.</span></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="metalLotModal">
+  <div class="modal">
+    <h3 id="metalLotTitle">Edelmetall-Kauf hinzufügen</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="mlDate"></div>
+    <div class="modal-field"><label>Gramm</label><input type="number" step="0.001" min="0" class="auth-input" id="mlGrams" placeholder="z.B. 31.1"></div>
+    <div class="modal-field"><label>Kaufwert gesamt (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="mlValue" placeholder="z.B. 2200.00"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="mlFees" placeholder="z.B. 25.00"></div>
+    <div class="modal-field"><label>Lagerart</label>
+      <select id="mlStorage" class="auth-input">
+        <option value="physisch">Physisch (zuhause)</option>
+        <option value="tresor">Tresor</option>
+        <option value="haendler">Beim Händler</option>
+        <option value="muenze">Münze</option>
+        <option value="barren">Barren</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Bewertungsart</label>
+      <select id="mlValuation" class="auth-input">
+        <option value="spot">Spotpreis</option>
+        <option value="dealer">Händler-Ankaufspreis</option>
+        <option value="conservative">Konservativer Abschlag (−2 %)</option>
+      </select>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="mlCancel">Abbrechen</button><button class="auth-btn" id="mlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="cashTxModal">
+  <div class="modal">
+    <h3 id="cashTxTitle">Cash-Einzahlung</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="ctxDate"></div>
+    <div class="modal-field"><label id="ctxAmountLabel">Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="ctxAmount" placeholder="z.B. 500.00"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="ctxNote" placeholder="z.B. Gehalt, Sparrate, Depotgebühr, Quellensteuer"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="ctxCancel">Abbrechen</button><button class="auth-btn" id="ctxSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="cashTxListModal">
+  <div class="modal">
+    <h3>Cash-Bewegungen</h3>
+    <div class="cash-tx-list-wrap" id="cashTxListWrap"></div>
+    <div class="modal-actions"><button class="auth-btn" id="ctxListClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="layoutModal">
+  <div class="modal layout-modal">
+    <h3>Ansicht bearbeiten</h3>
+    <div class="layout-note">Blende Bereiche aus, sortiere sie neu und ordne deine Titel. Ausgeblendete Bereiche bleiben erhalten und können jederzeit wieder eingeblendet werden.</div>
+    <div class="layout-editor-block">
+      <div class="layout-editor-head">
+        <div>
+          <div class="layout-editor-title">Bereiche</div>
+          <div class="layout-editor-sub">Ziehen oder mit Pfeilen verschieben</div>
+        </div>
+      </div>
+      <div class="layout-list" id="layoutSectionsList"></div>
+    </div>
+    <div class="layout-editor-block">
+      <div class="layout-editor-head">
+        <div>
+          <div class="layout-editor-title">Titel-Reihenfolge</div>
+          <div class="layout-editor-sub">Gilt für Aktien, ETF und Krypto</div>
+        </div>
+      </div>
+      <div class="layout-list" id="layoutPositionsList"></div>
+    </div>
+    <div class="layout-modal-actions">
+      <button class="layout-reset-btn" id="layoutResetBtn" type="button">Standard</button>
+      <button class="auth-btn secondary" id="layoutCancelBtn" type="button">Abbrechen</button>
+      <button class="auth-btn" id="layoutSaveBtn" type="button">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="ssPreviewModal">
+  <div class="modal">
+    <h3>KI-Vorschau prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Haiku hat aus deinem Screenshot folgende Daten ausgelesen. Bitte prüfen und korrigieren, dann übernehmen.</p>
+    <div class="ss-conflicts" id="ssConflicts"></div>
+    <div class="ss-batch-preview" id="ssBatchPreview"></div>
+    <div id="ssSingleFields">
+      <div class="modal-field"><label>Name</label><input type="text" class="auth-input" id="sspName"></div>
+      <div class="modal-field"><label>Symbol / Ticker</label><input type="text" class="auth-input" id="sspSymbol"></div>
+      <div class="modal-field"><label>Typ</label>
+        <select id="sspType" class="auth-input">
+          <option value="ETF">ETF</option>
+          <option value="Aktie">Aktie</option>
+          <option value="Crypto">Crypto</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Stück</label><input type="number" step="0.000001" class="auth-input" id="sspShares"></div>
+      <div class="modal-field"><label>Einstand pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="sspCost"></div>
+      <div class="modal-field"><label>Aktueller Kurs (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="sspPrice"></div>
+      <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="sspDate"></div>
+      <div class="modal-field" id="sspExistingWrap" style="display:none;">
+        <label>Existierende Position erkannt — was tun?</label>
+        <select id="sspMergeMode" class="auth-input">
+          <option value="addTx">Als Nachkauf-Transaktion zur bestehenden Position hinzufügen (empfohlen)</option>
+          <option value="newPos">Trotzdem als neue Position anlegen</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="sspCancel">Abbrechen</button><button class="auth-btn" id="sspSave">Übernehmen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="flatexCsvModal">
+  <div class="modal">
+    <h3>Flatex CSV prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Die Vorschau rechnet die Endbestände aus der Depotumsatzliste nach. Aktuelle Positionen entstehen nur bei positivem Endbestand; verkaufte Titel bleiben für die Depot-Entwicklung historisch erhalten.</p>
+    <div class="ss-conflicts" id="flatexCsvSummary"></div>
+    <div class="ss-batch-preview" id="flatexCsvPreview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Historie neu aufbauen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="flatexAccountCsvModal">
+  <div class="modal">
+    <h3>Flatex Kontoumsätze prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Diese Liste ergänzt den Cash-Verlauf. Einzahlungen und Erträge werden übernommen; Käufe und Verkäufe werden über ISIN und Ordernummer mit bestehenden Depotumsätzen verknüpft.</p>
+    <div class="ss-conflicts" id="flatexAccountCsvSummary"></div>
+    <div class="ss-batch-preview" id="flatexAccountCsvPreview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="flatexAccountCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexAccountCsvImport" disabled>Kontoumsätze übernehmen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="watchModal">
+  <div class="modal">
+    <h3 id="watchTitle">Watchlist-Eintrag</h3>
+    <div class="modal-field"><label>Name / Kandidat</label><input type="text" class="auth-input" id="wlName" placeholder="z.B. NVIDIA Corp"></div>
+    <div class="modal-field"><label>Symbol / Ticker (optional)</label><input type="text" class="auth-input" id="wlSymbol" placeholder="z.B. NVDA"></div>
+    <div class="modal-field"><label>Gewünschter Einstieg (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlTarget" placeholder="z.B. 95.00"></div>
+    <div class="modal-field"><label>Grund</label><input type="text" class="auth-input" id="wlReason" placeholder="z.B. AI-Wachstum, KGV-attraktiv"></div>
+    <div class="modal-field"><label>Risiko</label>
+      <select id="wlRisk" class="auth-input">
+        <option value="low">Niedrig</option>
+        <option value="medium" selected>Mittel</option>
+        <option value="high">Hoch</option>
+        <option value="very-high">Sehr hoch</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Geplante Positionsgröße (EUR, optional)</label><input type="number" step="0.01" class="auth-input" id="wlSize" placeholder="z.B. 1000"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="wlCancel">Abbrechen</button><button class="auth-btn" id="wlSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal">
+    <h3 style="color:var(--negative);">Portfolio unwiderruflich zurücksetzen</h3>
+    <div class="reset-warn-box">
+      <strong>⚠ Achtung — das kann NICHT rückgängig gemacht werden!</strong>
+      Folgendes wird komplett gelöscht und auf Null gesetzt:
+      <ul class="reset-warn-list">
+        <li>Alle Positionen (Aktien, ETFs, Krypto)</li>
+        <li>Alle Transaktionen (Käufe, Verkäufe)</li>
+        <li>Edelmetalle, Cash, Ziel & Sparrate</li>
+        <li>Watchlist, Journal, Erträge</li>
+        <li>Das komplette KI-Gedächtnis</li>
+      </ul>
+    </div>
+    <div class="reset-backup-row">
+      <button class="backup-btn" id="resetBackupBtn" type="button"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Jetzt JSON-Backup sichern</button>
+    </div>
+    <div class="reset-countdown" id="resetCountdown"><span class="num" id="resetCountdownNum">10</span>Bitte warte, bevor du fortfahren kannst …</div>
+    <div class="modal-field"><label>Master-Code zur Bestätigung</label><input type="password" class="auth-input" id="resetMasterCode" placeholder="Dein Master-Code" autocomplete="off"></div>
+    <div class="auth-error" id="resetError"></div>
+    <div class="modal-actions">
+      <button class="auth-btn secondary" id="resetCancel">Abbrechen</button>
+      <button class="auth-btn reset-confirm-btn" id="resetConfirm" disabled>Endgültig löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="venueModal">
+  <div class="modal">
+    <h3 id="venueModalTitle">Handelsplatz auswählen</h3>
+    <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px 0;line-height:1.4;" id="venueModalSubtitle">Wähle den Handelsplatz für die Live-Kursabfrage. „Auto" überlässt der Quelle die Hauptbörse.</p>
+    <div class="venue-list" id="venueListBody"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="venueCloseBtn">Abbrechen</button><button class="auth-btn" id="venueSaveBtn">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="buyMoreModal">
+  <div class="modal">
+    <h3 id="buyMoreTitle">Nachkauf erfassen</h3>
+    <p style="font-size:11px; color:var(--text-secondary); margin:0 0 10px 0;" id="buyMoreSubtitle">—</p>
+    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="bmDate"><span style="font-size:10px;color:var(--text-muted);">Auch Käufe in der Vergangenheit erlaubt — der Depot-Verlauf wird automatisch angepasst.</span></div>
+    <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" min="0" class="auth-input" id="bmShares" placeholder="z.B. 5"></div>
+    <div class="modal-field"><label>Kaufpreis pro Stück (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="bmPrice" placeholder="z.B. 145.50"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="bmFees" placeholder="z.B. 1.50"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="bmNote" placeholder="z.B. Nachkauf nach Kursrücksetzer"></div>
+    <div class="realized-section" id="bmPreview" style="display:none;background:rgba(34,197,94,0.06);border-left-color:var(--positive);">
+      <div class="title">Vorschau neuer Ø-Einstand</div>
+      <div id="bmPreviewBody"></div>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="bmCancel">Abbrechen</button><button class="auth-btn" id="bmSave">Nachkauf erfassen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="sellModal">
+  <div class="modal">
+    <h3 id="sellTitle">Verkauf erfassen</h3>
+    <p style="font-size:11px; color:var(--text-secondary); margin:0 0 10px 0;" id="sellSubtitle">—</p>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="sellDate"></div>
+    <div class="modal-field"><label>Verkaufte Stück</label><input type="number" step="0.000001" min="0" class="auth-input" id="sellShares" placeholder="z.B. 5"></div>
+    <div class="modal-field"><label>Verkaufspreis pro Stück (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="sellPrice" placeholder="z.B. 145.50"></div>
+    <div class="modal-field"><label>Gebühr (optional, EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="sellFees" placeholder="z.B. 2.50"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="sellNote" placeholder="z.B. Teilgewinn realisiert"></div>
+    <div class="realized-section" id="sellPreview" style="display:none;">
+      <div class="title">Vorschau realisierter G/V</div>
+      <div id="sellPreviewBody"></div>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="sellCancel">Abbrechen</button><button class="auth-btn" id="sellSave">Verkauf erfassen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="incomeModal">
+  <div class="modal">
+    <h3 id="incomeTitle">Ertrag erfassen</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="incDate"></div>
+    <div class="modal-field"><label>Position (optional)</label>
+      <select id="incPositionId" class="auth-input">
+        <option value="">— allgemein —</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Art</label>
+      <select id="incKind" class="auth-input">
+        <option value="dividend">Dividende</option>
+        <option value="distribution">ETF-Ausschüttung</option>
+        <option value="interest">Zinsen</option>
+        <option value="bonus">Bonus</option>
+        <option value="staking">Staking-Ertrag</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Brutto-Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="incGross" placeholder="z.B. 35.50"></div>
+    <div class="modal-field"><label>Steuer/Abzug (optional)</label><input type="number" step="0.01" min="0" class="auth-input" id="incTax" placeholder="z.B. 9.40"></div>
+    <div class="modal-field"><label>Netto (autoberechnet)</label><input type="number" step="0.01" class="auth-input" id="incNet" readonly style="opacity:0.7;"></div>
+    <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="incNote" placeholder="z.B. Quartalsdividende Q1 2026"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="incCancel">Abbrechen</button><button class="auth-btn" id="incSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="journalModal">
+  <div class="modal">
+    <h3 id="journalTitle">Journal-Eintrag</h3>
+    <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="jrDate"></div>
+    <div class="modal-field"><label>Entscheidung</label><input type="text" class="auth-input" id="jrDecision" placeholder="z.B. ServiceNow halten"></div>
+    <div class="modal-field"><label>Begründung</label><input type="text" class="auth-input" id="jrReason" placeholder="z.B. unter Einstand, langer Zeithorizont"></div>
+    <div class="modal-field"><label>Erwartung</label><input type="text" class="auth-input" id="jrExpect" placeholder="z.B. Erholung auf 100€ binnen 12 Mo"></div>
+    <div class="modal-field"><label>Review-Datum</label><input type="date" class="auth-input" id="jrReview"></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="jrCancel">Abbrechen</button><button class="auth-btn" id="jrSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="screenshotModal">
+  <div class="modal">
+    <h3>Screenshot auswerten</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height: 1.4;">Wähle einen Screenshot deiner Depotposition. Haiku liest Name, Stück, Einstand und Kurs automatisch aus und füllt das Formular vor.</p>
+    <div class="modal-field">
+      <input type="file" id="ssFile" accept="image/*" class="auth-input" style="padding: 8px; font-size: 12px;">
+    </div>
+    <div class="ss-preview-wrap" id="ssPreviewWrap">
+      <img id="ssPreviewImg" class="ss-preview-img" alt="Vorschau">
+    </div>
+    <div class="ss-status" id="ssStatus"></div>
+    <div class="modal-actions">
+      <button class="auth-btn secondary" id="ssCancel">Abbrechen</button>
+      <button class="auth-btn" id="ssAnalyze" disabled>Mit KI auswerten</button>
+    </div>
+  </div>
+</div>
+
+<script>
+__APP_JS__
+</script>
+</body>
+</html>

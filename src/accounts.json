@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "note": "Produktive Accounts fuer den Build. Jede Datei bekommt eigene Titel, USER_KEY und verschluesselte Startdaten.",
+  "accounts": [
+    {
+      "name": "Michael",
+      "output": "index.html",
+      "webAppTitle": "Portfolio",
+      "documentTitle": "Mein Portfolio",
+      "gateTitle": "Portfolio",
+      "headerTitle": "Mein Portfolio",
+      "userKey": "michael",
+      "bakedBlob": {
+        "v": 1,
+        "s": "bHz+GC5Dlzb44Ichg7l5xg==",
+        "i": "nRjM3WWozJWw4Lye",
+        "c": "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"
+      }
+    },
+    {
+      "name": "Bruder",
+      "output": "bruder/index.html",
+      "webAppTitle": "Portfolio 1",
+      "documentTitle": "Mein Portfolio 1",
+      "gateTitle": "Portfolio",
+      "headerTitle": "Mein Portfolio",
+      "userKey": "bruder",
+      "bakedBlob": {
+        "v": 1,
+        "s": "RRmDGu/cYaScfbg3iU3Okg==",
+        "i": "tf8gxr0BCA2bp6c9",
+        "c": "3D4dYMIfDR5WtsQ06gmhmDvRblMyDGC2icoCddu+RyZPKhiUh4QECqiljlgGGrWyEOp/gz0fQyFpOwcPK6FYBGi3etOHUU/Vgh1ZQOy2EtjuPeN9SkYg86IupHIS9BsrdrF02raa+NuPNZv6ihF8z7d8jvfjJmTOnKVpBdPD8pDio4N95izMiOMb"
+      }
+    },
+    {
+      "name": "Person1",
+      "output": "person1/index.html",
+      "webAppTitle": "Person1 Portfolio",
+      "documentTitle": "Person1 Portfolio",
+      "gateTitle": "Person1 Portfolio",
+      "headerTitle": "Person1 Portfolio",
+      "userKey": "person1",
+      "bakedBlob": null
+    },
+    {
+      "name": "Person2",
+      "output": "person2/index.html",
+      "webAppTitle": "Person2 Portfolio",
+      "documentTitle": "Person2 Portfolio",
+      "gateTitle": "Person2 Portfolio",
+      "headerTitle": "Person2 Portfolio",
+      "userKey": "person2",
+      "bakedBlob": null
+    }
+  ]
+}
