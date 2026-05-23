@@ -141,6 +141,7 @@
   }
   .positive { color: var(--positive); } .negative { color: var(--negative); }
   .positions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .positions-list-scroll { overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
   .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
   .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
   .card-name { font-size: 14px; font-weight: 500; margin: 0 0 2px 0; }
@@ -378,7 +379,7 @@
   .positions-toggle { display: inline-flex; background: var(--bg-track); border-radius: 6px; padding: 2px; gap: 0; }
   .positions-toggle-btn { background: transparent; border: 0; color: var(--text-tertiary); font-size: 10px; font-family: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
   .positions-toggle-btn.active { background: var(--bg-card); color: var(--text-primary); font-weight: 500; }
-  .positions-section { background: transparent; margin: 0; padding: 0; }
+  .positions-section { background: transparent; margin: 0 0 14px; padding: 0; }
   .positions-section > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; color: var(--text-tertiary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
   .positions-section > summary::-webkit-details-marker { display: none; }
   .positions-summary-left { display: inline-flex; align-items: center; gap: 8px; }
@@ -387,9 +388,13 @@
   .positions-section[open] .positions-summary-chevron { transform: rotate(180deg); }
   .positions-section .positions-head-label { justify-content: flex-end; margin-top: -2px; }
   .positions-section:not([open]) .positions-toggle { display: none; }
+  .positions-section:not([open]) { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .positions-section:not([open]) > summary { margin: 0; padding: 12px 14px; color: var(--text-primary); font-size: 13px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .positions-section:not([open]) .positions-summary-left { gap: 10px; min-width: 0; }
+  .positions-section:not([open]) .positions-summary-meta { color: var(--text-secondary); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .positions.compact .card .card-collapsed-row { gap: 8px; }
   .positions.compact .card { padding: 8px 11px; }
-  .positions.compact .card.expanded .card-expanded-content { display: none; }
+  .positions.compact .card.expanded .card-expanded-content { display: block; }
   .positions.compact .card .card-meta-line { display: none; }
   .positions.compact .card .card-chevron { display: none; }
   .positions.compact .card .card-quick-edit { width: 22px; height: 22px; padding: 2px; }
@@ -5711,6 +5716,21 @@ function buildSpecialCard(kind, totals) {
 }
 
 let renderExpandedRestore = new Set();
+function updatePositionsScrollLimit() {
+  const container = document.getElementById('positions');
+  if (!container) return;
+  const cards = [...container.children].filter(el => el.classList?.contains('card'));
+  if (cards.length <= 3) {
+    container.classList.remove('positions-list-scroll');
+    container.style.maxHeight = '';
+    return;
+  }
+  const styles = getComputedStyle(container);
+  const gap = parseFloat(styles.rowGap || styles.gap || '10') || 10;
+  const visibleHeight = cards.slice(0, 3).reduce((sum, card) => sum + card.getBoundingClientRect().height, 0) + gap * 2 + 4;
+  container.classList.add('positions-list-scroll');
+  container.style.maxHeight = `${Math.ceil(Math.max(280, visibleHeight))}px`;
+}
 function renderPositions(totals) {
   const container = document.getElementById('positions');
   // Expand-State der bisherigen Karten merken
@@ -5738,6 +5758,7 @@ function renderPositions(totals) {
   if (positionsSummary) {
     positionsSummary.textContent = `${current.length} Titel · ${fmt.format(totals.marketValue || totals.totalCur || 0)} an der Börse`;
   }
+  requestAnimationFrame(updatePositionsScrollLimit);
   if (metalsWasOpen) {
     const metalsDetails = container.querySelector('#card-metals details');
     if (metalsDetails) metalsDetails.open = true;
@@ -6728,6 +6749,7 @@ function wireEvents() {
     if (!container) return;
     container.classList.toggle('compact', view === 'compact');
     document.querySelectorAll('.positions-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    requestAnimationFrame(updatePositionsScrollLimit);
     try { localStorage.setItem(POSVIEW_KEY, view); } catch (e) {}
   };
   document.querySelectorAll('.positions-toggle-btn').forEach(b => b.addEventListener('click', () => applyPosView(b.dataset.view)));
