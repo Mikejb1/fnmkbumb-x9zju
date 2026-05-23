@@ -186,13 +186,18 @@
   .cash-tx-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
   .cash-tx-btn:hover { background: var(--bg-track); }
   .cash-tx-btn.cash-tx-list { color: var(--text-secondary); }
+  .cash-balance-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-top: 10px; padding: 10px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px; }
+  .cash-balance-kicker { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .cash-balance-value { margin-top: 2px; color: var(--text-primary); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cash-balance-meta { margin-top: 3px; color: var(--text-muted); font-size: 10px; line-height: 1.45; }
+  .cash-reconcile-btn { color: var(--positive); border-color: rgba(34,197,94,0.45); white-space: nowrap; }
   .cash-tx-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
   .cash-tx-list-wrap { max-height: 320px; overflow-y: auto; margin: 10px 0; }
   .cash-tx-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
   .cash-tx-item .cash-tx-meta { display: flex; flex-direction: column; gap: 2px; }
   .cash-tx-item .cash-tx-date { font-size: 10px; color: var(--text-tertiary); }
-  .cash-tx-item .cash-tx-val.deposit, .cash-tx-item .cash-tx-val.refund, .cash-tx-item .cash-tx-val.dividend, .cash-tx-item .cash-tx-val.distribution, .cash-tx-item .cash-tx-val.interest, .cash-tx-item .cash-tx-val.bonus, .cash-tx-item .cash-tx-val.staking { color: var(--positive); font-weight: 500; }
-  .cash-tx-item .cash-tx-val.withdraw, .cash-tx-item .cash-tx-val.fee, .cash-tx-item .cash-tx-val.tax { color: var(--negative); font-weight: 500; }
+  .cash-tx-item .cash-tx-val.deposit, .cash-tx-item .cash-tx-val.refund, .cash-tx-item .cash-tx-val.adjust-credit, .cash-tx-item .cash-tx-val.dividend, .cash-tx-item .cash-tx-val.distribution, .cash-tx-item .cash-tx-val.interest, .cash-tx-item .cash-tx-val.bonus, .cash-tx-item .cash-tx-val.staking { color: var(--positive); font-weight: 500; }
+  .cash-tx-item .cash-tx-val.withdraw, .cash-tx-item .cash-tx-val.adjust-debit, .cash-tx-item .cash-tx-val.fee, .cash-tx-item .cash-tx-val.tax { color: var(--negative); font-weight: 500; }
   .cash-tx-del { background: transparent; border: 0; color: var(--negative); cursor: pointer; padding: 4px 8px; font-size: 11px; }
   .backup-status { font-size: 10px; color: var(--text-secondary); margin-top: 7px; line-height: 1.4; }
   .backup-status.warn { color: #fbbf24; }
@@ -323,6 +328,7 @@
   .income-summary { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; }
   .income-summary .big { font-size: 18px; font-weight: 600; color: var(--positive); font-variant-numeric: tabular-nums; }
   .income-summary .breakdown { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .income-list-scroll { overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
   .income-kind-badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-right: 4px; font-weight: 500; }
   .income-kind-dividend { background: rgba(34,197,94,0.18); color: #4ade80; }
   .income-kind-interest { background: rgba(59,130,246,0.18); color: #93c5fd; }
@@ -358,15 +364,29 @@
   .mini-nav::-webkit-scrollbar { display: none; }
   .mini-nav-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
   .mini-nav-btn:hover, .mini-nav-btn:active { background: var(--bg-card); color: var(--text-primary); }
-  .privacy-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
-  .privacy-section h3 { font-size: 13px; font-weight: 500; margin: 0 0 8px 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-  .privacy-section h3 svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .privacy-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0; margin-bottom: 14px; font-size: 11px; color: var(--text-secondary); line-height: 1.6; overflow: hidden; }
+  .privacy-section summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-primary); }
+  .privacy-section summary::-webkit-details-marker { display: none; }
+  .privacy-section .privacy-head { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .privacy-section .privacy-head svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+  .privacy-section .privacy-chevron { width: 13px; height: 13px; stroke: currentColor; fill: none; color: var(--text-muted); transition: transform 0.2s; }
+  .privacy-section[open] .privacy-chevron { transform: rotate(180deg); }
+  .privacy-section .privacy-body { border-top: 1px solid var(--border-light); padding: 2px 14px 12px; }
   .privacy-section ul { list-style: none; padding: 0; margin: 0; }
   .privacy-section li { padding: 4px 0; padding-left: 18px; position: relative; }
   .privacy-section li::before { content: "✓"; position: absolute; left: 0; color: var(--positive); font-weight: 600; }
   .positions-toggle { display: inline-flex; background: var(--bg-track); border-radius: 6px; padding: 2px; gap: 0; }
   .positions-toggle-btn { background: transparent; border: 0; color: var(--text-tertiary); font-size: 10px; font-family: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
   .positions-toggle-btn.active { background: var(--bg-card); color: var(--text-primary); font-weight: 500; }
+  .positions-section { background: transparent; margin: 0; padding: 0; }
+  .positions-section > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; color: var(--text-tertiary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .positions-section > summary::-webkit-details-marker { display: none; }
+  .positions-summary-left { display: inline-flex; align-items: center; gap: 8px; }
+  .positions-summary-meta { color: var(--text-muted); font-size: 10px; text-transform: none; letter-spacing: 0; }
+  .positions-summary-chevron { width: 14px; height: 14px; stroke: currentColor; fill: none; transition: transform 0.2s; }
+  .positions-section[open] .positions-summary-chevron { transform: rotate(180deg); }
+  .positions-section .positions-head-label { justify-content: flex-end; margin-top: -2px; }
+  .positions-section:not([open]) .positions-toggle { display: none; }
   .positions.compact .card .card-collapsed-row { gap: 8px; }
   .positions.compact .card { padding: 8px 11px; }
   .positions.compact .card.expanded .card-expanded-content { display: none; }
@@ -376,7 +396,7 @@
   .positions.compact .card .card-name-row { margin-bottom: 0; gap: 4px; }
   .positions.compact .card .card-pnl-mini .val { font-size: 13px; }
   .positions.compact .card .card-pnl-mini .pct { font-size: 10px; }
-  .positions.compact .card .special-slider-wrap, .positions.compact .card .cash-tx-toolbar, .positions.compact .card .metals-body { display: none; }
+  .positions.compact .card .special-slider-wrap, .positions.compact .card .cash-balance-panel, .positions.compact .card .cash-tx-toolbar, .positions.compact .card .metals-body { display: none; }
   .positions.compact .card.special details summary .card-chevron { display: none; }
   .ss-conflicts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
   .ss-conflict-item { padding: 8px 10px; border-radius: 6px; font-size: 11px; line-height: 1.4; }
@@ -933,14 +953,23 @@
     <div class="quality-bar"><div class="quality-bar-fill" id="qualityBarFill" style="width:0%"></div></div>
     <div id="qualityIssues"></div>
   </div>
-  <div class="positions-head-label" id="anchor-positions">
-    <span>Positionen</span>
-    <span class="positions-toggle" role="group" aria-label="Ansicht">
-      <button type="button" class="positions-toggle-btn active" data-view="details">Details</button>
-      <button type="button" class="positions-toggle-btn" data-view="compact">Kompakt</button>
-    </span>
-  </div>
-  <div class="positions" id="positions"></div>
+  <details class="positions-section" id="anchor-positions" open>
+    <summary>
+      <span class="positions-summary-left">
+        <span>Positionen</span>
+        <span class="positions-summary-meta" id="positionsSummaryMeta">—</span>
+      </span>
+      <svg class="positions-summary-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="positions-head-label">
+      <span></span>
+      <span class="positions-toggle" role="group" aria-label="Ansicht">
+        <button type="button" class="positions-toggle-btn active" data-view="details">Details</button>
+        <button type="button" class="positions-toggle-btn" data-view="compact">Kompakt</button>
+      </span>
+    </div>
+    <div class="positions" id="positions"></div>
+  </details>
   <div class="history-section" id="anchor-history">
     <div class="history-head">
       <h2 class="history-title">Depot-Entwicklung</h2>
@@ -948,6 +977,9 @@
         <button class="history-tab" data-history="1W">1W</button>
         <button class="history-tab" data-history="6M">6M</button>
         <button class="history-tab active" data-history="12M">12M</button>
+        <button class="history-tab" data-history="+1W">+1W</button>
+        <button class="history-tab" data-history="+1M">+1M</button>
+        <button class="history-tab" data-history="+1J">+1J</button>
       </div>
     </div>
     <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
@@ -1142,20 +1174,25 @@
     </div>
   </details>
 
-  <div class="privacy-section">
-    <h3>
-      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span>Datenschutz</span>
-    </h3>
-    <ul>
-      <li>Portfolio-Daten clientseitig mit AES-GCM (PBKDF2 150k Iterationen) verschlüsselt — Worker speichert nur unentschlüsselbaren Blob in Cloudflare KV</li>
-      <li>Master-Code wird niemals übertragen — Entschlüsselung passiert nur im Browser</li>
-      <li>KI-Anfragen senden aggregierten Portfolio-Kontext an Anthropic API (über Cloudflare Worker)</li>
-      <li>Chat-Gedächtnis wird als Klartext-Zusammenfassung in deinem KV-Slot gespeichert — nur du mit deinem Master-Code kannst es entschlüsseln</li>
-      <li>Krypto-Preise via Worker auf EUR-Tagesbasis, Edelmetalle via Worker-Proxy</li>
-      <li>Lokales API-Usage-Tracking nur in localStorage — keine Server-Speicherung</li>
-    </ul>
-  </div>
+  <details class="privacy-section" id="privacySection">
+    <summary>
+      <span class="privacy-head">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Datenschutz</span>
+      </span>
+      <svg class="privacy-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="privacy-body">
+      <ul>
+        <li>Portfolio-Daten werden clientseitig mit AES-GCM (PBKDF2 150k Iterationen) verschlüsselt; der Worker speichert den verschlüsselten Blob in Cloudflare KV.</li>
+        <li>Der Master-Code bleibt im Browser. Die Entschlüsselung gespeicherter Portfolio- und Chat-Daten passiert dort.</li>
+        <li>KI-Anfragen senden den nötigen Portfolio-Kontext über den Cloudflare Worker an die Anthropic API.</li>
+        <li>Chat-Gedächtnis und Zusammenfassung werden bei neuer Speicherung clientseitig verschlüsselt; ältere Legacy-Daten können beim Laden noch erkannt werden.</li>
+        <li>Kursabfragen laufen über den Worker und externe Kursquellen; Krypto und Edelmetalle werden dabei als EUR-Werte verarbeitet.</li>
+        <li>Lokale Ansichtseinstellungen und API-Nutzungszähler werden im Browser gespeichert.</li>
+      </ul>
+    </div>
+  </details>
 
   <div class="backup-section">
     <div class="backup-head">
@@ -1335,7 +1372,7 @@
   <div class="modal">
     <h3 id="cashTxTitle">Cash-Einzahlung</h3>
     <div class="modal-field"><label>Datum</label><input type="date" class="auth-input" id="ctxDate"></div>
-    <div class="modal-field"><label>Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="ctxAmount" placeholder="z.B. 500.00"></div>
+    <div class="modal-field"><label id="ctxAmountLabel">Betrag (EUR)</label><input type="number" step="0.01" min="0" class="auth-input" id="ctxAmount" placeholder="z.B. 500.00"></div>
     <div class="modal-field"><label>Notiz (optional)</label><input type="text" class="auth-input" id="ctxNote" placeholder="z.B. Gehalt, Sparrate, Depotgebühr, Quellensteuer"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="ctxCancel">Abbrechen</button><button class="auth-btn" id="ctxSave">Speichern</button></div>
   </div>
@@ -1593,13 +1630,16 @@ const MANUAL_QUOTE_OVERRIDE_MS = 30 * 60 * 1000;
 let aiProgressState = null, aiRegenTimer = null, refreshProgressState = null;
 
 const LAYOUT_STORAGE_KEY = STORAGE_PREFIX + 'layout_v1';
+const POSITIONS_PANEL_OPEN_KEY = STORAGE_PREFIX + 'positions_panel_open_v1';
 const LAYOUT_SECTIONS = [
   { key: 'overview', label: 'Depot Stand', meta: 'Gesamtwert, Tageswert, Drawdown, Sparrate', selectors: ['#anchor-top'], nav: 'anchor-top' },
   { key: 'addPosition', label: 'Position hinzufügen', meta: 'Manuell oder per Screenshot & KI', selectors: ['.add-position-section'] },
   { key: 'allocation', label: 'Asset-Allokation', meta: 'Aufteilung und Diversifikation', selectors: ['.alloc-section'] },
   { key: 'riskRules', label: 'Risiko-Regeln', meta: 'Grenzen und Hinweise', selectors: ['#riskRulesSection'] },
   { key: 'quality', label: 'Datenqualität', meta: 'Prüfung der Eingaben', selectors: ['#qualitySection'] },
-  { key: 'positions', label: 'Positionen', meta: 'Aktien, ETF, Krypto, Edelmetalle, Cash', selectors: ['#anchor-positions', '#positions'], nav: 'anchor-positions' },
+  { key: 'positions', label: 'Positionen', meta: 'Aktien, ETF und Krypto', selectors: ['#anchor-positions'], nav: 'anchor-positions' },
+  { key: 'metalsCard', label: 'Edelmetalle', meta: 'Karte innerhalb Positionen', selectors: ['#card-metals'] },
+  { key: 'cashCard', label: 'Cash', meta: 'Cash-Saldo und Bewegungen', selectors: ['#card-cash'] },
   { key: 'history', label: 'Depot-Entwicklung', meta: 'Chart, Wochen-/Monatsansicht', selectors: ['#anchor-history'], nav: 'anchor-history' },
   { key: 'goal', label: 'Ziel', meta: 'Zielbetrag, Sparrate, Risiko', selectors: ['#anchor-goal'], nav: 'anchor-goal' },
   { key: 'savings', label: 'Sparplan-Simulation', meta: 'Monatsraten und Ziel-Lücke', selectors: ['.savings-sim-section'] },
@@ -2420,10 +2460,10 @@ function startManualQuoteExpiryTimer() {
 }
 
 // Cashbestand zu einem Datum (oder heute) — bezieht Käufe/Verkäufe als Abflüsse/Zuflüsse mit ein
-function isCashCreditType(type) { return ['deposit', 'dividend', 'distribution', 'interest', 'bonus', 'staking', 'refund'].includes(type); }
-function isCashDebitType(type) { return ['withdraw', 'fee', 'tax'].includes(type); }
+function isCashCreditType(type) { return ['deposit', 'dividend', 'distribution', 'interest', 'bonus', 'staking', 'refund', 'adjust-credit'].includes(type); }
+function isCashDebitType(type) { return ['withdraw', 'fee', 'tax', 'adjust-debit'].includes(type); }
 function cashTxLabel(type) {
-  return ({ deposit: 'Einzahlung', withdraw: 'Auszahlung', fee: 'Gebühr', tax: 'Steuer', dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking', refund: 'Erstattung' })[type] || type;
+  return ({ deposit: 'Einzahlung', withdraw: 'Auszahlung', fee: 'Gebühr', tax: 'Steuer', dividend: 'Dividende', distribution: 'Ausschüttung', interest: 'Zinsen', bonus: 'Bonus', staking: 'Staking', refund: 'Erstattung', 'adjust-credit': 'Saldo-Korrektur', 'adjust-debit': 'Saldo-Korrektur' })[type] || type;
 }
 function cashEffectiveDate(t) {
   if (!t) return '';
@@ -2473,6 +2513,14 @@ function getTotalWithdrawals() {
 }
 function hasCashTransactions() {
   return Array.isArray(appData?.transactions) && appData.transactions.some(t => t.assetType === 'cash');
+}
+function latestCashMovementDate() {
+  return (appData?.transactions || [])
+    .filter(t => t.assetType === 'cash')
+    .map(t => cashEffectiveDate(t))
+    .filter(Boolean)
+    .sort()
+    .pop() || '';
 }
 function currentCashValue() {
   return hasCashTransactions() ? getCashBalance() : Number(appData?.goal?.cash || 0);
@@ -3915,7 +3963,10 @@ function renderIncome() {
     listEl.innerHTML = '<div class="strat-empty">Noch keine Erträge erfasst.</div>';
     return;
   }
-  listEl.innerHTML = list.map(e => {
+  const newestFirst = list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  listEl.classList.toggle('income-list-scroll', newestFirst.length > 3);
+  listEl.style.maxHeight = '';
+  listEl.innerHTML = newestFirst.map(e => {
     const posName = e.positionId ? (appData.positions.find(p => p.id === e.positionId)?.name || 'gelöschte Position') : 'allgemein';
     return `<div class="strat-item">
       <div class="info">
@@ -3929,6 +3980,13 @@ function renderIncome() {
       </div>
     </div>`;
   }).join('');
+  if (newestFirst.length > 3) {
+    requestAnimationFrame(() => {
+      const firstThree = [...listEl.children].slice(0, 3);
+      const height = firstThree.reduce((sum, node) => sum + node.getBoundingClientRect().height, 0) + 18;
+      listEl.style.maxHeight = `${Math.ceil(height)}px`;
+    });
+  }
 }
 
 // ===== SZENARIO-RECHNER =====
@@ -4906,6 +4964,7 @@ function renderChart(canvasId, points, valueKey, opts) {
   const datasets = [{
     label: opts?.mainLabel || 'Depotwert',
     data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8,
+    borderDash: opts?.mainDashed ? [6, 4] : undefined,
     fill: true, tension: opts?.daily ? 0.15 : 0.3,
     pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5,
     pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1
@@ -5396,10 +5455,17 @@ function closeMetalLotModal() {
 // ===== CASH-TRANSAKTIONEN =====
 let pendingCashTxType = 'deposit';
 function openCashTxModal(type) {
-  pendingCashTxType = ['deposit', 'withdraw', 'fee', 'tax'].includes(type) ? type : 'deposit';
+  pendingCashTxType = ['deposit', 'withdraw', 'fee', 'tax', 'reconcile'].includes(type) ? type : 'deposit';
   document.getElementById('cashTxTitle').textContent = ({
-    deposit: 'Cash-Einzahlung', withdraw: 'Cash-Auszahlung', fee: 'Cash-Gebühr', tax: 'Cash-Steuer'
+    deposit: 'Cash-Einzahlung', withdraw: 'Cash-Auszahlung', fee: 'Cash-Gebühr', tax: 'Cash-Steuer', reconcile: 'Cash-Saldo korrigieren'
   })[pendingCashTxType];
+  const amountLabel = document.getElementById('ctxAmountLabel');
+  const amountInput = document.getElementById('ctxAmount');
+  if (amountLabel) amountLabel.textContent = pendingCashTxType === 'reconcile' ? 'Zielsaldo laut Konto (EUR)' : 'Betrag (EUR)';
+  if (amountInput) {
+    amountInput.min = pendingCashTxType === 'reconcile' ? '' : '0';
+    amountInput.placeholder = pendingCashTxType === 'reconcile' ? 'z.B. 12.40' : 'z.B. 500.00';
+  }
   document.getElementById('ctxDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('ctxAmount').value = '';
   document.getElementById('ctxNote').value = '';
@@ -5412,10 +5478,28 @@ async function saveCashTxModal() {
   const amount = parseFloat(String(document.getElementById('ctxAmount').value).replace(',', '.'));
   const note = document.getElementById('ctxNote').value.trim();
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Bitte gültiges Datum.'); return; }
-  if (!isFinite(amount) || amount <= 0) { alert('Bitte gültigen Betrag eingeben.'); return; }
+  if (!isFinite(amount) || (pendingCashTxType !== 'reconcile' && amount <= 0)) { alert(pendingCashTxType === 'reconcile' ? 'Bitte gültigen Zielsaldo eingeben.' : 'Bitte gültigen Betrag eingeben.'); return; }
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
   // Erste Cash-Tx startet mit automatischer Anfangsbasis, damit alte Käufe den Cashsaldo nicht plötzlich negativ machen.
   ensureCashLedgerStart(date);
+  if (pendingCashTxType === 'reconcile') {
+    const before = getCashBalance(date);
+    const delta = Math.round((amount - before) * 100) / 100;
+    if (Math.abs(delta) < 0.005) {
+      closeCashTxModal();
+      return alert('Cash-Saldo ist bereits passend. Es wurde keine Korrekturbuchung angelegt.');
+    }
+    appData.transactions.push({
+      id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: delta > 0 ? 'adjust-credit' : 'adjust-debit',
+      quantity: Math.abs(delta), price: 1, value: Math.abs(delta), fees: 0,
+      note: note || `Saldo-Korrektur auf ${fmt.format(amount)}`
+    });
+    appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    closeCashTxModal();
+    await savePositionsToKV();
+    await refreshUI({ skipAI: true });
+    return;
+  }
   appData.transactions.push({
     id: makeTxId(), date, assetId: 'cash', assetType: 'cash', txType: pendingCashTxType,
     quantity: amount, price: 1, value: amount, fees: 0,
@@ -5580,18 +5664,21 @@ function buildSpecialCard(kind, totals) {
     const accountStats = hasCashTx ? accountImportCashStats() : { cashRows: 0, depositRows: 0, orderRows: 0, latest: '' };
     const pct = totals && totals.totalCur > 0 ? (cash / totals.totalCur) * 100 : 0;
     wrap.id = 'card-cash';
-    const sliderHtml = hasCashTx ? `
-      <div class="special-slider-wrap" style="opacity:0.6;">
-        <span class="special-slider-min">0 €</span>
-        <input type="range" min="0" max="1000000" step="100" value="${Math.max(0, cash)}" disabled>
-        <span class="special-slider-val">${fmt.format(cash)}</span>
-      </div>
-      <div class="cash-tx-hint">Wert wird aus Cash-Bewegungen berechnet · Regler deaktiviert${cash < 0 ? ' · Negativer Saldo wird als Abzug im Depotwert berücksichtigt' : ''}</div>
-    ` : `
-      <div class="special-slider-wrap">
-        <span class="special-slider-min">0 €</span>
-        <input type="range" id="cashSlider" min="0" max="1000000" step="100" value="${cash}">
-        <span class="special-slider-val" id="cashSliderVal">${fmt.format(cash)}</span>
+    const lastCashMove = latestCashMovementDate();
+    const cashBasisText = hasCashTx
+      ? `Cash-Kassenbuch aktiv${lastCashMove ? ' · letzte Bewegung ' + formatDateAT(lastCashMove) : ''}`
+      : 'Noch keine Cash-Bewegung erfasst · Saldo-Korrektur startet das Kassenbuch';
+    const cashStatusText = hasCashTx
+      ? `Berechnet aus Bewegungen, Erträgen und Orderabgleich${cash < 0 ? ' · negativer Saldo zieht den Depotwert ab' : ''}`
+      : 'Legacy-Startwert wird bis zur ersten Bewegung weiter berücksichtigt';
+    const balanceHtml = `
+      <div class="cash-balance-panel">
+        <div>
+          <div class="cash-balance-kicker">Cash-Saldo</div>
+          <div class="cash-balance-value">${fmt.format(cash)}</div>
+          <div class="cash-balance-meta">${escapeHtml(cashBasisText)}<br>${escapeHtml(cashStatusText)}</div>
+        </div>
+        <button class="cash-tx-btn cash-reconcile-btn" id="cashReconcileBtn" type="button">Saldo korrigieren</button>
       </div>`;
     wrap.innerHTML = `
       <div class="special-card-row">
@@ -5604,7 +5691,7 @@ function buildSpecialCard(kind, totals) {
           <div class="pct" style="color:#666;">Reserve</div>
         </div>
       </div>
-      ${sliderHtml}
+      ${balanceHtml}
       <div class="cash-tx-toolbar">
         <button class="cash-tx-btn" id="cashAddDepositBtn" type="button">+ Einzahlung</button>
         <button class="cash-tx-btn" id="cashAddWithdrawBtn" type="button">− Auszahlung</button>
@@ -5642,10 +5729,15 @@ function renderPositions(totals) {
     totals = { totalCur };
   }
   const alloc = getCategoryAllocation(totals.totalCur);
-  currentPortfolioPositions().forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
+  const current = currentPortfolioPositions();
+  current.forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
   // Edelmetalle + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
   container.appendChild(buildSpecialCard('metals', totals));
   container.appendChild(buildSpecialCard('cash', totals));
+  const positionsSummary = document.getElementById('positionsSummaryMeta');
+  if (positionsSummary) {
+    positionsSummary.textContent = `${current.length} Titel · ${fmt.format(totals.marketValue || totals.totalCur || 0)} an der Börse`;
+  }
   if (metalsWasOpen) {
     const metalsDetails = container.querySelector('#card-metals details');
     if (metalsDetails) metalsDetails.open = true;
@@ -5659,6 +5751,7 @@ function renderPositions(totals) {
       if (pos) loadChartForPosition(pos, chartTabState[id] || 'week');
     }
   });
+  applyLayoutSettings();
 }
 
 function renderTotals() {
@@ -5803,6 +5896,50 @@ function historyStartDate(period, today) {
   else start.setMonth(today.getMonth() - 12);
   return start;
 }
+function isFutureHistoryPeriod(period) { return period === '+1W' || period === '+1M' || period === '+1J'; }
+function currentPortfolioHistoryTotal() {
+  let total = 0;
+  appData.positions.forEach(pos => {
+    const live = currentPrices[pos.id] || { price: pos.costPrice };
+    total += getPositionValuation(pos, live).currentValue;
+  });
+  return total + metalsTotalValue() + currentCashValue();
+}
+function buildPortfolioProjection(period) {
+  const today = new Date();
+  const end = new Date(today);
+  if (period === '+1W') end.setDate(today.getDate() + 7);
+  else if (period === '+1M') end.setMonth(today.getMonth() + 1);
+  else end.setFullYear(today.getFullYear() + 1);
+  const startValue = currentPortfolioHistoryTotal();
+  const startInvested = getInvestedCapital();
+  const startNet = getNetExternalContributions();
+  const cash = currentCashValue();
+  const savingsRate = Number(appData?.goal?.savingsRate || 0);
+  const points = [];
+  const totalDays = Math.max(1, Math.round((end - today) / 86400000));
+  for (let step = 0; step <= totalDays; step += 1) {
+    const date = addDays(today, step);
+    const contribution = savingsRate * (step / 30.44);
+    const label = period === '+1W' || period === '+1M'
+      ? String(date.getDate()).padStart(2, '0') + '.'
+      : MONTHS_SHORT[date.getMonth()];
+    const labelLong = `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`;
+    points.push({
+      date,
+      label,
+      labelLong: step === 0 ? `${labelLong} (heute)` : `${labelLong} (Projektion)`,
+      value: startValue + contribution,
+      invested: startInvested + contribution,
+      netContributions: startNet + contribution,
+      cash,
+      pnl: startValue - startInvested,
+      events: step === 0 ? ['Start der Projektion'] : [],
+      historyNote: `Sparpfad-Projektion mit ${fmt.format(savingsRate)}/Monat ohne Renditeannahme`
+    });
+  }
+  return points;
+}
 function historyApproximationForPosition(pos) {
   if (!pos || pos.special) return '';
   if (Array.isArray(pos.dailyHistory) && pos.dailyHistory.length > 20) return pos.dailyHistoryFxApproximate ? 'Tageskurs mit aktueller FX-Näherung' : '';
@@ -5881,16 +6018,10 @@ function purchaseEventsForDate(date) {
   return events;
 }
 function buildPortfolioHistory(period) {
+  if (isFutureHistoryPeriod(period)) return buildPortfolioProjection(period);
   const today = new Date();
   const start = historyStartDate(period, today);
-  const currentTotals = (() => {
-    let t = 0;
-    appData.positions.forEach(pos => {
-      const live = currentPrices[pos.id] || { price: pos.costPrice };
-      t += getPositionValuation(pos, live).currentValue;
-    });
-    return t + metalsTotalValue() + currentCashValue();
-  })();
+  const currentTotals = currentPortfolioHistoryTotal();
   const points = [];
   for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
     const isToday = toIsoDate(d) === toIsoDate(today);
@@ -5914,6 +6045,7 @@ function buildPortfolioHistory(period) {
 function renderHistory() {
   const points = buildPortfolioHistory(currentHistoryPeriod);
   if (points.length < 2) return;
+  const futureProjection = isFutureHistoryPeriod(currentHistoryPeriod);
   // Zielpfad: linear interpolation vom Startpunkt bis zum Ziel-Enddatum
   if (historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
     const goalEnd = new Date(appData.goal.year, 11, 31);
@@ -5935,17 +6067,17 @@ function renderHistory() {
   if (historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
   // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
   const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
-  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, mainLabel: mainKey === 'value' ? 'Depotwert' : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
+  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
   const first = points[0], last = points[points.length - 1];
   const delta = last.value - first.value;
   const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
-  document.getElementById('historyPeriodLabel').textContent = `${first.labelLong.replace(' (heute)', '')} – ${last.labelLong.replace(' (heute)', '')}`;
+  document.getElementById('historyPeriodLabel').textContent = `${futureProjection ? 'Projektion: ' : ''}${first.labelLong.replace(' (heute)', '')} – ${last.labelLong.replace(' (heute)', '').replace(' (Projektion)', '')}`;
   const deltaEl = document.getElementById('historyDelta');
   deltaEl.textContent = `${delta >= 0 ? '+' : ''}${fmt.format(delta)} (${delta >= 0 ? '+' : ''}${fmtNum(deltaPct, 1)} %)`;
   deltaEl.className = 'history-delta ' + (delta >= 0 ? 'positive' : 'negative');
   document.getElementById('historyStartLabel').textContent = `Depot Stand ${first.labelLong.replace(' (heute)', '')}`;
   document.getElementById('historyStartValue').textContent = fmt.format(first.value);
-  document.getElementById('historyEndLabel').textContent = last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
+  document.getElementById('historyEndLabel').textContent = futureProjection ? `Sparpfad am ${last.labelLong.replace(' (Projektion)', '')}` : last.labelLong.includes('heute') ? `Depot Stand aktuell (${String(last.date.getDate()).padStart(2, '0')}.${String(last.date.getMonth() + 1).padStart(2, '0')}.${last.date.getFullYear()})` : `Depot Stand ${last.labelLong}`;
   document.getElementById('historyEndValue').textContent = fmt.format(last.value);
   // Performance-Kennzahlen
   const invested = last.invested;
@@ -5953,7 +6085,10 @@ function renderHistory() {
   const grossEl = document.getElementById('historyReturnGross');
   if (grossEl) {
     const base = netContributions > 0 ? netContributions : invested;
-    if (base > 0) {
+    if (futureProjection) {
+      grossEl.textContent = 'Zukunftsansicht';
+      grossEl.className = '';
+    } else if (base > 0) {
       const grossPct = ((last.value - base) / base) * 100;
       grossEl.textContent = `${grossPct >= 0 ? '+' : ''}${fmtNum(grossPct, 1)} % · ${fmt.format(last.value - base)}`;
       grossEl.className = grossPct >= 0 ? 'positive' : 'negative';
@@ -5961,8 +6096,11 @@ function renderHistory() {
   }
   const mwrEl = document.getElementById('historyReturnMwr');
   if (mwrEl) {
-    const mwrPct = plausiblePerformancePct(computeMWR(last.value));
-    if (mwrPct != null) {
+    const mwrPct = futureProjection ? null : plausiblePerformancePct(computeMWR(last.value));
+    if (futureProjection) {
+      mwrEl.textContent = 'keine Renditeprognose';
+      mwrEl.className = '';
+    } else if (mwrPct != null) {
       mwrEl.textContent = `${mwrPct >= 0 ? '+' : ''}${fmtNum(mwrPct, 1)} % p.a.`;
       mwrEl.className = mwrPct >= 0 ? 'positive' : 'negative';
     } else {
@@ -5972,8 +6110,11 @@ function renderHistory() {
   }
   const twrEl = document.getElementById('historyReturnTwr');
   if (twrEl) {
-    const twrPct = plausiblePerformancePct(computeTWR(points));
-    if (twrPct != null) {
+    const twrPct = futureProjection ? null : plausiblePerformancePct(computeTWR(points));
+    if (futureProjection) {
+      twrEl.textContent = 'keine Renditeprognose';
+      twrEl.className = '';
+    } else if (twrPct != null) {
       twrEl.textContent = `${twrPct >= 0 ? '+' : ''}${fmtNum(twrPct, 1)} % p.a.`;
       twrEl.className = twrPct >= 0 ? 'positive' : 'negative';
     } else {
@@ -5988,11 +6129,12 @@ function renderHistory() {
     const hasCash = currentCashValue() > 0 || getNetExternalContributions() !== 0;
     const hasCashTx = hasCashTransactions();
     const hasFallbackHistory = (appData.positions || []).some(pos => !pos.cgId && !Array.isArray(pos.monthlyHistory));
-    if (hasCash && !hasCashTx) notes.push('Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.');
-    if (!hasCashTx) notes.push('MWR wird erst belastbar, wenn Einzahlungen und Auszahlungen als Cash-Bewegungen erfasst sind.');
+    if (futureProjection) notes.push('Zukunftsansicht: gestrichelter Sparpfad mit aktueller Sparrate, ohne Renditeannahme und ohne künftige Kursprognose. Den Zielpfad kannst du über die Legende einblenden.');
+    if (!futureProjection && hasCash && !hasCashTx) notes.push('Cash wird aktuell als konstanter Wert über die Historie gerechnet. Sobald du Cash-Bewegungen erfasst, wird die Historie genauer.');
+    if (!futureProjection && !hasCashTx) notes.push('MWR wird erst belastbar, wenn Einzahlungen und Auszahlungen als Cash-Bewegungen erfasst sind.');
     const accountStats = accountImportCashStats();
     if (accountStats.cashRows || accountStats.orderRows) notes.push(`Kontoumsätze CSV fließen ein: ${accountStats.cashRows} Cash-Bewegungen und ${accountStats.orderRows} echte Order-Cashwerte sind im Verlauf berücksichtigt.`);
-    if (hasFallbackHistory) notes.push('Bei Titeln ohne historische Kursreihe verwendet die App ersatzweise aktuelle oder monatliche Kurse.');
+    if (!futureProjection && hasFallbackHistory) notes.push('Bei Titeln ohne historische Kursreihe verwendet die App ersatzweise aktuelle oder monatliche Kurse.');
     cashNoteEl.textContent = notes.join(' ');
     cashNoteEl.style.display = notes.length ? '' : 'none';
   }
@@ -6433,11 +6575,21 @@ function wireEvents() {
       if (appData) renderHistory();
     });
   });
+  const positionsPanel = document.getElementById('anchor-positions');
+  if (positionsPanel) {
+    try {
+      if (localStorage.getItem(POSITIONS_PANEL_OPEN_KEY) === '0') positionsPanel.removeAttribute('open');
+    } catch (e) {}
+    positionsPanel.addEventListener('toggle', () => {
+      try { localStorage.setItem(POSITIONS_PANEL_OPEN_KEY, positionsPanel.open ? '1' : '0'); } catch (e) {}
+    });
+  }
   document.getElementById('positions').addEventListener('click', e => {
     if (e.target.id === 'cashAddDepositBtn') { e.stopPropagation(); openCashTxModal('deposit'); return; }
     if (e.target.id === 'cashAddWithdrawBtn') { e.stopPropagation(); openCashTxModal('withdraw'); return; }
     if (e.target.id === 'cashAddFeeBtn') { e.stopPropagation(); openCashTxModal('fee'); return; }
     if (e.target.id === 'cashAddTaxBtn') { e.stopPropagation(); openCashTxModal('tax'); return; }
+    if (e.target.id === 'cashReconcileBtn') { e.stopPropagation(); openCashTxModal('reconcile'); return; }
     if (e.target.id === 'cashShowTxBtn') { e.stopPropagation(); openCashTxList(); return; }
     const metalAdd = e.target.closest('[data-metal-add]');
     if (metalAdd) { e.preventDefault(); e.stopPropagation(); addMetalLot(metalAdd.dataset.metalAdd); return; }
