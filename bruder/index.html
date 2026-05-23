@@ -173,6 +173,14 @@
   .history-tab.active { background: var(--bg-card); color: var(--text-primary); }
   .history-chart-wrap { position: relative; height: 180px; margin-bottom: 14px; }
   .history-summary { border-top: 1px solid var(--border-light); padding-top: 12px; }
+  .history-quality-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 10px; font-size: 10px; color: var(--text-secondary); }
+  .history-quality-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; border: 1px solid var(--border); background: var(--bg-secondary); font-weight: 600; }
+  .history-quality-badge.exact { color: var(--positive); border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
+  .history-quality-badge.approx { color: #fbbf24; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.10); }
+  .history-quality-badge.weak { color: var(--negative); border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.10); }
+  .history-quality-badge.projection { color: #fbbf24; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.10); }
+  .history-event-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-secondary); }
+  .history-basis-text { color: var(--text-tertiary); line-height: 1.35; }
   .history-period-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; gap: 12px; }
   .history-period-label { font-weight: 500; font-size: 15px; }
   .history-delta { font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -1012,6 +1020,11 @@
       </div>
     </div>
     <div class="history-chart-wrap"><canvas id="historyChart"></canvas></div>
+    <div class="history-quality-strip">
+      <span class="history-quality-badge" id="historyQualityBadge">Datenqualität: —</span>
+      <span class="history-event-badge" id="historyEventBadge">Ereignisse: —</span>
+      <span class="history-basis-text" id="historyBasisText">—</span>
+    </div>
     <div class="history-legend" id="historyLegend">
       <button class="history-legend-toggle active" data-series="value" type="button"><span class="dot" style="background:#22c55e"></span>Depotwert</button>
       <button class="history-legend-toggle active" data-series="invested" type="button"><span class="dot" style="background:#888"></span>Einstand</button>
@@ -1022,7 +1035,7 @@
       <div class="history-period-row"><span class="history-period-label" id="historyPeriodLabel">—</span><span class="history-delta" id="historyDelta">—</span></div>
       <div class="history-balance-row"><span id="historyStartLabel">Depot Stand Start</span><strong id="historyStartValue">—</strong></div>
       <div class="history-balance-row"><span id="historyEndLabel">Depot Stand aktuell</span><strong id="historyEndValue">—</strong></div>
-      <div class="history-balance-row" title="Wert abzüglich Kapitalbasis. Mit erfassten Einzahlungen nutzt die App Netto-Einzahlungen, sonst den Einstand als Näherung."><span>Wert ggü. Kapitalbasis</span><strong id="historyReturnGross">—</strong></div>
+      <div class="history-balance-row" title="Wert abzüglich Kapitalbasis. Mit erfassten Einzahlungen nutzt die App Netto-Einzahlungen, sonst den Einstand als Näherung."><span id="historyCapitalBasisLabel">Wert ggü. Kapitalbasis</span><strong id="historyReturnGross">—</strong></div>
       <div class="history-balance-row" title="Geldgewichtete Rendite (MWR): berücksichtigt Zeitpunkt und Höhe externer Ein- und Auszahlungen. Nur belastbar, wenn Cashflows gepflegt sind."><span>Rendite mit Cashflows (MWR)</span><strong id="historyReturnMwr">—</strong></div>
       <div class="history-balance-row" title="Zeitgewichtete Rendite (TWR): trennt Anlageentwicklung möglichst von externen Ein- und Auszahlungen. Ersatzkurse schränken die Aussagekraft ein."><span>Anlageentwicklung (TWR)</span><strong id="historyReturnTwr">—</strong></div>
       <div class="history-disclaimer">Depotwert zeigt Vermögensstand. Einstand zeigt Anschaffungskosten. MWR/TWR sind Renditekennzahlen und werden bei unvollständigen Cashflows oder Ersatzkursen bewusst eingeschränkt.</div>
@@ -4998,14 +5011,21 @@ function renderChart(canvasId, points, valueKey, opts) {
   const isUp = values[values.length - 1] >= values[0];
   const color = isUp ? '#22c55e' : '#f87171';
   const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
+  const useEventMarkers = !!opts?.eventMarkers;
+  const markerRadius = useEventMarkers
+    ? points.map(p => (p.events && p.events.length) ? 3.5 : (p.quality?.level === 'weak' ? 2 : 0))
+    : (opts?.daily ? 0 : opts?.bigPoints ? 3 : 2);
+  const markerColors = useEventMarkers
+    ? points.map(p => (p.events && p.events.length) ? '#fbbf24' : (p.quality?.level === 'weak' ? '#f87171' : color))
+    : color;
   // Hauptserie + optionale Zusatzserien (für Depotchart: Einstand-Linie, P&L)
   const datasets = [{
     label: opts?.mainLabel || 'Depotwert',
     data: values, borderColor: color, backgroundColor: fillColor, borderWidth: 1.8,
     borderDash: opts?.mainDashed ? [6, 4] : undefined,
     fill: true, tension: opts?.daily ? 0.15 : 0.3,
-    pointRadius: opts?.daily ? 0 : opts?.bigPoints ? 3 : 2, pointHoverRadius: 5,
-    pointBackgroundColor: color, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1
+    pointRadius: markerRadius, pointHoverRadius: 5,
+    pointBackgroundColor: markerColors, pointBorderColor: document.body.classList.contains('light') ? '#fff' : '#181818', pointBorderWidth: 1
   }];
   (opts?.extraSeries || []).forEach(s => {
     if (s.hidden) return;
@@ -5028,7 +5048,12 @@ function renderChart(canvasId, points, valueKey, opts) {
     data: { labels: points.map(p => p.label || p.date), datasets },
     options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { backgroundColor: theme.tooltipBg, titleColor: theme.tooltipText, bodyColor: theme.tooltipText, borderColor: color, borderWidth: 1, padding: 8, displayColors: datasets.length > 1, titleFont: { size: 11, weight: '500' }, bodyFont: { size: 12 }, callbacks: { title: (items) => points[items[0].dataIndex].labelLong || items[0].label, label: (item) => (item.dataset.label ? item.dataset.label + ': ' : '') + fmt.format(item.parsed.y), afterBody: (items) => {
           const point = points[items[0].dataIndex];
-          return [...(point.events || []), ...(point.historyNote ? [point.historyNote] : [])];
+          const lines = [];
+          if (point.cash != null) lines.push(`Cash: ${fmt.format(point.cash)}`);
+          if (point.invested != null) lines.push(`Einstand: ${fmt.format(point.invested)}`);
+          if (point.netContributions != null) lines.push(`Netto eingezahlt: ${fmt.format(point.netContributions)}`);
+          if (point.quality?.label) lines.push(`Kursbasis: ${point.quality.label}`);
+          return [...lines, ...(point.events || []), ...(point.historyNote ? [point.historyNote] : [])];
         } } } }, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: theme.axisText, maxRotation: 0, autoSkipPadding: 8 } }, y: { display: true, grid: { color: theme.gridColor, drawBorder: false }, ticks: { font: { size: 10 }, color: theme.axisText, callback: (v) => opts?.compactY ? fmtNoCent.format(v) : fmtNum(v, 2) + ' €', maxTicksLimit: 4 } } }, elements: { line: { borderJoinStyle: 'round' } } }
   });
 }
@@ -6018,6 +6043,7 @@ function buildPortfolioProjection(period) {
       netContributions: startNet + contribution,
       cash,
       pnl: startValue - startInvested,
+      quality: historyDataQualityForDate(date, step === 0, true),
       events: step === 0 ? ['Start der Projektion'] : [],
       historyNote: `Sparpfad-Projektion mit ${fmt.format(savingsRate)}/Monat ohne Renditeannahme`
     });
@@ -6065,6 +6091,63 @@ function priceForHistoryDate(pos, date, isToday) {
     return matched ? matched.price : pos.costPrice;
   }
   return (currentPrices[pos.id] || { price: pos.costPrice }).price;
+}
+function historyDataQualityForDate(date, isToday, futureProjection = false) {
+  if (futureProjection) return { level: 'projection', label: 'Projektion', note: 'Sparpfad ohne Renditeannahme' };
+  const active = (appData?.positions || []).filter(pos => !pos.special && sharesAtDate(pos, date) > 0);
+  if (active.length === 0) return { level: 'exact', label: 'Keine aktiven Titel', note: 'Keine aktiven Titel an diesem Tag' };
+  if (isToday) return { level: 'exact', label: 'Aktuelle Live-/Quellwerte', note: 'Aktuelle Bewertung aus Live-/Quellwerten' };
+  let exact = 0, approx = 0, weak = 0;
+  const examples = [];
+  active.forEach(pos => {
+    let basis = '';
+    if (dailyHistoryPriceAtDate(pos, date) > 0) {
+      if (pos.dailyHistoryFxApproximate) { approx++; basis = 'Tageskurs mit FX-Näherung'; }
+      else { exact++; basis = 'Tageskurs'; }
+    } else if (Array.isArray(pos.monthlyHistory) && pos.monthlyHistory.length > 0) {
+      approx++;
+      basis = 'Monatskurs';
+    } else {
+      weak++;
+      basis = 'Ersatzkurs';
+    }
+    if (basis && examples.length < 3 && basis !== 'Tageskurs') examples.push(`${qualityPositionName(pos)}: ${basis}`);
+  });
+  const level = weak > 0 ? 'weak' : approx > 0 ? 'approx' : 'exact';
+  const label = level === 'weak'
+    ? 'Ersatzkurse aktiv'
+    : level === 'approx'
+      ? 'Näherungen aktiv'
+      : 'Tageskurse';
+  const note = examples.length
+    ? `${label}: ${examples.join(', ')}${(weak + approx) > examples.length ? ' ...' : ''}`
+    : `${label}: ${exact} von ${active.length} aktiven Titeln mit Tageskursen`;
+  return { level, label, note, exact, approx, weak, total: active.length };
+}
+function summarizeHistoryQuality(points, futureProjection) {
+  if (!points || points.length === 0) return { level: 'weak', pct: 0, text: 'Datenqualität: —', basis: 'Keine Verlaufspunkte verfügbar', events: 0 };
+  if (futureProjection) {
+    return {
+      level: 'projection',
+      pct: null,
+      text: 'Projektion',
+      basis: 'Sparpfad mit aktueller Sparrate, ohne Kurs- oder Renditeprognose',
+      events: points.reduce((s, p) => s + ((p.events || []).length), 0)
+    };
+  }
+  let score = 0, exactDays = 0, approxDays = 0, weakDays = 0;
+  points.forEach(p => {
+    const level = p.quality?.level || 'weak';
+    if (level === 'exact') { score += 1; exactDays++; }
+    else if (level === 'approx') { score += 0.65; approxDays++; }
+    else { score += 0.3; weakDays++; }
+  });
+  const pct = Math.round((score / points.length) * 100);
+  const level = weakDays > 0 ? 'weak' : approxDays > 0 ? 'approx' : 'exact';
+  const text = `Datenqualität: ${pct}/100`;
+  const basis = `${exactDays} Tage mit Tagesdaten · ${approxDays} Tage mit Näherung · ${weakDays} Tage mit Ersatzkursen`;
+  const events = points.reduce((s, p) => s + ((p.events || []).length), 0);
+  return { level, pct, text, basis, events };
 }
 function purchaseEventsForDate(date) {
   const iso = toIsoDate(date);
@@ -6121,7 +6204,9 @@ function buildPortfolioHistory(period) {
     const pnl = value - invested;
     const label = period === '1W' ? String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') : MONTHS_SHORT[d.getMonth()];
     const labelLong = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, netContributions, cash: cashForDay, pnl, events: purchaseEventsForDate(d), historyNote: historyApproximationNote(d, isToday) });
+    const events = purchaseEventsForDate(d);
+    const quality = historyDataQualityForDate(d, isToday);
+    points.push({ date: new Date(d), label, labelLong: isToday ? `${labelLong} (heute)` : labelLong, value, invested, netContributions, cash: cashForDay, pnl, quality, events, historyNote: quality.level === 'exact' ? '' : quality.note });
   }
   return points;
 }
@@ -6151,7 +6236,17 @@ function renderHistory() {
   if (historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
   // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
   const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
-  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
+  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, eventMarkers: true, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
+  const qualitySummary = summarizeHistoryQuality(points, futureProjection);
+  const qualityBadge = document.getElementById('historyQualityBadge');
+  if (qualityBadge) {
+    qualityBadge.textContent = qualitySummary.text;
+    qualityBadge.className = `history-quality-badge ${qualitySummary.level}`;
+  }
+  const eventBadge = document.getElementById('historyEventBadge');
+  if (eventBadge) eventBadge.textContent = `Ereignisse: ${qualitySummary.events}`;
+  const basisText = document.getElementById('historyBasisText');
+  if (basisText) basisText.textContent = qualitySummary.basis;
   const first = points[0], last = points[points.length - 1];
   const delta = last.value - first.value;
   const deltaPct = first.value > 0 ? (delta / first.value) * 100 : 0;
@@ -6167,8 +6262,10 @@ function renderHistory() {
   const invested = last.invested;
   const netContributions = getNetExternalContributions();
   const grossEl = document.getElementById('historyReturnGross');
+  const basisLabelEl = document.getElementById('historyCapitalBasisLabel');
   if (grossEl) {
     const base = netContributions > 0 ? netContributions : invested;
+    if (basisLabelEl) basisLabelEl.textContent = netContributions > 0 ? 'Wert ggü. Netto-Einzahlungen' : 'Wert ggü. Einstand';
     if (futureProjection) {
       grossEl.textContent = 'Zukunftsansicht';
       grossEl.className = '';
