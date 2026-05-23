@@ -404,12 +404,16 @@
   .positions.compact .card.expanded .card-expanded-content { display: block; }
   .positions.compact .card .card-meta-line { display: none; }
   .positions.compact .card .card-chevron { display: none; }
+  .positions.compact .card.special .card-chevron { display: block; }
   .positions.compact .card .card-quick-edit { width: 22px; height: 22px; padding: 2px; }
   .positions.compact .card .card-name-row { margin-bottom: 0; gap: 4px; }
   .positions.compact .card .card-pnl-mini .val { font-size: 13px; }
   .positions.compact .card .card-pnl-mini .pct { font-size: 10px; }
-  .positions.compact .card .special-slider-wrap, .positions.compact .card .cash-balance-panel, .positions.compact .card .cash-tx-toolbar, .positions.compact .card .metals-body { display: none; }
-  .positions.compact .card.special details summary .card-chevron { display: none; }
+  .positions.compact .card.special:not(.expanded) .cash-balance-panel,
+  .positions.compact .card.special:not(.expanded) .cash-tx-toolbar,
+  .positions.compact .card.special:not(.expanded) .cash-tx-hint { display: none; }
+  .positions.compact .card.special details[open] .metals-body { display: flex; }
+  .card.special details[open] .card-chevron { transform: rotate(180deg); }
   .ss-conflicts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
   .ss-conflict-item { padding: 8px 10px; border-radius: 6px; font-size: 11px; line-height: 1.4; }
   .ss-conflict-item.warn { background: rgba(245,158,11,0.12); color: #fbbf24; border-left: 3px solid #f59e0b; }
@@ -5713,6 +5717,7 @@ function buildSpecialCard(kind, totals) {
           <div class="val">${fmt.format(cash)}</div>
           <div class="pct" style="color:#666;">Reserve</div>
         </div>
+        <div class="card-chevron"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></div>
       </div>
       ${balanceHtml}
       <div class="cash-tx-toolbar">
@@ -6695,12 +6700,20 @@ function wireEvents() {
       refreshMetalsOnly();
       return;
     }
-    // Special-Karten (Cash/Edelmetalle) sind nicht klappbar
-    const specialCard = e.target.closest('.card.special');
-    if (specialCard) return;
+    if (e.target.closest('.metals-summary')) {
+      requestAnimationFrame(() => requestAnimationFrame(updatePositionsScrollLimit));
+    }
     // Eingaben und echte Bedienelemente nicht als Klapp-Trigger werten.
     // Kein "details" hier: der gesamte Positionen-Bereich ist selbst ein details-Element.
     if (e.target.closest('input, button, a, select, textarea, summary, [contenteditable="true"]')) return;
+    const specialCard = e.target.closest('.card.special');
+    if (specialCard) {
+      if (specialCard.id === 'card-cash') {
+        specialCard.classList.toggle('expanded');
+        requestAnimationFrame(updatePositionsScrollLimit);
+      }
+      return;
+    }
     const card = e.target.closest('.card');
     if (!card) return;
     const wasExpanded = card.classList.contains('expanded');
