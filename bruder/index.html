@@ -473,6 +473,19 @@
   .import-impact-card { border: 1px solid var(--border-light); border-radius: 7px; background: rgba(255,255,255,0.03); padding: 7px 8px; }
   .import-impact-card .label { color: var(--text-tertiary); font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; }
   .import-impact-card .value { color: var(--text-primary); font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .import-assistant-modal { max-width: 760px; }
+  .import-steps-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .import-assistant-files { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .import-file-card { border: 1px solid var(--border); background: var(--bg-secondary); border-radius: 9px; padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .import-file-card.ready { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.07); }
+  .import-file-card.error { border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.08); }
+  .import-file-title { color: var(--text-primary); font-size: 13px; font-weight: 650; margin-bottom: 3px; }
+  .import-file-sub { color: var(--text-tertiary); font-size: 11px; line-height: 1.35; }
+  .import-file-name { color: var(--text-secondary); font-size: 11px; font-weight: 600; margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .import-assistant-preview { display: block; max-height: 270px; }
+  .import-assistant-preview:empty { display: none; }
+  .import-assistant-total-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--border-light); font-size: 11px; color: var(--text-secondary); }
+  .import-assistant-total-row strong { color: var(--text-primary); }
   .income-summary { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; }
   .income-summary .big { font-size: 18px; font-weight: 600; color: var(--positive); font-variant-numeric: tabular-nums; }
   .income-summary .breakdown { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
@@ -882,6 +895,8 @@
     .quote-freshness-line { text-align: left; font-size: 11px; }
     .stammdaten-grid { grid-template-columns: 1fr; }
     .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; }
+    .import-assistant-files { grid-template-columns: 1fr; }
+    .import-file-card { grid-template-columns: 1fr; }
     .import-steps { grid-template-columns: 1fr; }
   }
   .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
@@ -1206,6 +1221,10 @@
       <span>Position hinzufügen</span>
     </div>
     <div class="add-pos-buttons">
+      <button class="add-pos-btn primary" id="importAssistantBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Import-Assistent</span>
+      </button>
       <button class="add-pos-btn" id="addPosManualBtn">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span>Manuell eingeben</span>
@@ -1224,6 +1243,8 @@
         <span>Kontoumsätze CSV</span>
       </button>
       <input type="file" id="flatexAccountCsvFileInput" accept=".csv,text/csv" style="display:none;">
+      <input type="file" id="importAssistantDepotFileInput" accept=".csv,text/csv" style="display:none;">
+      <input type="file" id="importAssistantAccountFileInput" accept=".csv,text/csv" style="display:none;">
     </div>
     <div class="add-pos-hint">Depotumsätze rekonstruieren Titel und Stückzahlen. Kontoumsätze ergänzen Einzahlungen, Erträge und die echte Cash-Belastung passender Orders.</div>
   </div>
@@ -1908,6 +1929,44 @@
       <button class="layout-reset-btn" id="layoutResetBtn" type="button">Standard</button>
       <button class="auth-btn secondary" id="layoutCancelBtn" type="button">Abbrechen</button>
       <button class="auth-btn" id="layoutSaveBtn" type="button">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="importAssistantModal">
+  <div class="modal import-assistant-modal">
+    <h3>Import-Assistent</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Führe Depotumsätze und Kontoumsätze gemeinsam ein. Der Assistent prüft beide Dateien, zeigt die Auswirkungen und übernimmt sie in der richtigen Reihenfolge: zuerst Wertpapier-Verlauf, dann Cash- und Order-Abgleich.</p>
+    <div class="import-steps import-steps-four" data-import-steps="importAssistant">
+      <span class="import-step active" data-ia-step="files">1 Dateien</span>
+      <span class="import-step" data-ia-step="check">2 Prüfung</span>
+      <span class="import-step" data-ia-step="preview">3 Vorschau</span>
+      <span class="import-step" data-ia-step="apply">4 Übernehmen</span>
+    </div>
+    <div class="import-assistant-files">
+      <div class="import-file-card" id="importAssistantDepotCard">
+        <div>
+          <div class="import-file-title">Depotumsätze CSV</div>
+          <div class="import-file-sub">Baut Positionen, Stückzahlen, Einstand und historische Wertpapierbuchungen neu auf.</div>
+          <div class="import-file-name" id="importAssistantDepotName">Keine Datei gewählt</div>
+        </div>
+        <button class="auth-btn secondary" id="importAssistantChooseDepot">Auswählen</button>
+      </div>
+      <div class="import-file-card" id="importAssistantAccountCard">
+        <div>
+          <div class="import-file-title">Kontoumsätze CSV</div>
+          <div class="import-file-sub">Ergänzt Einzahlungen, Erträge, Steuern und echte Cash-Belastungen der Orders.</div>
+          <div class="import-file-name" id="importAssistantAccountName">Keine Datei gewählt</div>
+        </div>
+        <button class="auth-btn secondary" id="importAssistantChooseAccount">Auswählen</button>
+      </div>
+    </div>
+    <div class="ss-conflicts" id="importAssistantSummary"></div>
+    <div class="ss-batch-preview import-assistant-preview" id="importAssistantPreview"></div>
+    <div class="modal-actions">
+      <button class="auth-btn secondary" id="importAssistantCancel">Abbrechen</button>
+      <button class="auth-btn secondary" id="importAssistantReset">Zurücksetzen</button>
+      <button class="auth-btn" id="importAssistantApply" disabled>Import übernehmen</button>
     </div>
   </div>
 </div>
@@ -8869,6 +8928,15 @@ function wireEvents() {
   });
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
   // Position-Management
+  document.getElementById('importAssistantBtn').addEventListener('click', openImportAssistantModal);
+  document.getElementById('importAssistantChooseDepot').addEventListener('click', () => document.getElementById('importAssistantDepotFileInput').click());
+  document.getElementById('importAssistantChooseAccount').addEventListener('click', () => document.getElementById('importAssistantAccountFileInput').click());
+  document.getElementById('importAssistantDepotFileInput').addEventListener('change', e => handleImportAssistantDepotFile(e.target.files && e.target.files[0]));
+  document.getElementById('importAssistantAccountFileInput').addEventListener('change', e => handleImportAssistantAccountFile(e.target.files && e.target.files[0]));
+  document.getElementById('importAssistantCancel').addEventListener('click', closeImportAssistantModal);
+  document.getElementById('importAssistantReset').addEventListener('click', resetImportAssistant);
+  document.getElementById('importAssistantApply').addEventListener('click', applyImportAssistant);
+  document.getElementById('importAssistantModal').addEventListener('click', e => { if (e.target.id === 'importAssistantModal') closeImportAssistantModal(); });
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
   document.getElementById('addPosScreenshotBtn').addEventListener('click', openScreenshotModal);
   document.getElementById('addPosFlatexCsvBtn').addEventListener('click', () => document.getElementById('flatexCsvFileInput').click());
@@ -9909,17 +9977,267 @@ async function importFlatexCsvAnalysis() {
   const ok = confirm(`Flatex CSV wirklich übernehmen?\n\n${openCount} heutige Positionen werden aus der CSV neu aufgebaut. Vollständig verkaufte Titel bleiben nur im Verlauf. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
   if (!ok) return;
   await backupEncryptedJson('vor-flatex-csv');
-  const built = buildFlatexPositionsAndTransactions(flatexCsvAnalysis);
-  const keepTransactions = (appData.transactions || []).filter(tx => tx.assetType === 'cash' || tx.assetType === 'metal' || String(tx.assetId || '').startsWith('metal_'));
-  appData.positions = built.positions;
-  appData.transactions = keepTransactions.concat(built.transactions).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  syncPositionsFromLedger();
+  const result = await applyFlatexCsvAnalysis(flatexCsvAnalysis, { skipSave: true, skipRefresh: true });
   closeFlatexCsvModal();
   await savePositionsToKV();
   await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370, true), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370, { forceRefresh: true })]);
   await fetchAllWeeklyCharts();
   await refreshUI({ skipAI: true });
-  alert(`Flatex CSV übernommen. ${openCount} aktuelle Positionen und ${built.transactions.length} historische Buchungen sind aktiv.`);
+  alert(`Flatex CSV übernommen. ${openCount} aktuelle Positionen und ${result.transactionCount} historische Buchungen sind aktiv.`);
+}
+
+async function applyFlatexCsvAnalysis(analysis, opts = {}) {
+  if (!analysis) throw new Error('Keine Depotumsatz-Analyse vorhanden.');
+  const built = buildFlatexPositionsAndTransactions(analysis);
+  const keepTransactions = (appData.transactions || []).filter(tx => tx.assetType === 'cash' || tx.assetType === 'metal' || String(tx.assetId || '').startsWith('metal_'));
+  appData.positions = built.positions;
+  appData.transactions = keepTransactions.concat(built.transactions).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  syncPositionsFromLedger();
+  if (!opts.skipSave) await savePositionsToKV();
+  if (!opts.skipRefresh) {
+    await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370, true), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370, { forceRefresh: true })]);
+    await fetchAllWeeklyCharts();
+    await refreshUI({ skipAI: true });
+  }
+  return {
+    openCount: analysis.groups.filter(group => group.open).length,
+    archivedCount: analysis.groups.filter(group => !group.open).length,
+    positionCount: built.positions.length,
+    transactionCount: built.transactions.length
+  };
+}
+
+let importAssistantState = null;
+
+function createImportAssistantState() {
+  return {
+    depotFileName: '',
+    accountFileName: '',
+    depotText: '',
+    accountText: '',
+    depotAnalysis: null,
+    accountAnalysis: null,
+    depotError: '',
+    accountError: '',
+    busy: false
+  };
+}
+
+function getImportAssistantState() {
+  if (!importAssistantState) importAssistantState = createImportAssistantState();
+  return importAssistantState;
+}
+
+function openImportAssistantModal() {
+  getImportAssistantState();
+  renderImportAssistant();
+  document.getElementById('importAssistantModal').classList.add('active');
+}
+
+function closeImportAssistantModal() {
+  document.getElementById('importAssistantModal').classList.remove('active');
+}
+
+function resetImportAssistant() {
+  importAssistantState = createImportAssistantState();
+  ['importAssistantDepotFileInput', 'importAssistantAccountFileInput'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = '';
+  });
+  renderImportAssistant();
+}
+
+async function handleImportAssistantDepotFile(file) {
+  if (!file) return;
+  const state = getImportAssistantState();
+  state.depotFileName = file.name || 'Depotumsätze.csv';
+  state.depotError = '';
+  state.depotAnalysis = null;
+  renderImportAssistant();
+  try {
+    state.depotText = await readFlatexCsvFile(file);
+    state.depotAnalysis = analyzeFlatexCsvText(state.depotText);
+  } catch (e) {
+    state.depotError = e.message || String(e);
+  }
+  renderImportAssistant();
+}
+
+async function handleImportAssistantAccountFile(file) {
+  if (!file) return;
+  const state = getImportAssistantState();
+  state.accountFileName = file.name || 'Kontoumsätze.csv';
+  state.accountError = '';
+  state.accountAnalysis = null;
+  renderImportAssistant();
+  try {
+    state.accountText = await readFlatexCsvFile(file);
+    state.accountAnalysis = analyzeFlatexAccountCsvText(state.accountText);
+  } catch (e) {
+    state.accountError = e.message || String(e);
+  }
+  renderImportAssistant();
+}
+
+function importAssistantStepName(state) {
+  if (state.busy) return 'apply';
+  if (state.depotError || state.accountError) return 'check';
+  if (state.depotAnalysis || state.accountAnalysis) return 'preview';
+  return 'files';
+}
+
+function updateImportAssistantSteps(state) {
+  const order = ['files', 'check', 'preview', 'apply'];
+  const active = importAssistantStepName(state);
+  const activeIndex = order.indexOf(active);
+  document.querySelectorAll('[data-ia-step]').forEach(el => {
+    const idx = order.indexOf(el.dataset.iaStep);
+    el.classList.toggle('done', idx >= 0 && idx < activeIndex);
+    el.classList.toggle('active', el.dataset.iaStep === active);
+  });
+}
+
+function renderImportAssistantFileCards(state) {
+  const depotCard = document.getElementById('importAssistantDepotCard');
+  const accountCard = document.getElementById('importAssistantAccountCard');
+  if (depotCard) {
+    depotCard.classList.toggle('ready', !!state.depotAnalysis);
+    depotCard.classList.toggle('error', !!state.depotError);
+  }
+  if (accountCard) {
+    accountCard.classList.toggle('ready', !!state.accountAnalysis);
+    accountCard.classList.toggle('error', !!state.accountError);
+  }
+  const depotName = document.getElementById('importAssistantDepotName');
+  const accountName = document.getElementById('importAssistantAccountName');
+  if (depotName) depotName.textContent = state.depotError ? `Fehler: ${state.depotError}` : state.depotAnalysis ? `${state.depotFileName} · geprüft` : state.depotFileName || 'Keine Datei gewählt';
+  if (accountName) accountName.textContent = state.accountError ? `Fehler: ${state.accountError}` : state.accountAnalysis ? `${state.accountFileName} · geprüft` : state.accountFileName || 'Keine Datei gewählt';
+}
+
+function importAssistantImpactCards(state) {
+  const depot = state.depotAnalysis;
+  const account = state.accountAnalysis;
+  const open = depot ? depot.groups.filter(group => group.open).length : 0;
+  const archived = depot ? depot.groups.filter(group => !group.open).length : 0;
+  const matched = account ? account.matchedOrders.length : 0;
+  const orders = account ? account.orders.length : 0;
+  return `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Depotbuchungen</div><div class="value">${depot ? depot.entries.length : '—'}</div></div>
+    <div class="import-impact-card"><div class="label">Aktuelle Titel</div><div class="value">${depot ? open : '—'}</div></div>
+    <div class="import-impact-card"><div class="label">Historisch 0</div><div class="value">${depot ? archived : '—'}</div></div>
+    <div class="import-impact-card"><div class="label">Cash-Zeilen</div><div class="value">${account ? account.entries.length : '—'}</div></div>
+    <div class="import-impact-card"><div class="label">Order-Abgleich</div><div class="value">${account ? `${matched}/${orders}` : '—'}</div></div>
+    <div class="import-impact-card"><div class="label">Einzahlungen</div><div class="value">${account ? fmt.format(account.totals.deposits) : '—'}</div></div>
+  </div>`;
+}
+
+function renderImportAssistantSummary(state) {
+  const items = [];
+  if (!state.depotAnalysis && !state.accountAnalysis && !state.depotError && !state.accountError) {
+    items.push({ kind: 'info', text: 'Wähle mindestens eine CSV. Am saubersten ist: Depotumsätze CSV plus Kontoumsätze CSV gemeinsam importieren.' });
+  }
+  if (state.depotError) items.push({ kind: 'error', text: `Depotumsätze konnten nicht gelesen werden: ${state.depotError}` });
+  if (state.accountError) items.push({ kind: 'error', text: `Kontoumsätze konnten nicht gelesen werden: ${state.accountError}` });
+  if (state.depotAnalysis) {
+    const open = state.depotAnalysis.groups.filter(group => group.open).length;
+    const archived = state.depotAnalysis.groups.filter(group => !group.open).length;
+    items.push({ kind: 'info', text: `Depotumsätze geprüft: ${state.depotAnalysis.entries.length} Buchungen, ${open} aktuelle Positionen, ${archived} vollständig verkaufte Titel nur für den Verlauf.` });
+  }
+  if (state.accountAnalysis) {
+    items.push({ kind: state.accountAnalysis.unmatchedOrders.length ? 'warn' : 'info', text: `Kontoumsätze geprüft: ${state.accountAnalysis.entries.length} Bewegungen, ${state.accountAnalysis.orders.length} Order-Zeilen, aktuell ${state.accountAnalysis.matchedOrders.length} davon zugeordnet.` });
+  }
+  if (state.depotAnalysis && state.accountAnalysis) {
+    items.push({ kind: 'info', text: 'Beim Übernehmen wird zuerst der Wertpapier-Verlauf aufgebaut. Danach werden die Kontoumsätze erneut dagegen geprüft, damit die echten Order-Cashwerte sauber zugeordnet werden.' });
+  } else if (state.accountAnalysis && !state.depotAnalysis) {
+    items.push({ kind: 'warn', text: 'Du importierst nur Kontoumsätze. Order-Abgleich funktioniert dann nur mit bereits vorhandenen Depotumsätzen in der App.' });
+  } else if (state.depotAnalysis && !state.accountAnalysis) {
+    items.push({ kind: 'warn', text: 'Du importierst nur Depotumsätze. Stückzahlen und Verlauf werden aufgebaut; Einzahlungen, Dividenden und echte Kontobelastungen fehlen bis zum Kontoumsatz-Import.' });
+  }
+  if (state.depotAnalysis || state.accountAnalysis) {
+    items.push({ kind: 'warn', text: 'Vor der Übernahme erstellt die App automatisch ein verschlüsseltes JSON-Sicherheitsbackup. Michael, Bruder, Person1 und Person2 bleiben weiterhin getrennte Konten.' });
+  }
+  document.getElementById('importAssistantSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${escapeHtml(item.text)}</div>`).join('') + ((state.depotAnalysis || state.accountAnalysis) ? importAssistantImpactCards(state) : '');
+}
+
+function renderImportAssistantPreview(state) {
+  const rows = [];
+  if (state.depotAnalysis) {
+    state.depotAnalysis.groups.slice(0, 22).forEach(group => {
+      const result = group.open ? `${fmtNum(group.netQuantity, group.netQuantity % 1 ? 6 : 0)} Stk offen` : 'Endbestand 0';
+      const cls = group.open ? (group.matchesCurrent ? 'buy' : 'sell') : 'ignore';
+      rows.push(`<div class="ss-batch-row ${cls}">
+        <div class="date">Depot</div>
+        <div><div class="name">${escapeHtml(group.name)}</div><div class="meta">${escapeHtml(group.isin)} · ${escapeHtml(group.type)} · ${group.entries.length} Buchung${group.entries.length === 1 ? '' : 'en'}</div></div>
+        <div class="type">${escapeHtml(result)}</div>
+      </div>`);
+    });
+  }
+  if (state.accountAnalysis) {
+    const cashRows = state.accountAnalysis.entries.filter(entry => entry.kind !== 'order-buy' && entry.kind !== 'order-sell').slice(0, 10);
+    cashRows.forEach(entry => {
+      rows.push(`<div class="ss-batch-row ${entry.amount < 0 ? 'sell' : 'buy'}">
+        <div class="date">Konto</div>
+        <div><div class="name">${escapeHtml(accountKindLabel(entry.kind))}</div><div class="meta">${escapeHtml(formatDateAT(entry.ledgerDate))} · ${escapeHtml(entry.info || entry.recipient || 'Kontobewegung')}</div></div>
+        <div class="type">${entry.amount >= 0 ? '+' : '−'}${fmt.format(Math.abs(entry.amount))}</div>
+      </div>`);
+    });
+  }
+  if (state.depotAnalysis || state.accountAnalysis) {
+    rows.push(`<div class="import-assistant-total-row"><span>Übernahme-Reihenfolge</span><strong>${state.depotAnalysis ? 'Depotumsätze' : ''}${state.depotAnalysis && state.accountAnalysis ? ' → ' : ''}${state.accountAnalysis ? 'Kontoumsätze' : ''}</strong></div>`);
+  }
+  const preview = document.getElementById('importAssistantPreview');
+  preview.innerHTML = rows.join('');
+  preview.style.display = rows.length ? 'block' : 'none';
+}
+
+function renderImportAssistant() {
+  const state = getImportAssistantState();
+  updateImportAssistantSteps(state);
+  renderImportAssistantFileCards(state);
+  renderImportAssistantSummary(state);
+  renderImportAssistantPreview(state);
+  const applyBtn = document.getElementById('importAssistantApply');
+  if (applyBtn) {
+    const ready = !!(state.depotAnalysis || state.accountAnalysis) && !state.depotError && !state.accountError && !state.busy;
+    applyBtn.disabled = !ready;
+    applyBtn.textContent = state.busy ? 'Import läuft...' : 'Import übernehmen';
+  }
+}
+
+async function applyImportAssistant() {
+  const state = getImportAssistantState();
+  if (state.busy || !(state.depotAnalysis || state.accountAnalysis)) return;
+  const parts = [];
+  if (state.depotAnalysis) parts.push('Depotumsätze');
+  if (state.accountAnalysis) parts.push('Kontoumsätze');
+  const ok = confirm(`Import-Assistent wirklich übernehmen?\n\n${parts.join(' und ')} werden verarbeitet. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
+  if (!ok) return;
+  state.busy = true;
+  renderImportAssistant();
+  try {
+    await backupEncryptedJson('vor-import-assistent');
+    const results = [];
+    if (state.depotAnalysis) {
+      const depotResult = await applyFlatexCsvAnalysis(state.depotAnalysis, { skipSave: true, skipRefresh: true });
+      results.push(`${depotResult.openCount} aktuelle Positionen`);
+    }
+    if (state.accountAnalysis) {
+      const accountAnalysis = state.depotAnalysis && state.accountText ? analyzeFlatexAccountCsvText(state.accountText) : state.accountAnalysis;
+      const accountResult = await applyFlatexAccountCsvAnalysis(accountAnalysis, { skipSave: true, skipRefresh: true });
+      results.push(`${accountResult.orderMatches} Order-Cashwerte abgeglichen`);
+    }
+    await savePositionsToKV();
+    await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370, true), fetchMarketPrices({ forceRefresh: true }), fetchMarketHistory(370, { forceRefresh: true })]);
+    await fetchAllWeeklyCharts();
+    await refreshUI({ skipAI: true });
+    closeImportAssistantModal();
+    resetImportAssistant();
+    alert(`Import abgeschlossen. ${results.join(' · ') || 'Daten übernommen'}.`);
+  } catch (e) {
+    state.busy = false;
+    renderImportAssistant();
+    alert('Import-Assistent konnte nicht abschließen: ' + (e.message || e));
+  }
 }
 
 // Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
@@ -10190,11 +10508,20 @@ async function importFlatexAccountCsvAnalysis() {
   const ok = confirm(`Flatex Kontoumsätze wirklich übernehmen?\n\nEinzahlungen, Erträge und Sonder-Cash-Bewegungen werden in dein Cash-Kassenbuch geschrieben. ${matched} Order-Kontobewegungen werden mit vorhandenen Depotumsätzen abgeglichen. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
   if (!ok) return;
   await backupEncryptedJson('vor-flatex-kontoumsaetze');
+  const result = await applyFlatexAccountCsvAnalysis(flatexAccountCsvAnalysis, { skipSave: true, skipRefresh: true });
+  closeFlatexAccountCsvModal();
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+  alert(`Kontoumsätze übernommen. Cash-Verlauf ergänzt; ${result.orderMatches} Depotumsatz-Order${result.orderMatches === 1 ? '' : 's'} mit echter Kontobelastung abgeglichen.`);
+}
+
+async function applyFlatexAccountCsvAnalysis(analysis, opts = {}) {
+  if (!analysis) throw new Error('Keine Kontoumsatz-Analyse vorhanden.');
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
   ensureIncome();
   clearFlatexAccountCsvImports();
   let orderMatches = 0;
-  flatexAccountCsvAnalysis.entries.forEach(entry => {
+  analysis.entries.forEach(entry => {
     if (entry.kind === 'deposit') pushFlatexAccountCashTx(entry, 'deposit', entry.amount, 'Flatex Kontoumsätze · Einzahlung Verrechnungskonto');
     else if (entry.kind === 'dividend' || entry.kind === 'interest') pushFlatexAccountIncome(entry);
     else if (entry.kind === 'tax') pushFlatexAccountCashTx(entry, 'tax', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Thesaurierung'}`);
@@ -10203,10 +10530,16 @@ async function importFlatexAccountCsvAnalysis() {
     else if ((entry.kind === 'order-buy' || entry.kind === 'order-sell') && applyFlatexAccountOrder(entry)) orderMatches++;
   });
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  closeFlatexAccountCsvModal();
-  await savePositionsToKV();
-  await refreshUI({ skipAI: true });
-  alert(`Kontoumsätze übernommen. Cash-Verlauf ergänzt; ${orderMatches} Depotumsatz-Order${orderMatches === 1 ? '' : 's'} mit echter Kontobelastung abgeglichen.`);
+  if (!opts.skipSave) await savePositionsToKV();
+  if (!opts.skipRefresh) await refreshUI({ skipAI: true });
+  return {
+    entryCount: analysis.entries.length,
+    orderCount: analysis.orders.length,
+    orderMatches,
+    depositTotal: analysis.totals.deposits,
+    incomeTotal: analysis.totals.income,
+    debitTotal: analysis.totals.debits
+  };
 }
 
 function parseImportNumber(value) {
