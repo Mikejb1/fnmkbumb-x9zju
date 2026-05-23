@@ -66,6 +66,14 @@
   .icon-btn:disabled { opacity: 0.6; cursor: wait; }
   .icon-btn.refreshing svg { animation: spin 0.8s linear infinite; }
   .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+  body.simple-mode .usage-section,
+  body.simple-mode .privacy-section,
+  body.simple-mode .quote-freshness-box,
+  body.simple-mode .quote-freshness-line,
+  body.simple-mode .manual-quote-panel,
+  body.simple-mode .history-quality-strip,
+  body.simple-mode .tax-perf-table,
+  body.simple-mode .quality-breakdown { display: none !important; }
   .refresh-progress { display: none; margin: -8px 0 14px 0; padding: 9px 11px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
   .refresh-progress.active { display: block; }
   .refresh-progress.done .refresh-progress-fill { background: var(--positive); }
@@ -311,6 +319,14 @@
   .strat-add-btn { background: var(--positive); color: var(--bg-page); border: 0; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
   .strat-add-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
   .strat-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; padding: 8px 0; }
+  .empty-state { border: 1px dashed var(--border); border-radius: 10px; background: var(--bg-secondary); padding: 14px; color: var(--text-secondary); line-height: 1.45; }
+  .empty-state strong { display: block; color: var(--text-primary); font-size: 13px; font-weight: 650; margin-bottom: 3px; }
+  .empty-state p { margin: 0; color: var(--text-tertiary); font-size: 11px; }
+  .empty-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+  .empty-action-btn { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); color: var(--text-secondary); padding: 8px 10px; font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .empty-action-btn.primary { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.12); color: var(--positive); }
+  .empty-action-btn:hover { color: var(--text-primary); background: var(--bg-track); }
+  .positions-empty-state { margin-bottom: 10px; cursor: default; }
   .strat-item { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
   .strat-item .info { flex: 1; min-width: 0; }
   .strat-item .name { font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
@@ -467,6 +483,11 @@
   .ss-conflict-item.info { background: rgba(59,130,246,0.12); color: #93c5fd; border-left: 3px solid #3b82f6; }
   .ss-conflict-item.error { background: var(--error-bg); color: var(--error-text); border-left: 3px solid var(--negative); }
   .ss-batch-preview { display: none; max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
+  .import-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 12px; }
+  .import-step { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-tertiary); padding: 7px 8px; font-size: 10px; font-weight: 650; text-align: center; line-height: 1.2; }
+  .import-step.done { border-color: rgba(34,197,94,0.38); background: rgba(34,197,94,0.08); color: var(--positive); }
+  .import-step.active { border-color: rgba(245,158,11,0.45); background: rgba(245,158,11,0.1); color: #fbbf24; }
+  body.light .import-step.active { color: #92400e; }
   .ss-batch-row { display: grid; grid-template-columns: 68px 1fr 64px; gap: 8px; align-items: start; padding: 8px 10px; border-bottom: 1px solid var(--border-light); font-size: 11px; }
   .ss-batch-row:last-child { border-bottom: 0; }
   .ss-batch-row .date { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
@@ -741,7 +762,28 @@
   .lot-row.head { color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; padding-top: 0; }
   .lot-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
   @media (max-width: 900px) { .card-collapsed-row { grid-template-columns: minmax(0, 1fr) 26px 18px; } .card-collapsed-metrics { grid-column: 1 / -1; grid-row: 2; width: 100%; justify-self: stretch; } }
-  @media (max-width: 520px) { .stammdaten-grid { grid-template-columns: 1fr; } .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; } .card-collapsed-metrics { grid-template-columns: 1fr; row-gap: 7px; } .card-metric.total { text-align: left; } }
+  @media (max-width: 520px) {
+    .screen { padding: 12px; }
+    .header { align-items: flex-start; gap: 10px; }
+    .header-actions { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .icon-btn { width: 34px; height: 34px; }
+    .card { padding: 14px 15px; border-radius: 12px; }
+    .positions.compact .card { padding: 13px 14px; }
+    .card-collapsed-row { grid-template-columns: minmax(0, 1fr) 30px 22px; gap: 10px; align-items: start; }
+    .card-name-row .card-name { font-size: 16px; line-height: 1.25; }
+    .card-meta-line { display: block; font-size: 12px; line-height: 1.35; letter-spacing: 0; }
+    .card-collapsed-metrics { grid-template-columns: 1fr 1fr; gap: 10px 12px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border-light); }
+    .card-metric.total { text-align: left; }
+    .card-metric .lbl { font-size: 11px; }
+    .card-metric .val { font-size: 13px; white-space: normal; overflow: visible; text-overflow: clip; }
+    .card-metric.total .val,
+    .card-metric.today .val { font-size: 14px; }
+    .card-metric.today { grid-column: 1 / -1; }
+    .quote-freshness-line { text-align: left; font-size: 11px; }
+    .stammdaten-grid { grid-template-columns: 1fr; }
+    .lot-row { grid-template-columns: 68px 1fr 62px 70px; gap: 6px; font-size: 10px; }
+    .import-steps { grid-template-columns: 1fr; }
+  }
   .warn-box { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #fbbf24; margin: 10px 0; line-height: 1.4; }
   body.light .warn-box { background: rgba(245,158,11,0.12); color: #92400e; }
   /* ===== CHART TABS + LADEANIMATION ===== */
@@ -890,6 +932,9 @@
       <button class="icon-btn" id="refreshBtn" title="Live-Kurse holen"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg></button>
       <button class="icon-btn" id="layoutEditBtn" title="Ansicht bearbeiten" aria-label="Ansicht bearbeiten">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg>
+      </button>
+      <button class="icon-btn" id="modeToggleBtn" title="Einfach-Modus" aria-label="Einfach-/Experte-Modus">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M12 2v2"/><path d="M8 14a5 5 0 1 1 8 0c-.7.8-1 1.5-1 2H9c0-.5-.3-1.2-1-2z"/></svg>
       </button>
       <button class="icon-btn" id="themeToggleBtn" title="Hell/Dunkel">
         <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -1565,6 +1610,11 @@
   <div class="modal">
     <h3>KI-Vorschau prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Haiku hat aus deinem Screenshot folgende Daten ausgelesen. Bitte prüfen und korrigieren, dann übernehmen.</p>
+    <div class="import-steps" data-import-steps="screenshot">
+      <span class="import-step done">1 Bild gelesen</span>
+      <span class="import-step active">2 Daten prüfen</span>
+      <span class="import-step">3 Übernehmen</span>
+    </div>
     <div class="ss-conflicts" id="ssConflicts"></div>
     <div class="ss-batch-preview" id="ssBatchPreview"></div>
     <div id="ssSingleFields">
@@ -1597,6 +1647,11 @@
   <div class="modal">
     <h3>Flatex CSV prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Die Vorschau rechnet die Endbestände aus der Depotumsatzliste nach. Aktuelle Positionen entstehen nur bei positivem Endbestand; verkaufte Titel bleiben für die Depot-Entwicklung historisch erhalten.</p>
+    <div class="import-steps" data-import-steps="flatexCsv">
+      <span class="import-step done">1 Datei gewählt</span>
+      <span class="import-step active">2 Vorschau prüfen</span>
+      <span class="import-step">3 Übernehmen</span>
+    </div>
     <div class="ss-conflicts" id="flatexCsvSummary"></div>
     <div class="ss-batch-preview" id="flatexCsvPreview"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Historie neu aufbauen</button></div>
@@ -1607,6 +1662,11 @@
   <div class="modal">
     <h3>Flatex Kontoumsätze prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Diese Liste ergänzt den Cash-Verlauf. Einzahlungen und Erträge werden übernommen; Käufe und Verkäufe werden über ISIN und Ordernummer mit bestehenden Depotumsätzen verknüpft.</p>
+    <div class="import-steps" data-import-steps="flatexAccountCsv">
+      <span class="import-step done">1 Datei gewählt</span>
+      <span class="import-step active">2 Vorschau prüfen</span>
+      <span class="import-step">3 Übernehmen</span>
+    </div>
     <div class="ss-conflicts" id="flatexAccountCsvSummary"></div>
     <div class="ss-batch-preview" id="flatexAccountCsvPreview"></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="flatexAccountCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexAccountCsvImport" disabled>Kontoumsätze übernehmen</button></div>
@@ -2282,7 +2342,14 @@ const ENC = {
   _fromB64(str) { const s = atob(str); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; },
   _toB64(buf) { let s = ''; const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
 };
-const STORE = { THEME_KEY: STORAGE_PREFIX + 'theme', getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } }, setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} } };
+const STORE = {
+  THEME_KEY: STORAGE_PREFIX + 'theme',
+  VIEW_MODE_KEY: STORAGE_PREFIX + 'view_mode',
+  getTheme() { try { return localStorage.getItem(this.THEME_KEY); } catch (e) { return null; } },
+  setTheme(t) { try { localStorage.setItem(this.THEME_KEY, t); } catch (e) {} },
+  getViewMode() { try { return localStorage.getItem(this.VIEW_MODE_KEY); } catch (e) { return null; } },
+  setViewMode(mode) { try { localStorage.setItem(this.VIEW_MODE_KEY, mode); } catch (e) {} }
+};
 let appData = null, appPassword = null, currentPrices = {}, baseLivePrices = {}, quoteIssues = {}, weeklyData = {}, chartRegistry = {}, currentHistoryPeriod = '12M';
 let manualQuoteTimer = null;
 // Sicherheit: KV-Schlüssel wird aus dem Master-Code abgeleitet (unerratbar) statt fest 'michael'/'bruder'.
@@ -2333,6 +2400,23 @@ const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli
 function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
 function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
 function initTheme() { applyTheme(STORE.getTheme() === 'light' ? 'light' : 'dark'); }
+function applyViewMode(mode) {
+  const simple = mode !== 'expert';
+  document.body.classList.toggle('simple-mode', simple);
+  const btn = document.getElementById('modeToggleBtn');
+  if (btn) {
+    btn.classList.toggle('active', simple);
+    btn.title = simple ? 'Einfach-Modus aktiv' : 'Experte-Modus aktiv';
+    btn.setAttribute('aria-label', simple ? 'Einfach-Modus aktiv, zu Experte wechseln' : 'Experte-Modus aktiv, zu Einfach wechseln');
+  }
+}
+function toggleViewMode() {
+  const next = document.body.classList.contains('simple-mode') ? 'expert' : 'simple';
+  STORE.setViewMode(next);
+  applyViewMode(next);
+  requestAnimationFrame(updatePositionsScrollLimit);
+}
+function initViewMode() { applyViewMode(STORE.getViewMode() === 'expert' ? 'expert' : 'simple'); }
 function showScreen(id) { ['gateScreen', 'appScreen'].forEach(s => { const el = document.getElementById(s); if (s === id) el.classList.add('active'); else el.classList.remove('active'); }); }
 function showErr(el, msg) { el.textContent = msg; el.classList.add('visible'); }
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -3786,7 +3870,7 @@ function renderWatchlist() {
   const wl = ensureWatchlist();
   if (count) count.textContent = String(wl.length);
   if (wl.length === 0) {
-    list.innerHTML = '<div class="strat-empty">Noch keine Watchlist-Einträge. Tap "Eintrag hinzufügen".</div>';
+    list.innerHTML = '<div class="empty-state"><strong>Noch keine Watchlist-Einträge</strong><p>Lege Kandidaten an, die du beobachten möchtest, inklusive Einstiegsidee, Risiko und geplanter Größe.</p><div class="empty-actions"><button type="button" class="empty-action-btn primary" data-empty-action="watch">Eintrag hinzufügen</button></div></div>';
     return;
   }
   list.innerHTML = wl.map(w => `
@@ -3865,7 +3949,7 @@ function renderJournal() {
   const j = ensureJournal();
   if (count) count.textContent = String(j.length);
   if (j.length === 0) {
-    list.innerHTML = '<div class="strat-empty">Noch keine Journal-Einträge. Halte Entscheidungen mit Begründung und Review-Datum fest.</div>';
+    list.innerHTML = '<div class="empty-state"><strong>Noch keine Journal-Einträge</strong><p>Halte Käufe, Verkäufe und wichtige Gedanken mit Begründung und Review-Datum fest.</p><div class="empty-actions"><button type="button" class="empty-action-btn primary" data-empty-action="journal">Journal-Eintrag erstellen</button></div></div>';
     return;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -4191,7 +4275,7 @@ function renderIncome() {
   const breakdown = Object.entries(byKind).map(([k, v]) => `${INCOME_KIND_LABELS[k] || k}: ${fmt.format(v)}`).join(' · ');
   summaryEl.innerHTML = `<div>Erträge ${thisYear}</div><div class="big">${fmt.format(totalYear)}</div>${breakdown ? `<div class="breakdown">${breakdown}</div>` : ''}`;
   if (list.length === 0) {
-    listEl.innerHTML = '<div class="strat-empty">Noch keine Erträge erfasst.</div>';
+    listEl.innerHTML = '<div class="empty-state"><strong>Noch keine Erträge erfasst</strong><p>Erfasse Dividenden, Zinsen oder Staking-Erträge. Importierte Kontoumsätze können hier ebenfalls landen.</p><div class="empty-actions"><button type="button" class="empty-action-btn primary" data-empty-action="income">Ertrag erfassen</button></div></div>';
     return;
   }
   const newestFirst = list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -6243,6 +6327,19 @@ function renderPositions(totals) {
   }
   const alloc = getCategoryAllocation(totals.totalCur);
   const current = currentPortfolioPositions();
+  if (current.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state positions-empty-state';
+    empty.innerHTML = `
+      <strong>Noch keine Wertpapier-Positionen</strong>
+      <p>Starte mit einer manuellen Position, einem Screenshot oder einer Flatex-Depotumsatz-CSV. Edelmetalle und Cash bleiben darunter separat verfügbar.</p>
+      <div class="empty-actions">
+        <button type="button" class="empty-action-btn" data-empty-action="manual">Manuell eingeben</button>
+        <button type="button" class="empty-action-btn primary" data-empty-action="screenshot">Screenshot &amp; KI</button>
+        <button type="button" class="empty-action-btn" data-empty-action="depotCsv">Depotumsätze CSV</button>
+      </div>`;
+    container.appendChild(empty);
+  }
   current.forEach(pos => container.appendChild(buildCard(pos, totals, alloc)));
   // Edelmetalle + Cash immer als Karten unten (auch bei 0, damit Slider verfügbar sind)
   container.appendChild(buildSpecialCard('metals', totals));
@@ -7299,6 +7396,7 @@ function wireEvents() {
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+  document.getElementById('modeToggleBtn').addEventListener('click', toggleViewMode);
   document.getElementById('refreshBtn').addEventListener('click', refreshLiveValuesOnly);
   document.getElementById('layoutEditBtn').addEventListener('click', openLayoutModal);
   document.getElementById('layoutCancelBtn').addEventListener('click', closeLayoutModal);
@@ -7658,6 +7756,17 @@ function wireEvents() {
   document.getElementById('flatexAccountCsvCancel').addEventListener('click', closeFlatexAccountCsvModal);
   document.getElementById('flatexAccountCsvImport').addEventListener('click', importFlatexAccountCsvAnalysis);
   document.getElementById('flatexAccountCsvModal').addEventListener('click', e => { if (e.target.id === 'flatexAccountCsvModal') closeFlatexAccountCsvModal(); });
+  document.addEventListener('click', e => {
+    const emptyAction = e.target.closest('[data-empty-action]');
+    if (!emptyAction) return;
+    const action = emptyAction.dataset.emptyAction;
+    if (action === 'manual') document.getElementById('addPosManualBtn')?.click();
+    if (action === 'screenshot') document.getElementById('addPosScreenshotBtn')?.click();
+    if (action === 'depotCsv') document.getElementById('addPosFlatexCsvBtn')?.click();
+    if (action === 'watch') document.getElementById('watchAddBtn')?.click();
+    if (action === 'journal') document.getElementById('journalAddBtn')?.click();
+    if (action === 'income') document.getElementById('incomeAddBtn')?.click();
+  });
   document.getElementById('apType').addEventListener('change', updateAddPosTypeFields);
   document.getElementById('apCancel').addEventListener('click', closeAddPositionModal);
   document.getElementById('apSave').addEventListener('click', saveNewPosition);
@@ -9347,7 +9456,7 @@ function initAutoLogout() {
   });
 }
 
-function bootstrap() { initTheme(); wireEvents(); initAutoLogout(); showScreen('gateScreen'); }
+function bootstrap() { initTheme(); initViewMode(); wireEvents(); initAutoLogout(); showScreen('gateScreen'); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
 else bootstrap();
 </script>
