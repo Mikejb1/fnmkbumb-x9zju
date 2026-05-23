@@ -4524,6 +4524,11 @@ function renderPortfolioNews() {
     status.textContent = 'Noch keine News geladen.';
   }
 
+  if (portfolioNewsState.loading && !items.length) {
+    list.innerHTML = '<div class="news-empty">Meldungen werden gesucht, gefiltert und vorbereitet…</div>';
+    return;
+  }
+
   if (!items.length) {
     list.innerHTML = '<div class="news-empty">Für den aktuellen Filter wurden keine passenden Meldungen gefunden.</div>';
     return;
