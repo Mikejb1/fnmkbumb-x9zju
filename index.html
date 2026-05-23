@@ -1703,7 +1703,7 @@
 </div>
 
 <script>
-'use strict';
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== AI-Worker (Cloudflare + Anthropic) =====
 const AI_WORKER_URL = 'https://morning-tree-9bb.michael-bummer.workers.dev';
 const AI_APP_TOKEN = '';
@@ -2281,6 +2281,8 @@ function getThemeColors() { const cs = getComputedStyle(document.body); return {
 function normalizeText(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
 
 // =====================================================================
+
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ============== DATENMODELL · TRANSAKTIONEN + MIGRATION (Schema v2) ==
 // =====================================================================
 function makeTxId() { return 'tx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
@@ -2381,6 +2383,8 @@ function migrateSchemaIfNeeded() {
 }
 
 // =====================================================================
+
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ============== BERECHNUNG · Helpers aus Transaktionsmodell ===========
 // =====================================================================
 function getTransactionsFor(assetId) {
@@ -2814,6 +2818,7 @@ function buildStammdatenSection(pos, live, totals) {
   return `<div class="stammdaten-box"><div class="stammdaten-title">Depot-Stammdaten</div><div class="stammdaten-grid">${rows}</div>${lotRows}</div>`;
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== RISIKO + KATEGORIEN =====
 const SMALLCAP_CRYPTO_IDS = ['sui', 'apex', 'aptos', 'arbitrum', 'optimism', 'celestia', 'sei-network', 'injective-protocol', 'starknet'];
 const METALS = [
@@ -3025,6 +3030,7 @@ function categoryOf(pos) {
   return 'aktie';
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== ASSET-ALLOKATION =====
 function buildAllSpecialPositions() {
   // Konstruiert virtuelle Cash + Edelmetall Positionen aus appData.goal
@@ -3142,6 +3148,7 @@ function renderAllocation(totals) {
   return alloc;
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== DATENQUALITÄTS-SCORE =====
 const BACKUP_TS_KEY = STORAGE_PREFIX + 'last_backup_ts';
 const LEGACY_BACKUP_TS_KEY = 'portfolio_last_backup_ts';
@@ -3595,6 +3602,8 @@ function evaluateRiskRules(totals, alloc) {
   });
   return items;
 }
+
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ============== STRATEGISCHE FEATURES (Rebalancing, Watchlist, Journal) ==
 function ensureWatchlist() { if (!Array.isArray(appData.watchlist)) appData.watchlist = []; return appData.watchlist; }
 function ensureJournal() { if (!Array.isArray(appData.journal)) appData.journal = []; return appData.journal; }
@@ -3821,6 +3830,7 @@ function renderJournal() {
   }).join('');
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== NACHKÄUFE (auch in der Vergangenheit) =====
 let buyingMorePosId = null;
 function openBuyMoreModal(posId) {
@@ -4231,6 +4241,7 @@ function renderScenario(totals, alloc) {
   `;
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== BACKUP · EXPORT · IMPORT =====
 function downloadBlob(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
@@ -4418,6 +4429,7 @@ function renderRiskRules(totals, alloc) {
     </div>`).join('');
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== KI-EMPFEHLUNG pro Position (heuristisch) =====
 function getRecommendation(pos, totals, alloc) {
   if (pos.special === 'cash' || pos.special === 'gold' || pos.special === 'metal') return null;
@@ -4517,16 +4529,53 @@ async function loadChartForPosition(pos, period) {
   }
 }
 
+function createEmptyAppData() {
+  const nextYear = Math.max(new Date().getFullYear() + 1, 2027);
+  return {
+    schemaVersion: 2,
+    goal: {
+      year: nextYear,
+      amount: 15000,
+      savingsRate: 0,
+      pathSavingsPct: 50,
+      riskPct: 50,
+      type: 'wealth',
+      priority: 'medium',
+      month: 12,
+      minSavingsRate: 0,
+      maxSavingsRate: 1000,
+      bufferPct: 10,
+      annualReturnPct: 4,
+      cash: 0,
+      targetAllocation: { etf: 40, aktie: 25, crypto: 20, gold: 10, cash: 5 },
+      riskRules: {
+        low: { min: 0, max: 5 },
+        medium: { min: 5, max: 20 },
+        high: { min: 20, max: 100 }
+      }
+    },
+    positions: [],
+    transactions: [],
+    watchlist: [],
+    journal: [],
+    income: [],
+    metalHistory: {},
+    layout: null
+  };
+}
+
 async function handleGate() {
   const code = document.getElementById('gatePw').value;
   const errEl = document.getElementById('gateError');
   errEl.classList.remove('visible');
   if (!code) { showErr(errEl, 'Bitte Code eingeben.'); return; }
   try {
-    appData = await ENC.decrypt(BAKED_BLOB, code);
+    const hasBakedStartData = BAKED_BLOB && typeof BAKED_BLOB === 'object' && BAKED_BLOB.c;
+    appData = hasBakedStartData ? await ENC.decrypt(BAKED_BLOB, code) : createEmptyAppData();
     appPassword = code;
     appUserKey = await deriveUserKey(code);   // unerratbarer KV-Schlüssel aus Master-Code
     appAuthToken = await deriveWorkerAuthToken(code); // Worker-Auth ohne statisches Frontend-Geheimnis
+    if (!hasBakedStartData) await kvGetPositions(kvKeyActive()); // prueft den Worker-Hash, bevor ein leerer Zugang oeffnet
     kvLegacyMigrationDone = false;
     resetAutoLogout();                         // Inaktivitäts-Timer starten
     if (!Array.isArray(appData.transactions)) appData.transactions = [];
@@ -4562,6 +4611,7 @@ async function handleGate() {
 }
 function handleLogout() { appData = null; appPassword = null; appUserKey = null; appAuthToken = null; kvLegacyMigrationDone = false; currentPrices = {}; baseLivePrices = {}; quoteIssues = {}; weeklyData = {}; chartRegistry = {}; if (manualQuoteTimer) { clearInterval(manualQuoteTimer); manualQuoteTimer = null; } if (typeof autoLogoutTimer !== 'undefined' && autoLogoutTimer) { clearTimeout(autoLogoutTimer); autoLogoutTimer = null; } document.getElementById('gatePw').value = ''; showScreen('gateScreen'); }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // Mapping Symbol/Name -> CoinGecko-ID (für zuverlässige Live-Kurse)
 const CRYPTO_CG_IDS = {
   btc: 'bitcoin', bitcoin: 'bitcoin', xbt: 'bitcoin',
@@ -4772,6 +4822,7 @@ function quoteSymbolForPosition(pos) {
   return raw;
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== HANDELSPLATZ (Venue) =====
 // Aktien/ETFs — Yahoo-Suffix Mapping
 const VENUE_OPTIONS = [
@@ -7387,6 +7438,7 @@ function wireEvents() {
   document.getElementById('screenshotModal').addEventListener('click', e => { if (e.target.id === 'screenshotModal') closeScreenshotModal(); });
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== Chatbot =====
 let chatHistory = [];
 let chatBusy = false;
@@ -7926,6 +7978,7 @@ function renderUsage() {
   if (elWR) { const span = elWR.querySelector('span'); if (span) span.textContent = `Reset ${formatTimeUntil(getNextMonday())}`; }
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== POSITION-MANAGEMENT =====
 function openAddPositionModal(prefill) {
   prefill = prefill || {};
@@ -8000,6 +8053,7 @@ async function removePosition(posId) {
   await refreshUI();
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== SCREENSHOT-EXTRAKTION (Vision via Worker) =====
 let ssBase64 = null, ssMime = null;
 function openScreenshotModal() {
@@ -8366,6 +8420,7 @@ async function importFlatexCsvAnalysis() {
   alert(`Flatex CSV übernommen. ${openCount} aktuelle Positionen und ${built.transactions.length} historische Buchungen sind aktiv.`);
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== FLATEX KONTOUMSAETZE CSV — Cash-Verlauf + Orderabgleich =====
 const FLATEX_ACCOUNT_SOURCE = 'flatex-account-csv';
 function accountOrderParts(info) {
@@ -8957,6 +9012,7 @@ async function saveScreenshotBatchPreview() {
   alert(`${booked} Buchungen übernommen.${skipped ? ` ${skipped} Zeilen übersprungen/ignoriert.` : ''}`);
 }
 
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
 // ===== AUTO-LOGOUT bei Inaktivität (Sicherheit) =====
 const AUTO_LOGOUT_MS = 15 * 60 * 1000; // 15 Minuten
 let autoLogoutTimer = null;
