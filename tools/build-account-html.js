@@ -10,6 +10,7 @@ const ACCOUNTS_FILE = path.join(APP_ROOT, 'src', 'accounts.json');
 const CSS_FILE = path.join(APP_ROOT, 'src', 'app.css');
 const JS_FILE = path.join(APP_ROOT, 'src', 'app.js');
 const JS_DIR = path.join(APP_ROOT, 'src', 'js');
+const CHART_VENDOR_FILE = path.join(APP_ROOT, 'src', 'vendor', 'chart.umd.js');
 
 function escapeHtml(value) {
   return String(value)
@@ -61,6 +62,9 @@ function renderAccount(template, account, sourceParts = loadSourceParts()) {
 function main() {
   const template = fs.readFileSync(TEMPLATE_FILE, 'utf8');
   const sourceParts = loadSourceParts();
+  if (!fs.existsSync(CHART_VENDOR_FILE)) {
+    throw new Error('Lokale Chart.js-Datei fehlt: ' + CHART_VENDOR_FILE);
+  }
   fs.writeFileSync(JS_FILE, sourceParts.js + '\n');
   const config = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8'));
   for (const account of config.accounts || []) {
@@ -70,6 +74,7 @@ function main() {
     const target = path.join(APP_ROOT, account.output);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, renderAccount(template, account, sourceParts));
+    fs.copyFileSync(CHART_VENDOR_FILE, path.join(path.dirname(target), 'chart.umd.js'));
     console.log('built ' + account.name + ' -> ' + target);
   }
 }

@@ -412,7 +412,10 @@ async function checkRateLimit(request, env, body) {
     'unknown';
   const now = Date.now();
   const bucket = Math.floor(now / group.windowMs);
-  const key = `rate:${group.name}:${hashRateLimitPart(ip)}:${bucket}`;
+  const userPart = body?.userKey && /^[a-z0-9_-]{1,64}$/i.test(body.userKey)
+    ? body.userKey
+    : 'nouser';
+  const key = `rate:${group.name}:${hashRateLimitPart(userPart)}:${hashRateLimitPart(ip)}:${bucket}`;
 
   try {
     const current = Number((await env.KV.get(key)) || '0');
@@ -421,6 +424,7 @@ async function checkRateLimit(request, env, body) {
         status: 429,
         body: {
           error: 'Rate limit exceeded',
+          group: group.name,
           retryAfterSeconds: Math.ceil(group.windowMs / 1000),
         },
       };
@@ -437,24 +441,23 @@ async function checkRateLimit(request, env, body) {
 }
 
 function rateLimitGroup(action, body) {
-  if (action === 'get-market-prices' || action === 'get-market-history' || action === 'get-metal-prices' || action === 'resolve-market-symbols') {
-    return { name: action, limit: 80, windowMs: 10 * 60 * 1000 };
+  if (action === 'get-market-prices') return { name: 'quotes', limit: 50, windowMs: 5 * 60 * 1000 };
+  if (action === 'get-market-history') return { name: 'history', limit: 18, windowMs: 10 * 60 * 1000 };
+  if (action === 'get-metal-prices') return { name: 'metals', limit: 30, windowMs: 10 * 60 * 1000 };
+  if (action === 'resolve-market-symbols') return { name: 'resolve', limit: 20, windowMs: 10 * 60 * 1000 };
+
+  if (action === 'get-positions' || action === 'get-memory') {
+    return { name: 'kv-read', limit: 240, windowMs: 10 * 60 * 1000 };
   }
 
-  if (
-    action === 'get-positions' ||
-    action === 'put-positions' ||
-    action === 'get-memory' ||
-    action === 'put-memory' ||
-    action === 'put-memory-summary' ||
-    action === 'clear-memory'
-  ) {
-    return { name: 'kv', limit: 180, windowMs: 10 * 60 * 1000 };
+  if (action === 'put-positions' || action === 'put-memory' || action === 'put-memory-summary') {
+    return { name: 'kv-write', limit: 120, windowMs: 10 * 60 * 1000 };
   }
 
-  if (body?.messages || body?.prompt || body?.image) {
-    return { name: 'ai', limit: 30, windowMs: 10 * 60 * 1000 };
-  }
+  if (action === 'clear-memory') return { name: 'kv-destructive', limit: 10, windowMs: 10 * 60 * 1000 };
+
+  if (body?.image) return { name: 'ai-vision', limit: 12, windowMs: 10 * 60 * 1000 };
+  if (body?.messages || body?.prompt) return { name: 'ai-text', limit: 30, windowMs: 10 * 60 * 1000 };
 
   return { name: 'misc', limit: 100, windowMs: 10 * 60 * 1000 };
 }
