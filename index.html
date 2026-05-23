@@ -181,6 +181,12 @@
   .history-tab { background: transparent; border: 0; color: var(--text-tertiary); font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
   .history-tab.active { background: var(--bg-card); color: var(--text-primary); }
   .history-chart-wrap { position: relative; height: 180px; margin-bottom: 14px; }
+  .history-svg-fallback { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .history-svg-fallback text { fill: var(--chart-axis); font-size: 10px; font-weight: 500; }
+  .history-svg-fallback .grid { stroke: var(--chart-grid); stroke-width: 1; }
+  .history-svg-fallback .line { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .history-svg-fallback .area { opacity: 0.16; }
+  .history-chart-fallback-note { position: absolute; right: 0; bottom: 0; color: var(--text-muted); font-size: 9px; font-style: italic; }
   .history-summary { border-top: 1px solid var(--border-light); padding-top: 12px; }
   .history-quality-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 10px; font-size: 10px; color: var(--text-secondary); }
   .history-quality-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; border: 1px solid var(--border); background: var(--bg-secondary); font-weight: 600; cursor: pointer; user-select: none; }
@@ -5827,21 +5833,103 @@ function loadManualPrices() {
   });
 }
 
+function clearChartFallback(canvas) {
+  const wrap = canvas?.parentElement;
+  if (!wrap) return;
+  wrap.querySelectorAll('.history-svg-fallback, .history-chart-fallback-note').forEach(el => el.remove());
+  canvas.style.display = '';
+}
+
+function svgEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderChartFallback(canvas, points, valueKey, opts) {
+  const wrap = canvas?.parentElement;
+  if (!wrap) return;
+  clearChartFallback(canvas);
+  const rows = (points || [])
+    .map((p, index) => ({ point: p, index, value: Number(p?.[valueKey]) }))
+    .filter(row => Number.isFinite(row.value));
+  if (rows.length < 2) return;
+  canvas.style.display = 'none';
+
+  const width = 640;
+  const height = 180;
+  const pad = { left: 58, right: 16, top: 16, bottom: 30 };
+  let min = Math.min(...rows.map(r => r.value));
+  let max = Math.max(...rows.map(r => r.value));
+  if (min === max) {
+    const spread = Math.max(1, Math.abs(max) * 0.01);
+    min -= spread;
+    max += spread;
+  }
+  const xFor = (rowIndex) => pad.left + (rowIndex / Math.max(1, rows.length - 1)) * (width - pad.left - pad.right);
+  const yFor = (value) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
+  const linePath = rows.map((row, i) => `${i ? 'L' : 'M'} ${xFor(i).toFixed(1)} ${yFor(row.value).toFixed(1)}`).join(' ');
+  const baseY = height - pad.bottom;
+  const areaPath = `${linePath} L ${xFor(rows.length - 1).toFixed(1)} ${baseY} L ${xFor(0).toFixed(1)} ${baseY} Z`;
+  const isUp = rows[rows.length - 1].value >= rows[0].value;
+  const color = isUp ? '#22c55e' : '#f87171';
+  const grid = [0, 0.5, 1].map(t => {
+    const value = max - (max - min) * t;
+    const y = pad.top + (height - pad.top - pad.bottom) * t;
+    return `<line class="grid" x1="${pad.left}" y1="${y.toFixed(1)}" x2="${width - pad.right}" y2="${y.toFixed(1)}"></line><text x="4" y="${(y + 4).toFixed(1)}">${svgEscape(fmtNoCent.format(value))}</text>`;
+  }).join('');
+  const labels = [0, Math.floor((rows.length - 1) / 2), rows.length - 1]
+    .filter((value, index, arr) => arr.indexOf(value) === index)
+    .map(i => `<text x="${xFor(i).toFixed(1)}" y="${height - 8}" text-anchor="${i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle'}">${svgEscape(rows[i].point?.label || '')}</text>`)
+    .join('');
+  const markers = rows.map((row, i) => {
+    const isEdge = i === 0 || i === rows.length - 1;
+    const isEvent = !!(row.point?.events && row.point.events.length);
+    if (!isEdge && !isEvent && !opts?.bigPoints) return '';
+    return `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(row.value).toFixed(1)}" r="${isEvent ? 3.5 : 2.8}" fill="${isEvent ? '#fbbf24' : color}"></circle>`;
+  }).join('');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'history-svg-fallback');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', opts?.mainLabel || 'Depotchart');
+  svg.innerHTML = `
+    ${grid}
+    <path class="area" d="${areaPath}" fill="${color}"></path>
+    <path class="line" d="${linePath}" stroke="${color}"></path>
+    ${markers}
+    ${labels}
+  `;
+  const note = document.createElement('div');
+  note.className = 'history-chart-fallback-note';
+  note.textContent = 'Fallback-Chart aktiv';
+  wrap.appendChild(svg);
+  wrap.appendChild(note);
+}
+
 function renderChart(canvasId, points, valueKey, opts) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !points || points.length < 2 || typeof Chart === 'undefined') return;
+  if (!canvas || !points || points.length < 2) return;
   chartRegistry[canvasId] = { points, valueKey, opts: opts || {} };
+  const values = points.map(p => Number(p[valueKey]));
+  if (values.filter(Number.isFinite).length < 2) return;
+  if (typeof Chart === 'undefined') {
+    renderChartFallback(canvas, points, valueKey, opts || {});
+    return;
+  }
+  clearChartFallback(canvas);
   const existing = Chart.getChart && Chart.getChart(canvas);
   if (existing) existing.destroy();
   const theme = getThemeColors();
-  const values = points.map(p => p[valueKey]);
   const isUp = values[values.length - 1] >= values[0];
   const color = isUp ? '#22c55e' : '#f87171';
   const fillColor = isUp ? 'rgba(34,197,94,0.10)' : 'rgba(248,113,113,0.10)';
   const useEventMarkers = !!opts?.eventMarkers;
   const markerRadius = useEventMarkers
     ? points.map(p => (p.events && p.events.length) ? 3.5 : (p.quality?.level === 'weak' ? 2 : 0))
-    : (opts?.daily ? 0 : opts?.bigPoints ? 3 : 2);
+    : (opts?.bigPoints ? 3 : opts?.daily ? 0 : 2);
   const markerColors = useEventMarkers
     ? points.map(p => (p.events && p.events.length) ? '#fbbf24' : (p.quality?.level === 'weak' ? '#f87171' : color))
     : color;
@@ -7304,7 +7392,7 @@ function renderHistory() {
   if (!intraday && historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
   // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
   const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
-  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, eventMarkers: true, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : intraday ? 'Depotwert heute' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
+  renderChart('historyChart', points, mainKey, { compactY: true, daily: true, bigPoints: intraday, eventMarkers: !intraday, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : intraday ? 'Depotwert heute' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
   const qualitySummary = summarizeHistoryQuality(points, futureProjection);
   const qualityBadge = document.getElementById('historyQualityBadge');
   if (qualityBadge) {
