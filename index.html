@@ -338,6 +338,7 @@
   .scenario-slider-row .lbl { color: var(--text-secondary); }
   .scenario-slider-row input[type=range] { width: 100%; accent-color: var(--positive); }
   .scenario-slider-row .pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .scenario-slider-row.scenario-extra { border-top: 1px solid var(--border-light); margin-top: 4px; padding-top: 9px; }
   .scenario-slider-row .pct.up { color: var(--positive); }
   .scenario-slider-row .pct.down { color: var(--negative); }
   .scenario-result { background: var(--bg-secondary); border-radius: 8px; padding: 12px 14px; margin-top: 10px; }
@@ -349,6 +350,29 @@
   .scenario-violations { background: rgba(239,68,68,0.08); border-left: 3px solid var(--negative); border-radius: 6px; padding: 8px 10px; margin-top: 10px; font-size: 11px; color: #fca5a5; line-height: 1.5; }
   .scenario-reset-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
   .scenario-reset-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .tax-perf-body, .alerts-list { display: grid; gap: 8px; }
+  .tax-perf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
+  .tax-perf-card, .alert-item { border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-secondary); padding: 10px 11px; }
+  .tax-perf-card .label, .alert-item .meta { color: var(--text-tertiary); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .tax-perf-card .value { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .tax-perf-card .value.positive, .alert-item.good strong { color: var(--positive); }
+  .tax-perf-card .value.negative, .alert-item.critical strong, .alert-item.warn strong { color: var(--negative); }
+  .tax-perf-note { color: var(--text-tertiary); font-size: 11px; line-height: 1.45; margin-top: 8px; }
+  .tax-perf-table { display: grid; gap: 4px; margin-top: 8px; }
+  .tax-perf-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 11px; color: var(--text-secondary); padding: 5px 0; border-top: 1px solid var(--border-light); }
+  .tax-perf-row:first-child { border-top: 0; }
+  .tax-perf-row .amount { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .alert-item { display: grid; gap: 4px; }
+  .alert-item strong { font-size: 12px; color: var(--text-primary); }
+  .alert-item p { margin: 0; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
+  .alert-item.info { border-color: rgba(59,130,246,0.35); }
+  .alert-item.warn { border-color: rgba(245,158,11,0.38); background: rgba(245,158,11,0.08); }
+  .alert-item.critical { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.08); }
+  .alert-item.good { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
+  .import-impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 6px; margin-top: 8px; }
+  .import-impact-card { border: 1px solid var(--border-light); border-radius: 7px; background: rgba(255,255,255,0.03); padding: 7px 8px; }
+  .import-impact-card .label { color: var(--text-tertiary); font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .import-impact-card .value { color: var(--text-primary); font-size: 13px; font-weight: 600; margin-top: 2px; }
   .income-summary { background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; }
   .income-summary .big { font-size: 18px; font-weight: 600; color: var(--positive); font-variant-numeric: tabular-nums; }
   .income-summary .breakdown { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
@@ -888,9 +912,11 @@
     <button class="mini-nav-btn" data-jump="anchor-goal">Ziel</button>
     <button class="mini-nav-btn" data-jump="anchor-rebalancing">Rebalancing</button>
     <button class="mini-nav-btn" data-jump="anchor-scenario">Szenario</button>
+    <button class="mini-nav-btn" data-jump="anchor-alerts">Hinweise</button>
     <button class="mini-nav-btn" data-jump="anchor-watchlist">Watchlist</button>
     <button class="mini-nav-btn" data-jump="anchor-journal">Journal</button>
     <button class="mini-nav-btn" data-jump="anchor-income">Erträge</button>
+    <button class="mini-nav-btn" data-jump="anchor-tax">Steuern</button>
     <button class="mini-nav-btn" data-jump="anchor-chat">KI</button>
   </nav>
   <div class="total-bar" id="anchor-top">
@@ -1003,6 +1029,21 @@
     <div class="quality-breakdown" id="qualityBreakdown"></div>
     <div id="qualityIssues"></div>
   </div>
+
+  <span id="anchor-alerts"></span>
+  <details class="strat-section" id="alertsSection" open>
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <span>Hinweise &amp; Benachrichtigungen</span>
+      </span>
+      <span class="count-badge" id="alertsCount">0</span>
+    </summary>
+    <div class="strat-body">
+      <div class="alerts-list" id="alertsList"></div>
+    </div>
+  </details>
+
   <details class="positions-section" id="anchor-positions" open>
     <summary>
       <span class="positions-summary-left">
@@ -1196,6 +1237,8 @@
         <div class="scenario-slider-row"><span class="lbl">Aktien</span><input type="range" min="-30" max="30" step="1" value="0" data-scenario="aktie"><span class="pct" data-pct="aktie">±0 %</span></div>
         <div class="scenario-slider-row"><span class="lbl">Krypto</span><input type="range" min="-60" max="60" step="2" value="0" data-scenario="crypto"><span class="pct" data-pct="crypto">±0 %</span></div>
         <div class="scenario-slider-row"><span class="lbl">Edelmetalle</span><input type="range" min="-20" max="20" step="1" value="0" data-scenario="gold"><span class="pct" data-pct="gold">±0 %</span></div>
+        <div class="scenario-slider-row scenario-extra"><span class="lbl">Sparrate</span><input type="range" min="-500" max="1000" step="25" value="0" data-scenario="savings"><span class="pct" data-pct="savings">±0 €/Mo</span></div>
+        <div class="scenario-slider-row scenario-extra"><span class="lbl">Rendite</span><input type="range" min="-10" max="20" step="0.5" value="0" data-scenario="return"><span class="pct" data-pct="return">±0 % p.a.</span></div>
       </div>
       <div style="display:flex; justify-content:flex-end; margin-top:8px;"><button class="scenario-reset-btn" id="scenarioResetBtn" type="button">Zurücksetzen</button></div>
       <div class="scenario-result" id="scenarioResult"></div>
@@ -1245,6 +1288,20 @@
       <div class="income-summary" id="incomeSummary"></div>
       <button class="strat-add-btn" id="incomeAddBtn"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ertrag erfassen</button>
       <div id="incomeList" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <span id="anchor-tax"></span>
+  <details class="strat-section" id="taxPerformanceSection">
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        <span>Steuer &amp; Performance</span>
+      </span>
+      <span class="count-badge" id="taxPerformanceStatus">—</span>
+    </summary>
+    <div class="strat-body">
+      <div class="tax-perf-body" id="taxPerformanceBody"></div>
     </div>
   </details>
 
@@ -1729,6 +1786,7 @@ const LAYOUT_SECTIONS = [
   { key: 'allocation', label: 'Asset-Allokation', meta: 'Aufteilung und Diversifikation', selectors: ['.alloc-section'] },
   { key: 'riskRules', label: 'Risiko-Regeln', meta: 'Grenzen und Hinweise', selectors: ['#riskRulesSection'] },
   { key: 'quality', label: 'Datenqualität', meta: 'Prüfung der Eingaben', selectors: ['#qualitySection'] },
+  { key: 'alerts', label: 'Hinweise', meta: 'Lokale Warnungen und Aufgaben', selectors: ['#anchor-alerts', '#alertsSection'], nav: 'anchor-alerts' },
   { key: 'positions', label: 'Positionen', meta: 'Aktien, ETF und Krypto', selectors: ['#anchor-positions'], nav: 'anchor-positions' },
   { key: 'metalsCard', label: 'Edelmetalle', meta: 'Karte innerhalb Positionen', selectors: ['#card-metals'] },
   { key: 'cashCard', label: 'Cash', meta: 'Cash-Saldo und Bewegungen', selectors: ['#card-cash'] },
@@ -1742,6 +1800,7 @@ const LAYOUT_SECTIONS = [
   { key: 'watchlist', label: 'Watchlist', meta: 'Kandidaten beobachten', selectors: ['#anchor-watchlist', '#watchlistSection'], nav: 'anchor-watchlist' },
   { key: 'journal', label: 'Entscheidungs-Journal', meta: 'Gedanken und Reviews', selectors: ['#anchor-journal', '#journalSection'], nav: 'anchor-journal' },
   { key: 'income', label: 'Erträge', meta: 'Dividenden, Zinsen, Staking', selectors: ['#anchor-income', '#incomeSection'], nav: 'anchor-income' },
+  { key: 'taxPerformance', label: 'Steuer & Performance', meta: 'Realisierte Gewinne, Erträge und Gebühren', selectors: ['#anchor-tax', '#taxPerformanceSection'], nav: 'anchor-tax' },
   { key: 'privacy', label: 'Datenschutz', meta: 'Speicherung und Verschlüsselung', selectors: ['.privacy-section'] },
   { key: 'backup', label: 'Backup & Export', meta: 'JSON und CSV', selectors: ['.backup-section'] },
   { key: 'chat', label: 'KI-Chat', meta: 'Fragen und Gedächtnis', selectors: ['#anchor-chat'], nav: 'anchor-chat' },
@@ -4163,7 +4222,7 @@ function renderIncome() {
 
 // ===== SZENARIO-RECHNER =====
 function getScenarioDeltas() {
-  const d = { etf: 0, aktie: 0, crypto: 0, gold: 0 };
+  const d = { etf: 0, aktie: 0, crypto: 0, gold: 0, savings: 0, return: 0 };
   document.querySelectorAll('[data-scenario]').forEach(inp => {
     const k = inp.dataset.scenario;
     if (k in d) d[k] = parseFloat(inp.value) || 0;
@@ -4196,13 +4255,17 @@ function renderScenario(totals, alloc) {
   document.querySelectorAll('[data-pct]').forEach(el => {
     const k = el.dataset.pct;
     const v = deltas[k] || 0;
-    el.textContent = (v >= 0 ? '+' : '') + v + ' %';
+    if (k === 'savings') el.textContent = `${v >= 0 ? '+' : ''}${fmtNoCent.format(v)}/Mo`;
+    else if (k === 'return') el.textContent = `${v >= 0 ? '+' : ''}${fmtNum(v, 1)} % p.a.`;
+    else el.textContent = (v >= 0 ? '+' : '') + v + ' %';
     el.classList.toggle('up', v > 0);
     el.classList.toggle('down', v < 0);
   });
   // Status-Badge im Sektions-Header
   const statusEl = document.getElementById('scenarioStatus');
-  const absSum = Math.abs(deltas.etf) + Math.abs(deltas.aktie) + Math.abs(deltas.crypto) + Math.abs(deltas.gold);
+  const marketAbsSum = Math.abs(deltas.etf) + Math.abs(deltas.aktie) + Math.abs(deltas.crypto) + Math.abs(deltas.gold);
+  const planAbsSum = Math.abs(deltas.savings) + Math.abs(deltas.return);
+  const absSum = marketAbsSum + planAbsSum;
   if (statusEl) statusEl.textContent = absSum === 0 ? '±0' : `Δ ${absSum}`;
   const result = applyScenario(totals, alloc, deltas);
   const resEl = document.getElementById('scenarioResult');
@@ -4216,14 +4279,19 @@ function renderScenario(totals, alloc) {
   const fakeAlloc = { pcts: result.newAlloc, abs: result.newEur };
   const newRules = evaluateRiskRules(fakeTotals, fakeAlloc);
   const violations = newRules.filter(r => r.violated);
-  // Ziel-Berechnung
+  // Ziel-Berechnung mit optionalem Sparraten- und Rendite-Hebel
   const goal = appData?.goal || {};
   let goalText = '';
+  let projectionText = '';
   if (goal.amount && goal.year) {
-    const gap = goal.amount - result.newTotal;
+    const scenarioSavings = Math.max(0, (Number(goal.savingsRate) || 0) + (Number(deltas.savings) || 0));
+    const scenarioReturn = (Number(goal.annualReturnPct) || 0) + (Number(deltas.return) || 0);
     const today = new Date();
-    const endDate = new Date(goal.year, 11, 31);
+    const endDate = new Date(goal.year, (goal.month || 12) - 1, 28);
     const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
+    const projected = futureValueWithMonthlySavings(result.newTotal, scenarioSavings, monthsToGoal, scenarioReturn);
+    const gap = goal.amount - projected;
+    projectionText = `Mit ${fmtNoCent.format(scenarioSavings)}/Mo und ${fmtNum(scenarioReturn, 1)}% p.a.: <strong>${fmt.format(projected)}</strong>`;
     if (gap <= 0) {
       goalText = `Ziel <strong>bereits übertroffen</strong> (Puffer ${fmt.format(-gap)})`;
     } else {
@@ -4236,9 +4304,184 @@ function renderScenario(totals, alloc) {
     <div class="scenario-result-row"><span class="lbl">Neuer Depotwert</span><span class="val">${fmt.format(result.newTotal)}</span></div>
     <div class="scenario-result-row"><span class="lbl">Veränderung</span><span class="val ${cls}">${result.change >= 0 ? '+' : ''}${fmt.format(result.change)} (${result.changePct >= 0 ? '+' : ''}${fmtNum(result.changePct, 1)} %)</span></div>
     <div class="scenario-result-row"><span class="lbl">Allokation neu</span><span class="val" style="font-size:11px;font-weight:400;color:var(--text-secondary);">ETF ${fmtNum(result.newAlloc.etf, 0)} % · Aktie ${fmtNum(result.newAlloc.aktie, 0)} % · Krypto ${fmtNum(result.newAlloc.crypto, 0)} % · Gold ${fmtNum(result.newAlloc.gold, 0)} % · Cash ${fmtNum(result.newAlloc.cash, 0)} %</span></div>
+    ${projectionText ? `<div class="scenario-result-row"><span class="lbl">Ziel-Projektion</span><span class="val" style="font-weight:400;font-size:12px;">${projectionText}</span></div>` : ''}
     ${goalText ? `<div class="scenario-result-row"><span class="lbl">Ziel-Status</span><span class="val" style="font-weight:400;font-size:12px;">${goalText}</span></div>` : ''}
     ${violations.length > 0 ? `<div class="scenario-violations"><strong>Neue Regel-Verletzungen:</strong><br>${violations.map(v => '· ' + v.label + ': ' + v.value).join('<br>')}</div>` : ''}
   `;
+}
+
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
+// ===== STEUER/PERFORMANCE + LOKALE BENACHRICHTIGUNGEN =====
+function txYearOf(tx) {
+  return Number(String(cashEffectiveDate(tx) || tx?.date || '').slice(0, 4)) || new Date().getFullYear();
+}
+
+function calculateRealizedPerformance(year = new Date().getFullYear()) {
+  const state = new Map();
+  const rows = [];
+  const txs = (appData?.transactions || [])
+    .filter(tx => tx && tx.assetType !== 'cash' && tx.assetType !== 'metal' && ['buy', 'sell', 'adjust'].includes(tx.txType))
+    .slice()
+    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+  txs.forEach(tx => {
+    const key = tx.assetId || '';
+    const current = state.get(key) || { shares: 0, costBasis: 0 };
+    const qty = Number(tx.quantity) || 0;
+    const value = Number(tx.value) || qty * (Number(tx.price) || 0);
+    const fees = Number(tx.fees) || 0;
+    if (tx.txType === 'adjust') {
+      current.shares = qty;
+      current.costBasis = value;
+    } else if (tx.txType === 'buy') {
+      current.shares += qty;
+      current.costBasis += value + fees;
+    } else if (tx.txType === 'sell') {
+      const sold = Math.min(qty, current.shares);
+      const avg = current.shares > 0 ? current.costBasis / current.shares : 0;
+      const cost = avg * sold;
+      const proceeds = Number(tx.accountCashValue) > 0 ? Number(tx.accountCashValue) : value - fees;
+      const realized = proceeds - cost;
+      if (txYearOf(tx) === year) {
+        const pos = (appData?.positions || []).find(p => p.id === tx.assetId);
+        rows.push({
+          date: tx.date,
+          name: pos?.name || tx.note || tx.assetId || 'Verkauf',
+          proceeds,
+          cost,
+          fees,
+          realized,
+        });
+      }
+      current.costBasis = Math.max(0, current.costBasis - cost);
+      current.shares = Math.max(0, current.shares - sold);
+    }
+    state.set(key, current);
+  });
+
+  const totalRealized = rows.reduce((sum, row) => sum + row.realized, 0);
+  const wins = rows.filter(row => row.realized > 0).reduce((sum, row) => sum + row.realized, 0);
+  const losses = rows.filter(row => row.realized < 0).reduce((sum, row) => sum + row.realized, 0);
+  return { rows, totalRealized, wins, losses };
+}
+
+function calculateTaxPerformanceSummary(totals) {
+  const year = new Date().getFullYear();
+  const realized = calculateRealizedPerformance(year);
+  const income = (appData?.income || []).filter(entry => String(entry.date || '').startsWith(String(year)));
+  const incomeGross = income.reduce((sum, entry) => sum + (Number(entry.gross) || 0), 0);
+  const incomeTax = income.reduce((sum, entry) => sum + (Number(entry.tax) || 0), 0);
+  const incomeNet = income.reduce((sum, entry) => sum + (Number(entry.net) || 0), 0);
+  const cashTax = (appData?.transactions || [])
+    .filter(tx => tx.assetType === 'cash' && tx.txType === 'tax' && txYearOf(tx) === year)
+    .reduce((sum, tx) => sum + (Number(tx.value) || 0), 0);
+  const cashFees = (appData?.transactions || [])
+    .filter(tx => tx.assetType === 'cash' && tx.txType === 'fee' && txYearOf(tx) === year)
+    .reduce((sum, tx) => sum + (Number(tx.value) || 0), 0);
+  const tradeFees = (appData?.transactions || [])
+    .filter(tx => tx.assetType !== 'cash' && txYearOf(tx) === year)
+    .reduce((sum, tx) => sum + (Number(tx.fees) || 0), 0);
+  const unrealized = (currentPortfolioPositions() || []).reduce((sum, pos) => sum + getPositionValuation(pos).pnlAbs, 0);
+  return {
+    year,
+    realized,
+    incomeGross,
+    incomeTax,
+    incomeNet,
+    cashTax,
+    cashFees,
+    tradeFees,
+    totalTaxes: incomeTax + cashTax,
+    totalFees: cashFees + tradeFees,
+    unrealized,
+    totalPnl: Number(totals?.totalPnl) || 0,
+  };
+}
+
+function renderTaxPerformance(totals) {
+  const body = document.getElementById('taxPerformanceBody');
+  const status = document.getElementById('taxPerformanceStatus');
+  if (!body) return;
+  const s = calculateTaxPerformanceSummary(totals);
+  const realizedClass = s.realized.totalRealized >= 0 ? 'positive' : 'negative';
+  if (status) status.textContent = s.realized.rows.length ? `${s.realized.rows.length} Verkäufe` : String(s.year);
+  const topRows = s.realized.rows
+    .slice()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+    .slice(0, 5);
+  body.innerHTML = `
+    <div class="tax-perf-grid">
+      <div class="tax-perf-card"><div class="label">Realisierter G/V ${s.year}</div><div class="value ${realizedClass}">${s.realized.totalRealized >= 0 ? '+' : ''}${fmt.format(s.realized.totalRealized)}</div></div>
+      <div class="tax-perf-card"><div class="label">Offener G/V aktuell</div><div class="value ${s.unrealized >= 0 ? 'positive' : 'negative'}">${s.unrealized >= 0 ? '+' : ''}${fmt.format(s.unrealized)}</div></div>
+      <div class="tax-perf-card"><div class="label">Erträge netto ${s.year}</div><div class="value positive">${fmt.format(s.incomeNet)}</div></div>
+      <div class="tax-perf-card"><div class="label">Steuern & Gebühren</div><div class="value negative">${fmt.format(s.totalTaxes + s.totalFees)}</div></div>
+    </div>
+    <div class="tax-perf-table">
+      <div class="tax-perf-row"><span>Gewinne aus Verkäufen</span><span class="amount positive">${fmt.format(s.realized.wins)}</span></div>
+      <div class="tax-perf-row"><span>Verluste aus Verkäufen</span><span class="amount negative">${fmt.format(s.realized.losses)}</span></div>
+      <div class="tax-perf-row"><span>Erträge brutto / Steuer</span><span class="amount">${fmt.format(s.incomeGross)} / ${fmt.format(s.incomeTax)}</span></div>
+      <div class="tax-perf-row"><span>Order- und Cash-Gebühren</span><span class="amount">${fmt.format(s.totalFees)}</span></div>
+    </div>
+    ${topRows.length ? `<div class="tax-perf-table">${topRows.map(row => `<div class="tax-perf-row"><span>${escapeHtml(formatDateAT(row.date))} · ${escapeHtml(row.name)}</span><span class="amount ${row.realized >= 0 ? 'positive' : 'negative'}">${row.realized >= 0 ? '+' : ''}${fmt.format(row.realized)}</span></div>`).join('')}</div>` : ''}
+    <div class="tax-perf-note">Hinweis: Das ist eine Portfolio-Auswertung, keine Steuerberatung. Realisierte Gewinne/Verluste werden aus deinen Buchungen mit Average-Cost berechnet; Broker-Steuerlogik kann davon abweichen.</div>
+  `;
+}
+
+function backupAgeDays() {
+  try {
+    const ts = parseInt(localStorage.getItem(BACKUP_TS_KEY) || localStorage.getItem(LEGACY_BACKUP_TS_KEY) || '0', 10);
+    return ts > 0 ? (Date.now() - ts) / 86400000 : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function buildPortfolioAlerts(totals, goal, alloc) {
+  const alerts = [];
+  const quality = computeDataQuality(totals);
+  if (quality.score < 80) alerts.push({ level: 'warn', title: `Datenqualität ${quality.score}/100`, text: 'Einige Berechnungen nutzen Ersatzwerte. Öffne die Datenqualität, um die konkreten Punkte direkt zu verbessern.' });
+  else if (quality.score < 100) alerts.push({ level: 'info', title: `Datenqualität ${quality.score}/100`, text: 'Die Auswertungen sind nutzbar, aber für volle Genauigkeit fehlen noch Detaildaten wie Historie, Backup oder Stammdaten.' });
+
+  const cash = currentCashValue();
+  if (cash < -0.01) alerts.push({ level: 'critical', title: 'Cash ist negativ', text: `${fmt.format(cash)} Cash-Saldo. Prüfe Kontoumsätze, Einzahlungen und Order-Cashwerte.` });
+
+  const marketValue = Number(totals?.marketValue) || 0;
+  const biggest = currentPortfolioPositions()
+    .map(pos => ({ pos, value: getPositionValuation(pos).currentValue }))
+    .sort((a, b) => b.value - a.value)[0];
+  if (biggest && marketValue > 0) {
+    const pct = (biggest.value / marketValue) * 100;
+    if (pct >= 35) alerts.push({ level: pct >= 50 ? 'critical' : 'warn', title: 'Klumpenrisiko', text: `${biggest.pos.name} macht ${fmtNum(pct, 1)} % vom Börsenwert aus.` });
+  }
+
+  const missingLive = currentPortfolioPositions().filter(pos => !currentPrices[pos.id]?.live && !isManualQuoteOverrideActive(pos));
+  if (missingLive.length) alerts.push({ level: 'warn', title: 'Livekurse prüfen', text: `${missingLive.slice(0, 3).map(p => p.name).join(', ')}${missingLive.length > 3 ? ' …' : ''} nutzt manuelle oder alte Kursbasis.` });
+
+  if (goal?.amount && goal?.monthsToGoal) {
+    const projected = futureValueWithMonthlySavings(totals.totalCur, goal.savingsRate || 0, goal.monthsToGoal, goal.annualReturnPct || 0);
+    const gap = (goal.planAmount || goal.amount) - projected;
+    if (gap > 0) alerts.push({ level: 'info', title: 'Zielpfad beobachten', text: `Im aktuellen Spar-/Rendite-Szenario fehlen rechnerisch ${fmt.format(gap)} bis zum Planziel.` });
+  }
+
+  const age = backupAgeDays();
+  if (age == null) alerts.push({ level: 'warn', title: 'Backup fehlt', text: 'Lade ein JSON-Backup herunter, bevor du größere Importe oder Änderungen machst.' });
+  else if (age > 30) alerts.push({ level: 'info', title: 'Backup auffrischen', text: `Das letzte erkannte Backup ist ca. ${Math.floor(age)} Tage alt.` });
+
+  if (!alerts.length) alerts.push({ level: 'good', title: 'Alles ruhig', text: 'Keine wichtigen lokalen Warnungen erkannt. Kurse, Ziel und Datenqualität wirken aktuell plausibel.' });
+  return alerts;
+}
+
+function renderPortfolioAlerts(totals, goal, alloc) {
+  const list = document.getElementById('alertsList');
+  const count = document.getElementById('alertsCount');
+  if (!list) return;
+  const alerts = buildPortfolioAlerts(totals, goal, alloc);
+  if (count) count.textContent = String(alerts.filter(a => a.level !== 'good').length);
+  list.innerHTML = alerts.map(item => `<div class="alert-item ${item.level}">
+    <span class="meta">${item.level === 'critical' ? 'Wichtig' : item.level === 'warn' ? 'Prüfen' : item.level === 'good' ? 'Status' : 'Hinweis'}</span>
+    <strong>${escapeHtml(item.title)}</strong>
+    <p>${escapeHtml(item.text)}</p>
+  </div>`).join('');
 }
 
 // Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
@@ -6143,6 +6386,10 @@ async function refreshLiveValuesOnly() {
     const totals = renderTotals();
     renderPositions(totals);
     renderHistory();
+    const alloc = renderAllocation(totals);
+    const goal = renderGoal(totals);
+    renderPortfolioAlerts(totals, goal, alloc);
+    renderTaxPerformance(totals);
     applyLayoutSettings();
     await savePositionsToKV(800);
     completeRefreshProgress(true);
@@ -6949,12 +7196,14 @@ async function refreshUI(opts = {}) {
   const alloc = renderAllocation(totals);
   renderHistory();
   const goal = renderGoal(totals);
+  renderPortfolioAlerts(totals, goal, alloc);
   renderSavingsSim(totals, goal);
   if (alloc) renderRebalancing(totals, alloc);
   if (alloc) renderScenario(totals, alloc);
   renderWatchlist();
   renderJournal();
   renderIncome();
+  renderTaxPerformance(totals);
   renderBackupStatus();
   applyLayoutSettings();
   if (opts.skipAI) {
@@ -8315,6 +8564,16 @@ function renderFlatexCsvAnalysis(analysis) {
   const archived = analysis.groups.filter(group => !group.open);
   const matches = open.filter(group => group.matchesCurrent).length;
   const mismatches = open.filter(group => group.currentQuantity != null && !group.matchesCurrent);
+  const buyValue = analysis.entries.filter(entry => entry.txType === 'buy').reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
+  const sellValue = analysis.entries.filter(entry => entry.txType === 'sell').reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
+  const impactCards = `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Buchungen</div><div class="value">${analysis.entries.length}</div></div>
+    <div class="import-impact-card"><div class="label">Aktuelle Titel</div><div class="value">${open.length}</div></div>
+    <div class="import-impact-card"><div class="label">Historisch 0</div><div class="value">${archived.length}</div></div>
+    <div class="import-impact-card"><div class="label">Stück passt</div><div class="value">${matches}/${open.length}</div></div>
+    <div class="import-impact-card"><div class="label">Käufe</div><div class="value">${fmt.format(buyValue)}</div></div>
+    <div class="import-impact-card"><div class="label">Verkäufe</div><div class="value">${fmt.format(sellValue)}</div></div>
+  </div>`;
   const items = [
     { kind: 'info', text: `${analysis.entries.length} Flatex-Buchungen erkannt · ${open.length} heutige Position${open.length === 1 ? '' : 'en'} · ${archived.length} vollständig verkaufte historische Titel.` },
     { kind: mismatches.length ? 'warn' : 'info', text: `${matches} offene CSV-Bestände passen bereits zur aktuellen App. ${mismatches.length ? mismatches.length + ' Abweichung' + (mismatches.length === 1 ? '' : 'en') + ' bitte in der Vorschau prüfen.' : 'Keine Stückzahl-Abweichung bei erkannten Beständen.'}` },
@@ -8322,7 +8581,7 @@ function renderFlatexCsvAnalysis(analysis) {
   ];
   if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} wurden nicht importiert, weil Buchungsart oder Werte fehlen.` });
   items.push({ kind: 'warn', text: 'Importmodus: Bestehende Aktien/ETF/Krypto-Positionen und deren Wertpapier-Transaktionen werden nach Sicherheitsbackup aus dieser CSV neu aufgebaut. Cash, Ziele, Edelmetalle, Watchlist, Journal und KI-Gedächtnis bleiben erhalten.' });
-  document.getElementById('flatexCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  document.getElementById('flatexCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('') + impactCards;
   document.getElementById('flatexCsvPreview').innerHTML = analysis.groups.map(group => {
     const current = group.currentQuantity == null ? 'nicht in App' : `${fmtNum(group.currentQuantity, group.currentQuantity % 1 ? 6 : 0)} Stk`;
     const result = group.open ? `${fmtNum(group.netQuantity, group.netQuantity % 1 ? 6 : 0)} Stk offen` : 'Endbestand 0 · nur Verlauf';
@@ -8553,6 +8812,14 @@ function analyzeFlatexAccountCsvText(text) {
 }
 function renderFlatexAccountCsvAnalysis(analysis) {
   flatexAccountCsvAnalysis = analysis;
+  const accountImpact = `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Cash-Zeilen</div><div class="value">${analysis.entries.length}</div></div>
+    <div class="import-impact-card"><div class="label">Einzahlungen</div><div class="value">${fmt.format(analysis.totals.deposits)}</div></div>
+    <div class="import-impact-card"><div class="label">Erträge</div><div class="value">${fmt.format(analysis.totals.income)}</div></div>
+    <div class="import-impact-card"><div class="label">Abzüge</div><div class="value">${fmt.format(analysis.totals.debits)}</div></div>
+    <div class="import-impact-card"><div class="label">Orders erkannt</div><div class="value">${analysis.orders.length}</div></div>
+    <div class="import-impact-card"><div class="label">Orders gepaart</div><div class="value">${analysis.matchedOrders.length}</div></div>
+  </div>`;
   const items = [
     { kind: 'info', text: `${analysis.entries.length} Kontobewegungen erkannt · ${analysis.counts.deposit || 0} Einzahlung${analysis.counts.deposit === 1 ? '' : 'en'} (${fmt.format(analysis.totals.deposits)}) · ${analysis.counts.dividend || 0} Dividende${analysis.counts.dividend === 1 ? '' : 'n'} · ${analysis.counts.interest || 0} Zinsgutschrift${analysis.counts.interest === 1 ? '' : 'en'}.` },
     { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen Depotumsätzen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depotumsätze-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
@@ -8563,7 +8830,7 @@ function renderFlatexAccountCsvAnalysis(analysis) {
   }
   if (analysis.ignored.length) items.push({ kind: 'warn', text: `${analysis.ignored.length} Zeile${analysis.ignored.length === 1 ? '' : 'n'} werden ausgelassen: 0-EUR-Zeilen oder nicht eindeutig erkannte Kontobewegungen.` });
   items.push({ kind: 'warn', text: 'Importmodus: Frühere Kontoumsatz-Importspuren werden ersetzt. Manuell gepflegte Cash-Bewegungen bleiben erhalten und können zusätzlich wirken.' });
-  document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('');
+  document.getElementById('flatexAccountCsvSummary').innerHTML = items.map(item => `<div class="ss-conflict-item ${item.kind}">${item.text}</div>`).join('') + accountImpact;
   const previewEntries = analysis.entries.filter(entry => entry.kind !== 'order-buy' && entry.kind !== 'order-sell').slice(0, 24)
     .concat(analysis.orders.slice(0, 24));
   document.getElementById('flatexAccountCsvPreview').innerHTML = previewEntries.map(entry => {
@@ -8803,6 +9070,50 @@ function findMatchingPosition(name, symbol) {
     return pn === nName || pn.includes(nName) || nName.includes(pn);
   });
 }
+
+function summarizeBatchImportImpact(rows) {
+  const importable = (rows || []).filter(r => r.txType === 'buy' || r.txType === 'sell' || r.txType === 'fusion');
+  const byKey = new Map();
+  importable.forEach(row => {
+    const key = row.symbol || row.isin || row.name;
+    if (!byKey.has(key)) byKey.set(key, { name: row.name, buys: 0, sells: 0, buyValue: 0, sellValue: 0 });
+    const item = byKey.get(key);
+    const qty = Number(row.quantity) || 0;
+    const value = Number(row.amount) || qty * (Number(row.price) || 0);
+    const isSell = row.txType === 'sell' || (row.txType === 'fusion' && Number(row.signedQuantity) < 0);
+    if (isSell) {
+      item.sells += qty;
+      item.sellValue += value;
+    } else {
+      item.buys += qty;
+      item.buyValue += value;
+    }
+  });
+  const closing = [...byKey.values()].filter(item => item.buys > 0 && item.sells >= item.buys - 1e-8);
+  const netNew = [...byKey.values()].filter(item => item.buys > item.sells + 1e-8);
+  const buyValue = importable.reduce((sum, row) => {
+    const isBuy = row.txType === 'buy' || (row.txType === 'fusion' && Number(row.signedQuantity) > 0);
+    return sum + (isBuy ? (Number(row.amount) || (Number(row.quantity) || 0) * (Number(row.price) || 0)) : 0);
+  }, 0);
+  const sellValue = importable.reduce((sum, row) => {
+    const isSell = row.txType === 'sell' || (row.txType === 'fusion' && Number(row.signedQuantity) < 0);
+    return sum + (isSell ? (Number(row.amount) || (Number(row.quantity) || 0) * (Number(row.price) || 0)) : 0);
+  }, 0);
+  return { importable: importable.length, titles: byKey.size, netNew: netNew.length, closing: closing.length, buyValue, sellValue };
+}
+
+function renderImportImpactCards(summary) {
+  if (!summary) return '';
+  return `<div class="import-impact-grid">
+    <div class="import-impact-card"><div class="label">Buchungen</div><div class="value">${summary.importable}</div></div>
+    <div class="import-impact-card"><div class="label">Titel</div><div class="value">${summary.titles}</div></div>
+    <div class="import-impact-card"><div class="label">Netto offen</div><div class="value">${summary.netNew}</div></div>
+    <div class="import-impact-card"><div class="label">geschlossen</div><div class="value">${summary.closing}</div></div>
+    <div class="import-impact-card"><div class="label">Käufe</div><div class="value">${fmt.format(summary.buyValue)}</div></div>
+    <div class="import-impact-card"><div class="label">Verkäufe</div><div class="value">${fmt.format(summary.sellValue)}</div></div>
+  </div>`;
+}
+
 function openScreenshotPreviewModal(data) {
   ssBatchRows = null;
   ssPreviewMatchedPosId = null;
@@ -8863,10 +9174,12 @@ function openScreenshotBatchPreviewModal(rows) {
   const items = [
     { kind: 'info', text: `${importable.length} echte Depotbuchungen erkannt. Käufe/Verkäufe werden als Transaktionen gebucht und Positionen zusammengeführt.` }
   ];
+  const impact = summarizeBatchImportImpact(rows);
+  items.push({ kind: 'info', text: `Import-Vorschau: ${impact.titles} Titel, davon voraussichtlich ${impact.netNew} mit offenem Bestand und ${impact.closing} vollständig geschlossene Historienpositionen.` });
   if (ignored > 0) items.push({ kind: 'warn', text: `${ignored} Thesaurierungs-/Steuer-/Infozeilen werden bewusst ignoriert, damit keine künstlichen Käufe oder Verkäufe entstehen.` });
   const unmatchedSells = importable.filter(r => (r.txType === 'sell' || (r.txType === 'fusion' && r.signedQuantity < 0)) && !findMatchingPosition(r.name, r.symbol || r.isin));
   if (unmatchedSells.length > 0) items.push({ kind: 'warn', text: `${unmatchedSells.length} Verkauf/Abgang ohne bestehende Position erkannt. Diese Zeilen werden beim Speichern übersprungen.` });
-  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
+  conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('') + renderImportImpactCards(impact);
   batchEl.innerHTML = rows.map(row => {
     const action = row.txType === 'ignore' ? 'IGNOR' : row.txType === 'sell' || (row.txType === 'fusion' && row.signedQuantity < 0) ? 'VERK.' : row.txType === 'fusion' ? 'FUSION' : 'KAUF';
     return `<div class="ss-batch-row ${row.txType === 'ignore' ? 'ignore' : (action === 'VERK.' ? 'sell' : 'buy')}">
