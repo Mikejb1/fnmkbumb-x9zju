@@ -37,6 +37,42 @@
     --chart-grid: #e5e5e5; --chart-axis: #777;
     --error-bg: #fee; --error-text: #b00;
   }
+  body.theme-graphite {
+    color-scheme: dark;
+    --bg-page: #0f1217; --bg-card: #171b22; --bg-secondary: #202631; --bg-track: #2a313d; --bg-input: #141820;
+    --text-primary: #f1f5f9; --text-secondary: #b4bdc9; --text-tertiary: #8792a0; --text-muted: #647080;
+    --border: #2a313d; --border-light: #222936;
+    --positive: #34d399; --positive-strong: #10b981; --negative: #fb7185;
+    --badge-live-bg: rgba(52,211,153,0.16); --badge-live-text: #6ee7b7;
+    --badge-stale-bg: rgba(56,189,248,0.14); --badge-stale-text: #7dd3fc;
+    --tooltip-bg: rgba(241,245,249,0.96); --tooltip-text: #0f172a;
+    --chart-grid: #26303d; --chart-axis: #8b98aa;
+    --error-bg: rgba(251,113,133,0.14); --error-text: #fda4af;
+  }
+  body.theme-aurum {
+    color-scheme: dark;
+    --bg-page: #11100d; --bg-card: #1b1914; --bg-secondary: #242118; --bg-track: #312b1d; --bg-input: #171510;
+    --text-primary: #f6f0e1; --text-secondary: #c9bea5; --text-tertiary: #998d74; --text-muted: #726750;
+    --border: #332c1d; --border-light: #282316;
+    --positive: #35c979; --positive-strong: #20a861; --negative: #ff7a7a;
+    --badge-live-bg: rgba(53,201,121,0.16); --badge-live-text: #71e0a1;
+    --badge-stale-bg: rgba(245,184,76,0.18); --badge-stale-text: #f5c86a;
+    --tooltip-bg: rgba(246,240,225,0.96); --tooltip-text: #17130b;
+    --chart-grid: #302a1c; --chart-axis: #a79a7c;
+    --error-bg: rgba(255,122,122,0.14); --error-text: #ffb4b4;
+  }
+  body.theme-emerald {
+    color-scheme: dark;
+    --bg-page: #07110f; --bg-card: #0f1d1a; --bg-secondary: #172a25; --bg-track: #203831; --bg-input: #0b1714;
+    --text-primary: #ecfdf5; --text-secondary: #a9c8bd; --text-tertiary: #77958b; --text-muted: #587069;
+    --border: #214239; --border-light: #18342d;
+    --positive: #22e37d; --positive-strong: #16b965; --negative: #fb7185;
+    --badge-live-bg: rgba(34,227,125,0.16); --badge-live-text: #7cf7ad;
+    --badge-stale-bg: rgba(20,184,166,0.16); --badge-stale-text: #5eead4;
+    --tooltip-bg: rgba(236,253,245,0.96); --tooltip-text: #052e25;
+    --chart-grid: #1b342f; --chart-axis: #80a79b;
+    --error-bg: rgba(251,113,133,0.14); --error-text: #fda4af;
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-page); color: var(--text-primary); font-size: 15px; line-height: 1.5; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
@@ -701,6 +737,22 @@
   .modal-field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
   .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
   .modal-actions button { flex: 1; }
+  .theme-modal { max-width: 520px; }
+  .theme-note { color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin: 0 0 12px; }
+  .theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .theme-card { text-align: left; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); padding: 10px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, transform 0.12s, background 0.15s; }
+  .theme-card:hover { border-color: var(--positive); transform: translateY(-1px); }
+  .theme-card.active { border-color: var(--positive); box-shadow: 0 0 0 1px rgba(34,197,94,0.24) inset; }
+  .theme-preview { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 4px; height: 38px; border-radius: 8px; padding: 5px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.08); }
+  .theme-preview i { display: block; border-radius: 5px; }
+  .preview-classic { background: #0d0d0d; } .preview-classic i:nth-child(1) { background: #181818; } .preview-classic i:nth-child(2) { background: #22c55e; } .preview-classic i:nth-child(3) { background: #2a2a2a; }
+  .preview-light { background: #f5f5f7; } .preview-light i:nth-child(1) { background: #fff; } .preview-light i:nth-child(2) { background: #16a34a; } .preview-light i:nth-child(3) { background: #e5e5e5; }
+  .preview-graphite { background: #0f1217; } .preview-graphite i:nth-child(1) { background: #171b22; } .preview-graphite i:nth-child(2) { background: #34d399; } .preview-graphite i:nth-child(3) { background: #38bdf8; }
+  .preview-aurum { background: #11100d; } .preview-aurum i:nth-child(1) { background: #1b1914; } .preview-aurum i:nth-child(2) { background: #f5c86a; } .preview-aurum i:nth-child(3) { background: #35c979; }
+  .preview-emerald { background: #07110f; } .preview-emerald i:nth-child(1) { background: #0f1d1a; } .preview-emerald i:nth-child(2) { background: #22e37d; } .preview-emerald i:nth-child(3) { background: #14b8a6; }
+  .theme-card-title { display: block; font-size: 13px; font-weight: 700; }
+  .theme-card-sub { display: block; color: var(--text-tertiary); font-size: 11px; margin-top: 1px; }
+  @media (max-width: 520px) { .theme-grid { grid-template-columns: 1fr; } }
   /* ===== ASSET-ALLOKATION ===== */
   .alloc-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .alloc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -1011,6 +1063,9 @@
       </button>
       <button class="icon-btn" id="modeToggleBtn" title="Einfach-Modus" aria-label="Einfach-/Experte-Modus">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M12 2v2"/><path d="M8 14a5 5 0 1 1 8 0c-.7.8-1 1.5-1 2H9c0-.5-.3-1.2-1-2z"/></svg>
+      </button>
+      <button class="icon-btn" id="themePickerBtn" title="Theme wählen" aria-label="Theme wählen">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H12a2 2 0 0 1 0-4h1a8 8 0 0 0 7.7-5.9A9 9 0 0 0 12 3z"/></svg>
       </button>
       <button class="icon-btn" id="themeToggleBtn" title="Hell/Dunkel">
         <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -1703,6 +1758,41 @@
     <h3>Cash-Bewegungen</h3>
     <div class="cash-tx-list-wrap" id="cashTxListWrap"></div>
     <div class="modal-actions"><button class="auth-btn" id="ctxListClose">Schließen</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="themeModal">
+  <div class="modal theme-modal">
+    <h3>Theme wählen</h3>
+    <div class="theme-note">Das aktuelle Design bleibt als Standard erhalten. Wähle hier nur die visuelle Hülle, alle Berechnungen und Daten bleiben unverändert.</div>
+    <div class="theme-grid">
+      <button class="theme-card" data-theme-choice="classic" type="button">
+        <span class="theme-preview preview-classic"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Classic Dark</span>
+        <span class="theme-card-sub">Aktuelles Design</span>
+      </button>
+      <button class="theme-card" data-theme-choice="light" type="button">
+        <span class="theme-preview preview-light"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Clean Light</span>
+        <span class="theme-card-sub">Hell und ruhig</span>
+      </button>
+      <button class="theme-card" data-theme-choice="graphite" type="button">
+        <span class="theme-preview preview-graphite"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Graphite Pro</span>
+        <span class="theme-card-sub">Broker-Look</span>
+      </button>
+      <button class="theme-card" data-theme-choice="aurum" type="button">
+        <span class="theme-preview preview-aurum"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Gold Premium</span>
+        <span class="theme-card-sub">Warme Akzente</span>
+      </button>
+      <button class="theme-card" data-theme-choice="emerald" type="button">
+        <span class="theme-preview preview-emerald"><i></i><i></i><i></i></span>
+        <span class="theme-card-title">Emerald Focus</span>
+        <span class="theme-card-sub">Konzentriert grün</span>
+      </button>
+    </div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="themeCloseBtn" type="button">Schließen</button></div>
   </div>
 </div>
 
@@ -2537,6 +2627,13 @@ const AI_PRIVACY_MODES = {
   },
 };
 const SESSION_TIMEOUT_OPTIONS = [5, 15, 30, 60];
+const APP_THEMES = [
+  { key: 'classic', label: 'Classic Dark', meta: 'Aktuelles Design' },
+  { key: 'light', label: 'Clean Light', meta: 'Hell und ruhig' },
+  { key: 'graphite', label: 'Graphite Pro', meta: 'Broker-Look' },
+  { key: 'aurum', label: 'Gold Premium', meta: 'Warme Akzente' },
+  { key: 'emerald', label: 'Emerald Focus', meta: 'Konzentriert grün' }
+];
 
 const STORE = {
   THEME_KEY: STORAGE_PREFIX + 'theme',
@@ -2599,9 +2696,43 @@ const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + fmtN
 const MONTHS_SHORT = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
-function applyTheme(theme) { if (theme === 'light') document.body.classList.add('light'); else document.body.classList.remove('light'); reRenderAllCharts(); }
-function toggleTheme() { const next = document.body.classList.contains('light') ? 'dark' : 'light'; STORE.setTheme(next); applyTheme(next); }
-function initTheme() { applyTheme(STORE.getTheme() === 'light' ? 'light' : 'dark'); }
+function normalizeTheme(theme) {
+  if (theme === 'dark') return 'classic';
+  return APP_THEMES.some(t => t.key === theme) ? theme : 'classic';
+}
+function applyTheme(theme) {
+  const selected = normalizeTheme(theme);
+  document.body.classList.remove('light', 'theme-graphite', 'theme-aurum', 'theme-emerald');
+  if (selected === 'light') document.body.classList.add('light');
+  if (selected === 'graphite') document.body.classList.add('theme-graphite');
+  if (selected === 'aurum') document.body.classList.add('theme-aurum');
+  if (selected === 'emerald') document.body.classList.add('theme-emerald');
+  document.querySelectorAll('[data-theme-choice]').forEach(btn => btn.classList.toggle('active', btn.dataset.themeChoice === selected));
+  const picker = document.getElementById('themePickerBtn');
+  const label = APP_THEMES.find(t => t.key === selected)?.label || 'Classic Dark';
+  if (picker) {
+    picker.classList.toggle('active', selected !== 'classic');
+    picker.title = `Theme wählen · aktuell: ${label}`;
+    picker.setAttribute('aria-label', `Theme wählen, aktuell ${label}`);
+  }
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', selected === 'light' ? '#f5f5f7' : selected === 'graphite' ? '#0f1217' : selected === 'aurum' ? '#11100d' : selected === 'emerald' ? '#07110f' : '#0d0d0d');
+  reRenderAllCharts();
+}
+function setTheme(theme) {
+  const selected = normalizeTheme(theme);
+  STORE.setTheme(selected);
+  applyTheme(selected);
+}
+function toggleTheme() { setTheme(document.body.classList.contains('light') ? 'classic' : 'light'); }
+function openThemeModal() {
+  applyTheme(STORE.getTheme());
+  document.getElementById('themeModal')?.classList.add('active');
+}
+function closeThemeModal() {
+  document.getElementById('themeModal')?.classList.remove('active');
+}
+function initTheme() { applyTheme(normalizeTheme(STORE.getTheme())); }
 function applyViewMode(mode) {
   const simple = mode !== 'expert';
   document.body.classList.toggle('simple-mode', simple);
@@ -8076,6 +8207,15 @@ function wireEvents() {
   document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') handleGate(); });
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+  document.getElementById('themePickerBtn')?.addEventListener('click', openThemeModal);
+  document.getElementById('themeCloseBtn')?.addEventListener('click', closeThemeModal);
+  document.getElementById('themeModal')?.addEventListener('click', e => { if (e.target.id === 'themeModal') closeThemeModal(); });
+  document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.themeChoice || 'classic');
+      closeThemeModal();
+    });
+  });
   document.getElementById('modeToggleBtn').addEventListener('click', toggleViewMode);
   document.getElementById('aiPrivacyMode')?.addEventListener('change', e => {
     setAIPrivacyMode(e.target.value);
