@@ -466,7 +466,11 @@
   .slider-row input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--bg-track); border-radius: 2px; outline: none; margin: 0; }
   .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); box-shadow: 0 0 0 1px var(--positive), 0 1px 4px rgba(0,0,0,0.3); }
   .slider-row input[type=range]::-moz-range-thumb { width: 22px; height: 22px; background: var(--positive); border-radius: 50%; border: 2px solid var(--bg-card); }
+  .slider-row select { width: 100%; padding: 7px 9px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 7px; color: var(--text-primary); font-size: 12px; font-family: inherit; outline: none; }
   .slider-value { font-size: 13px; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+  .goal-details { border-top: 1px solid var(--border-light); padding-top: 10px; }
+  .goal-details summary { color: var(--text-secondary); cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.35px; text-transform: uppercase; }
+  .goal-details[open] summary { margin-bottom: 10px; }
   .goal-meta { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
   .analysis-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .analysis-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
@@ -1057,6 +1061,18 @@
       <div class="slider-row"><label for="goalSavings">Sparrate</label><input type="range" id="goalSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalSavingsVal">0 €</span></div>
       <div class="slider-row"><label for="goalPath">Zielweg</label><input type="range" id="goalPath" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalPathVal">50% / 50%</span></div>
       <div class="slider-row"><label for="goalRisk">Risiko</label><input type="range" id="goalRisk" min="0" max="100" step="5" value="50"><span class="slider-value" id="goalRiskVal">Ausgewogen</span></div>
+      <details class="goal-details" id="goalDetails">
+        <summary>Planungsdetails</summary>
+        <div class="goal-sliders" style="border-top:0;margin:0;padding:0;">
+          <div class="slider-row"><label for="goalType">Zielart</label><select id="goalType"><option value="wealth">Vermögensziel</option><option value="reserve">Sicherheitsreserve</option><option value="purchase">Kaufziel</option><option value="retirement">Langfristig</option><option value="free">Freies Ziel</option></select><span class="slider-value" id="goalTypeVal">Vermögen</span></div>
+          <div class="slider-row"><label for="goalPriority">Priorität</label><select id="goalPriority"><option value="medium">Mittel</option><option value="high">Hoch</option><option value="critical">Sehr wichtig</option><option value="low">Niedrig</option></select><span class="slider-value" id="goalPriorityVal">Mittel</span></div>
+          <div class="slider-row"><label for="goalMonth">Zielmonat</label><select id="goalMonth"><option value="1">Jänner</option><option value="2">Februar</option><option value="3">März</option><option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option></select><span class="slider-value" id="goalMonthVal">Dezember</span></div>
+          <div class="slider-row"><label for="goalMinSavings">Min. Rate</label><input type="range" id="goalMinSavings" min="0" max="2000" step="20" value="0"><span class="slider-value" id="goalMinSavingsVal">0 €</span></div>
+          <div class="slider-row"><label for="goalMaxSavings">Max. Rate</label><input type="range" id="goalMaxSavings" min="0" max="3000" step="20" value="1000"><span class="slider-value" id="goalMaxSavingsVal">1.000 €</span></div>
+          <div class="slider-row"><label for="goalBuffer">Puffer</label><input type="range" id="goalBuffer" min="0" max="30" step="5" value="10"><span class="slider-value" id="goalBufferVal">10 %</span></div>
+          <div class="slider-row"><label for="goalReturn">Rendite</label><input type="range" id="goalReturn" min="-5" max="12" step="0.5" value="4"><span class="slider-value" id="goalReturnVal">4,0 % p.a.</span></div>
+        </div>
+      </details>
     </div>
     <div class="goal-meta" id="goalMeta">—</div>
     <div class="strategy-note" id="strategyNote">—</div>
@@ -2052,12 +2068,13 @@ function buildFactSheet(totals, goal) {
   const monthlyNeeded = goal.monthlyNeeded || 0;
   // Zielpfad-Status
   let goalStatus = '—';
-  if (goal.amount && goal.year) {
+  const targetAmount = goal.planAmount || goal.amount;
+  if (targetAmount && goal.year) {
     const startOfYear = new Date(new Date().getFullYear(), 0, 1).getTime();
-    const endOfGoal = new Date(goal.year, 11, 31).getTime();
+    const endOfGoal = endOfGoalMonth(goal.year, goal.month || 12).getTime();
     const now = Date.now();
     const elapsed = (now - startOfYear) / (endOfGoal - startOfYear);
-    const expectedProgress = goal.amount * elapsed;
+    const expectedProgress = targetAmount * elapsed;
     if (totals.totalCur >= expectedProgress * 1.05) goalStatus = 'vor Plan';
     else if (totals.totalCur >= expectedProgress * 0.95) goalStatus = 'auf Plan';
     else goalStatus = 'hinter Plan';
@@ -2069,9 +2086,11 @@ function buildFactSheet(totals, goal) {
 - Einzahlungen gesamt (Cash-Deposits): ${fmt.format(totalDeposits)}
 - Allokation: ETF ${fmtNum(alloc.pcts.etf, 0)} % · Aktien ${fmtNum(alloc.pcts.aktie, 0)} % · Krypto ${fmtNum(alloc.pcts.crypto, 0)} % · Gold ${fmtNum(alloc.pcts.gold, 0)} % · Cash ${fmtNum(alloc.pcts.cash, 0)} %
 - Größte Position: ${largest ? `${largest.name} (${fmtNum(largestPct, 1)} %)` : '—'}
-- Ziel: ${fmt.format(goal.amount)} bis ${goal.year} · Status: ${goalStatus}
+- Ziel: ${fmt.format(goal.amount)} bis ${monthNameAT(goal.month || 12)} ${goal.year} · Planbetrag ${fmt.format(targetAmount)} · Status: ${goalStatus}
 - Benötigte monatliche Sparrate: ${fmt.format(monthlyNeeded)}
 - Aktuelle Sparrate: ${fmt.format(goal.savingsRate || 0)} €/Monat
+- Sparraten-Korridor: ${fmt.format(goal.minSavingsRate || 0)} bis ${fmt.format(goal.maxSavingsRate || 0)} €/Monat
+- Rendite-Szenario: ${fmtNum(goal.annualReturnPct || 0, 1)} % p.a. · Zielart: ${goal.typeLabel || GOAL_TYPE_LABELS[goal.type] || 'Vermögen'} · Priorität: ${goal.priorityLabel || GOAL_PRIORITY_LABELS[goal.priority] || 'Mittel'}
 - Strategie-Zielweg: ${fmtNum(goal.savingsPct ?? goal.pathSavingsPct ?? 50, 0)} % Sparrate / ${fmtNum(goal.returnPct ?? (100 - (goal.pathSavingsPct ?? 50)), 0)} % Rendite
 - Risikoprofil: ${goal.riskLabel || ((goal.riskPct ?? 50) < 34 ? 'Defensiv' : (goal.riskPct ?? 50) < 67 ? 'Ausgewogen' : 'Offensiv')} (${fmtNum(goal.riskPct ?? 50, 0)} %)
 - Käufe letzte 30 Tage: ${recentBuys.length} Stk${recentBuys.length > 0 ? ', gesamt ' + fmt.format(recentBuys.reduce((s, t) => s + t.value, 0)) : ''}
@@ -2121,12 +2140,16 @@ Gesamtwert: ${fmt.format(totals.totalCur)}
 Einstand gesamt: ${fmt.format(totals.totalCost)}
 P&L gesamt: ${totals.totalPnl >= 0 ? '+' : ''}${fmt.format(totals.totalPnl)} (${totals.totalPnlPct.toFixed(1)}%)
 
-ZIEL: ${fmt.format(goal.amount)} bis Ende ${goal.year}
+ZIEL: ${fmt.format(goal.amount)} bis ${monthNameAT(goal.month || 12)} ${goal.year}
+PLANBETRAG inkl. Puffer: ${fmt.format(goal.planAmount || goal.amount)} (${fmtNum(goal.bufferPct || 0, 0)}% Puffer)
 GAP zum Ziel: ${fmt.format(goal.gap)}
-Zeit bis Jahresende: ~${goal.monthsToGoal} Monate
+Zeit bis Zieldatum: ~${goal.monthsToGoal} Monate
 Benötigte Gesamt-Rendite: ${goal.requiredReturnPct.toFixed(1)}% in ${goal.monthsToGoal} Monaten
 Bei reinem Sparen ohne Rendite: ${fmt.format(goal.monthlyNeeded)}/Monat
 Aktuelle Sparrate (vom Nutzer gesetzt): ${fmt.format(goal.savingsRate || 0)}/Monat → ergibt ohne Rendite ${fmt.format(totals.totalCur + (goal.savingsRate || 0) * goal.monthsToGoal)} bis Zieldatum
+Sparraten-Korridor: min. ${fmt.format(goal.minSavingsRate || 0)}/Monat, max. ${fmt.format(goal.maxSavingsRate || 0)}/Monat
+Rendite-Szenario des Nutzers: ${fmtNum(goal.annualReturnPct || 0, 1)}% p.a. → Projektion mit aktueller Rate: ${fmt.format(goal.projectedWithReturn || 0)}
+Zielart/Priorität: ${goal.typeLabel || 'Vermögen'} · ${goal.priorityLabel || 'Mittel'}
 STRATEGIEVORGABE DES NUTZERS:
 - Zielweg: ${fmtNum(goal.savingsPct, 0)}% Sparrate / ${fmtNum(goal.returnPct, 0)}% Rendite (${goal.pathLabel})
 - Risikobereitschaft: ${goal.riskLabel} (${fmtNum(goal.riskPct, 0)}%)
@@ -3173,7 +3196,7 @@ function runCoreCalculationSelfTests() {
   const failures = [];
   try {
     appData = {
-      goal: { cash: 0 },
+      goal: { cash: 0, month: 12, minSavingsRate: 0, maxSavingsRate: 1000, bufferPct: 10, annualReturnPct: 4, type: 'wealth', priority: 'medium' },
       positions: [{ id: 'self_stock', type: 'Aktie', shares: 5, costPrice: 100 }],
       transactions: [
         { id: 'self_cash', date: '2026-01-01', assetId: 'cash', assetType: 'cash', txType: 'deposit', value: 1000, quantity: 1000, price: 1, fees: 0 },
@@ -6443,6 +6466,25 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
+const GOAL_TYPE_LABELS = { wealth: 'Vermögen', reserve: 'Reserve', purchase: 'Kaufziel', retirement: 'Langfristig', free: 'Freies Ziel' };
+const GOAL_PRIORITY_LABELS = { low: 'Niedrig', medium: 'Mittel', high: 'Hoch', critical: 'Sehr wichtig' };
+function monthNameAT(month) {
+  return ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'][Math.max(0, Math.min(11, (Number(month) || 12) - 1))];
+}
+function endOfGoalMonth(year, month) {
+  return new Date(year, month, 0, 23, 59, 59);
+}
+function futureValueWithMonthlySavings(startValue, monthlySavings, months, annualReturnPct) {
+  const m = Math.max(0, Number(months) || 0);
+  const pmt = Math.max(0, Number(monthlySavings) || 0);
+  const monthlyR = (Number(annualReturnPct) || 0) / 100 / 12;
+  if (Math.abs(monthlyR) < 0.0000001) return startValue + pmt * m;
+  return startValue * Math.pow(1 + monthlyR, m) + pmt * ((Math.pow(1 + monthlyR, m) - 1) / monthlyR);
+}
+function goalPlanAmount(amount, bufferPct) {
+  return (Number(amount) || 0) * (1 + (Number(bufferPct) || 0) / 100);
+}
+
 function getGoalStrategy(goalOverride) {
   const source = goalOverride || appData?.goal || {};
   const pathEl = document.getElementById('goalPath');
@@ -6469,20 +6511,41 @@ function renderGoal(totals) {
   const year = parseInt(document.getElementById('goalYear').value, 10);
   const amount = parseInt(document.getElementById('goalAmount').value, 10);
   const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0;
+  const goalType = document.getElementById('goalType')?.value || appData?.goal?.type || 'wealth';
+  const goalPriority = document.getElementById('goalPriority')?.value || appData?.goal?.priority || 'medium';
+  const goalMonth = parseInt(document.getElementById('goalMonth')?.value || appData?.goal?.month || 12, 10);
+  const minSavingsRate = parseInt(document.getElementById('goalMinSavings')?.value || appData?.goal?.minSavingsRate || 0, 10) || 0;
+  const maxSavingsRateRaw = parseInt(document.getElementById('goalMaxSavings')?.value || appData?.goal?.maxSavingsRate || 1000, 10) || 0;
+  const maxSavingsRate = Math.max(minSavingsRate, maxSavingsRateRaw);
+  if (document.getElementById('goalMaxSavings') && maxSavingsRate !== maxSavingsRateRaw) document.getElementById('goalMaxSavings').value = String(maxSavingsRate);
+  const bufferPct = parseInt(document.getElementById('goalBuffer')?.value || appData?.goal?.bufferPct || 0, 10) || 0;
+  const annualReturnPct = parseFloat(document.getElementById('goalReturn')?.value || appData?.goal?.annualReturnPct || 0) || 0;
+  const planAmount = goalPlanAmount(amount, bufferPct);
   const strategy = getGoalStrategy();
   document.getElementById('goalYearVal').textContent = String(year);
   document.getElementById('goalAmountVal').textContent = fmtNoCent.format(amount);
   document.getElementById('goalSavingsVal').textContent = fmtNoCent.format(savingsRate);
   document.getElementById('goalPathVal').textContent = `${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite`;
   document.getElementById('goalRiskVal').textContent = `${strategy.riskLabel} · ${fmtNum(strategy.riskPct, 0)}%`;
-  document.getElementById('goalTitle').textContent = `Ziel: ${fmtNoCent.format(amount)} bis ${year}`;
+  const setGoalText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  setGoalText('goalTypeVal', GOAL_TYPE_LABELS[goalType] || 'Vermögen');
+  setGoalText('goalPriorityVal', GOAL_PRIORITY_LABELS[goalPriority] || 'Mittel');
+  setGoalText('goalMonthVal', monthNameAT(goalMonth));
+  setGoalText('goalMinSavingsVal', fmtNoCent.format(minSavingsRate));
+  setGoalText('goalMaxSavingsVal', fmtNoCent.format(maxSavingsRate));
+  setGoalText('goalBufferVal', `${fmtNum(bufferPct, 0)} %`);
+  setGoalText('goalReturnVal', `${fmtNum(annualReturnPct, 1)} % p.a.`);
+  document.getElementById('goalTitle').textContent = `Ziel: ${fmtNoCent.format(amount)} bis ${monthNameAT(goalMonth)} ${year}`;
   const today = new Date();
-  const endDate = new Date(year, 11, 31);
+  const endDate = endOfGoalMonth(year, goalMonth);
   const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
-  const gap = amount - totals.totalCur;
-  const requiredReturnPct = totals.totalCur > 0 ? ((amount / totals.totalCur) - 1) * 100 : 0;
+  const gap = planAmount - totals.totalCur;
+  const requiredReturnPct = totals.totalCur > 0 ? ((planAmount / totals.totalCur) - 1) * 100 : 0;
   const monthlyNeeded = gap / monthsToGoal;
-  const progress = Math.min(100, Math.max(0, (totals.totalCur / amount) * 100));
+  const projectedWithReturn = futureValueWithMonthlySavings(totals.totalCur, savingsRate, monthsToGoal, annualReturnPct);
+  const projectedMin = futureValueWithMonthlySavings(totals.totalCur, minSavingsRate, monthsToGoal, annualReturnPct);
+  const projectedMax = futureValueWithMonthlySavings(totals.totalCur, maxSavingsRate, monthsToGoal, annualReturnPct);
+  const progress = Math.min(100, Math.max(0, (totals.totalCur / planAmount) * 100));
   document.getElementById('goalPct').textContent = `${fmtNum(progress, 1)}%`;
   document.getElementById('goalFill').style.width = `${progress}%`;
 
@@ -6491,8 +6554,9 @@ function renderGoal(totals) {
   if (savingsTileEl) savingsTileEl.textContent = savingsRate > 0 ? fmtNoCent.format(savingsRate) : '0 €';
 
   let meta;
+  const planHint = bufferPct > 0 ? ` · Planbetrag inkl. ${fmtNum(bufferPct, 0)}% Puffer: <strong>${fmt.format(planAmount)}</strong>` : '';
   if (gap <= 0) {
-    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend`;
+    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Ziel bereits erreicht (Puffer: <strong>${fmt.format(-gap)}</strong>) · ${monthsToGoal} Monate verbleibend${planHint}`;
   } else if (savingsRate > 0) {
     const sparEnd = totals.totalCur + savingsRate * monthsToGoal;
     const restGap = amount - sparEnd;
@@ -6504,22 +6568,29 @@ function renderGoal(totals) {
       const monthlyR = r / 12;
       const months = monthsToGoal;
       const fv = monthlyR === 0 ? totals.totalCur + savingsRate * months : totals.totalCur * Math.pow(1 + monthlyR, months) + savingsRate * ((Math.pow(1 + monthlyR, months) - 1) / monthlyR);
-      if (fv >= amount) { rEst = r; break; }
+      if (fv >= planAmount) { rEst = r; break; }
     }
-    if (restGap <= 0) {
-      meta = `Bei <strong>${fmt.format(savingsRate)}/Mo</strong> Sparrate erreichst du <strong>${fmt.format(sparEnd)}</strong> in ${monthsToGoal} Monaten — Ziel ohne Rendite erreicht (Puffer <strong>${fmt.format(-restGap)}</strong>).`;
+    const returnGap = planAmount - projectedWithReturn;
+    if (returnGap <= 0) {
+      meta = `Bei <strong>${fmt.format(savingsRate)}/Mo</strong> und <strong>${fmtNum(annualReturnPct, 1)}% p.a.</strong> Szenario erreichst du <strong>${fmt.format(projectedWithReturn)}</strong> in ${monthsToGoal} Monaten — Plan erfüllt (Puffer <strong>${fmt.format(-returnGap)}</strong>).${planHint}`;
     } else {
       const renditeText = rEst > 0 && rEst < 0.5 ? `<strong>${fmtNum(rEst * 100, 1)}% p.a.</strong> Rendite` : `keine realistische Rendite`;
       const sparAlt = gap / monthsToGoal;
-      meta = `Bei <strong>${fmt.format(savingsRate)}/Mo</strong> Sparrate: <strong>${fmt.format(sparEnd)}</strong> in ${monthsToGoal} Monaten (Lücke noch <strong>${fmt.format(restGap)}</strong>). Zusätzlich nötig: ${renditeText} — oder Sparrate auf <strong>${fmt.format(sparAlt)}/Mo</strong> erhöhen.`;
+      meta = `Bei <strong>${fmt.format(savingsRate)}/Mo</strong> und <strong>${fmtNum(annualReturnPct, 1)}% p.a.</strong>: <strong>${fmt.format(projectedWithReturn)}</strong> in ${monthsToGoal} Monaten (Lücke <strong>${fmt.format(returnGap)}</strong>). Zusätzlich nötig: ${renditeText} — oder Sparrate auf <strong>${fmt.format(sparAlt)}/Mo</strong> erhöhen.${planHint}`;
     }
   } else {
-    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig`;
+    meta = `Aktuell: <strong>${fmt.format(totals.totalCur)}</strong> · Lücke: <strong>${fmt.format(gap)}</strong> · Noch ${monthsToGoal} Monate · <strong>${fmt.format(monthlyNeeded)}/Monat</strong> ohne Rendite oder <strong>${fmtNum(requiredReturnPct, 0)}%</strong> Rendite nötig${planHint}`;
   }
   document.getElementById('goalMeta').innerHTML = meta;
   const strategyEl = document.getElementById('strategyNote');
   if (strategyEl) {
-    strategyEl.innerHTML = `<strong>Strategie:</strong> ${strategy.pathLabel} (${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite) · Risiko <strong>${strategy.riskLabel}</strong> (${fmtNum(strategy.riskPct, 0)}%). ${strategy.pathText}`;
+    const corridor = `Korridor ${fmtNoCent.format(minSavingsRate)}–${fmtNoCent.format(maxSavingsRate)}/Mo`;
+    const status = projectedMax < planAmount
+      ? `selbst Maximalrate bleibt unter Plan`
+      : projectedMin >= planAmount
+        ? `Mindest-Sparrate reicht im Szenario`
+        : `aktuelle Rate entscheidet`;
+    strategyEl.innerHTML = `<strong>Strategie:</strong> ${strategy.pathLabel} (${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite) · Risiko <strong>${strategy.riskLabel}</strong> (${fmtNum(strategy.riskPct, 0)}%) · ${GOAL_PRIORITY_LABELS[goalPriority] || 'Mittel'} · ${corridor}. ${strategy.pathText} <strong>Planstatus:</strong> ${status}.`;
   }
   if (appData.goal) {
     appData.goal.year = year;
@@ -6527,8 +6598,15 @@ function renderGoal(totals) {
     appData.goal.savingsRate = savingsRate;
     appData.goal.pathSavingsPct = strategy.savingsPct;
     appData.goal.riskPct = strategy.riskPct;
+    appData.goal.type = goalType;
+    appData.goal.priority = goalPriority;
+    appData.goal.month = goalMonth;
+    appData.goal.minSavingsRate = minSavingsRate;
+    appData.goal.maxSavingsRate = maxSavingsRate;
+    appData.goal.bufferPct = bufferPct;
+    appData.goal.annualReturnPct = annualReturnPct;
   }
-  return { year, amount, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress, savingsRate, ...strategy };
+  return { year, month: goalMonth, amount, planAmount, bufferPct, gap, monthsToGoal, monthlyNeeded, requiredReturnPct, progress, savingsRate, minSavingsRate, maxSavingsRate, annualReturnPct, projectedWithReturn, projectedMin, projectedMax, type: goalType, typeLabel: GOAL_TYPE_LABELS[goalType] || 'Vermögen', priority: goalPriority, priorityLabel: GOAL_PRIORITY_LABELS[goalPriority] || 'Mittel', ...strategy };
 }
 
 function renderAnalysisLocal(totals, goal) {
@@ -6574,7 +6652,7 @@ function renderAnalysisLocal(totals, goal) {
   document.getElementById('analysisText').innerHTML = `
     <div class="block"><strong>Lage heute:</strong> Gesamtwert ${fmt.format(totals.totalCur)}, Performance gegenüber Einstand: <span class="${totals.totalPnl >= 0 ? 'positive' : 'negative'}">${totals.totalPnl >= 0 ? '+' : ''}${fmt.format(totals.totalPnl)} (${fmtNum(totals.totalPnlPct, 1)}%)</span>.</div>
     <div class="block"><strong>Allokation:</strong><div style="margin-top:6px;font-size:12px;">${allocLines}</div></div>
-    <div class="block"><strong>Strategie:</strong> ${strategy.pathLabel}: <strong>${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite</strong>. Risiko: <strong>${strategy.riskLabel}</strong> (${fmtNum(strategy.riskPct, 0)}%).</div>
+    <div class="block"><strong>Strategie:</strong> ${strategy.pathLabel}: <strong>${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite</strong>. Risiko: <strong>${strategy.riskLabel}</strong> (${fmtNum(strategy.riskPct, 0)}%). Zielart: <strong>${goal.typeLabel || 'Vermögen'}</strong>, Priorität: <strong>${goal.priorityLabel || 'Mittel'}</strong>, Rendite-Szenario: <strong>${fmtNum(goal.annualReturnPct || 0, 1)}% p.a.</strong>.</div>
     <div class="block"><strong>Auffälligkeiten:</strong><div style="margin-top:6px;">${obs.map(o => `<div>• ${o}</div>`).join('')}</div></div>
     <div class="block"><strong>Ziel-Realität:</strong> ${goalRealityText}</div>
     <div class="block"><strong>Konkrete Optionen (keine Empfehlung):</strong><div style="margin-top:6px;">${options.map((o, i) => `<div>${i + 1}. ${o}</div>`).join('')}</div></div>`;
@@ -6675,7 +6753,8 @@ function renderSavingsSim(totals, goal) {
   const grid = document.getElementById('savingsSimGrid');
   const note = document.getElementById('savingsSimNote');
   if (!sub || !grid || !note) return;
-  const gap = goal.amount - totals.totalCur;
+  const target = goal.planAmount || goal.amount;
+  const gap = target - totals.totalCur;
   const months = Math.max(1, goal.monthsToGoal);
   if (gap <= 0) {
     sub.textContent = `Ziel bereits erreicht — Puffer ${fmt.format(-gap)}`;
@@ -6683,14 +6762,16 @@ function renderSavingsSim(totals, goal) {
     note.innerHTML = `Du bist über dem Ziel. Sparrate kannst du frei wählen oder Ziel anheben.`;
     return;
   }
-  sub.textContent = `Ziel: ${fmt.format(goal.amount)} bis Ende ${goal.year} · Lücke ${fmt.format(gap)} · ${months} Mo`;
+  sub.textContent = `Planziel: ${fmt.format(target)} bis ${monthNameAT(goal.month || 12)} ${goal.year} · Lücke ${fmt.format(gap)} · ${months} Mo · Rendite-Szenario ${fmtNum(goal.annualReturnPct || 0, 1)}% p.a.`;
   const current = goal.savingsRate || 0;
   const required = gap / months;
   const roundedRequired = Math.max(0, Math.ceil(required / 20) * 20);
   const halfRequired = Math.max(0, Math.ceil((required / 2) / 20) * 20);
   const rates = [...new Set([
     0,
+    goal.minSavingsRate || 0,
     current,
+    goal.maxSavingsRate || 0,
     halfRequired,
     roundedRequired,
     roundedRequired + 100,
@@ -6702,9 +6783,9 @@ function renderSavingsSim(totals, goal) {
   ].filter(rate => Number.isFinite(rate) && rate >= 0))]
     .sort((a, b) => a - b);
   const rows = rates.map(rate => {
-    const projected = totals.totalCur + rate * months;
-    const pct = Math.min(100, (projected / goal.amount) * 100);
-    const diff = projected - goal.amount;
+    const projected = futureValueWithMonthlySavings(totals.totalCur, rate, months, goal.annualReturnPct || 0);
+    const pct = Math.min(100, (projected / target) * 100);
+    const diff = projected - target;
     let cls, tag;
     if (projected < goal.amount * 0.85) { cls = 'late'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
     else if (projected < goal.amount) { cls = 'tight'; tag = `fehlt ${fmtNoCent.format(Math.abs(diff))}`; }
@@ -6718,12 +6799,14 @@ function renderSavingsSim(totals, goal) {
       <span class="savings-sim-tag ${cls}" title="${label}">${tag}</span>`;
   }).join('');
   grid.innerHTML = rows;
-  const currentProjected = totals.totalCur + current * months;
-  const currentGap = goal.amount - currentProjected;
+  const currentProjected = futureValueWithMonthlySavings(totals.totalCur, current, months, goal.annualReturnPct || 0);
+  const currentGap = target - currentProjected;
   if (currentGap <= 0) {
-    note.innerHTML = `Aktuell eingestellt: <strong>${fmtNoCent.format(current)}/Mo</strong>. Damit landest du rechnerisch bei <strong>${fmt.format(currentProjected)}</strong> und hast einen Puffer von <strong style="color:var(--positive);">${fmt.format(-currentGap)}</strong>.`;
+    note.innerHTML = `Aktuell eingestellt: <strong>${fmtNoCent.format(current)}/Mo</strong>. Mit ${fmtNum(goal.annualReturnPct || 0, 1)}% p.a. Szenario landest du bei <strong>${fmt.format(currentProjected)}</strong> und hast einen Puffer von <strong style="color:var(--positive);">${fmt.format(-currentGap)}</strong>.`;
   } else {
-    note.innerHTML = `Aktuell eingestellt: <strong>${fmtNoCent.format(current)}/Mo</strong>. Ohne Rendite würdest du <strong>${fmt.format(currentProjected)}</strong> erreichen; offen bleiben <strong style="color:var(--negative);">${fmt.format(currentGap)}</strong>. Rechnerisch nötig wären etwa <strong>${fmt.format(required)}/Mo</strong>.`;
+    const maxProjected = futureValueWithMonthlySavings(totals.totalCur, goal.maxSavingsRate || current, months, goal.annualReturnPct || 0);
+    const corridorText = maxProjected >= target ? `Deine Maximalrate könnte die Lücke schließen.` : `Selbst die Maximalrate bleibt im Szenario unter dem Plan.`;
+    note.innerHTML = `Aktuell eingestellt: <strong>${fmtNoCent.format(current)}/Mo</strong>. Mit ${fmtNum(goal.annualReturnPct || 0, 1)}% p.a. Szenario würdest du <strong>${fmt.format(currentProjected)}</strong> erreichen; offen bleiben <strong style="color:var(--negative);">${fmt.format(currentGap)}</strong>. Ohne Rendite wären etwa <strong>${fmt.format(required)}/Mo</strong> nötig. ${corridorText}`;
   }
 }
 
@@ -6809,6 +6892,14 @@ async function initApp() {
     document.getElementById('goalSavings').value = String(appData.goal.savingsRate || 0);
     document.getElementById('goalPath').value = String(appData.goal.pathSavingsPct ?? 50);
     document.getElementById('goalRisk').value = String(appData.goal.riskPct ?? 50);
+    const setGoalInput = (id, value) => { const el = document.getElementById(id); if (el && value != null) el.value = String(value); };
+    setGoalInput('goalType', appData.goal.type || 'wealth');
+    setGoalInput('goalPriority', appData.goal.priority || 'medium');
+    setGoalInput('goalMonth', appData.goal.month || 12);
+    setGoalInput('goalMinSavings', appData.goal.minSavingsRate || 0);
+    setGoalInput('goalMaxSavings', appData.goal.maxSavingsRate || Math.max(1000, appData.goal.savingsRate || 0));
+    setGoalInput('goalBuffer', appData.goal.bufferPct ?? 10);
+    setGoalInput('goalReturn', appData.goal.annualReturnPct ?? 4);
   }
   loadManualPrices();
   chatHistory = [];
@@ -6839,20 +6930,31 @@ function wireEvents() {
   document.getElementById('layoutModal').addEventListener('click', e => { if (e.target.id === 'layoutModal') closeLayoutModal(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   document.getElementById('goalApplyBtn').addEventListener('click', applyGoalSettingsUpdate);
-  ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk'].forEach(id => {
-    document.getElementById(id).addEventListener('input', async () => {
+  ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk', 'goalType', 'goalPriority', 'goalMonth', 'goalMinSavings', 'goalMaxSavings', 'goalBuffer', 'goalReturn'].forEach(id => {
+    const goalInputEl = document.getElementById(id);
+    if (!goalInputEl) return;
+    goalInputEl.addEventListener('input', async () => {
       if (!appData) return;
       const year = parseInt(document.getElementById('goalYear').value, 10);
       const amount = parseInt(document.getElementById('goalAmount').value, 10);
       const savingsRate = parseInt(document.getElementById('goalSavings').value, 10) || 0;
       const pathSavingsPct = parseInt(document.getElementById('goalPath').value, 10) || 0;
       const riskPct = parseInt(document.getElementById('goalRisk').value, 10) || 0;
+      const minSavingsRate = parseInt(document.getElementById('goalMinSavings')?.value || 0, 10) || 0;
+      const maxSavingsRate = Math.max(minSavingsRate, parseInt(document.getElementById('goalMaxSavings')?.value || 0, 10) || 0);
       if (appData.goal) {
         appData.goal.year = year;
         appData.goal.amount = amount;
         appData.goal.savingsRate = savingsRate;
         appData.goal.pathSavingsPct = pathSavingsPct;
         appData.goal.riskPct = riskPct;
+        appData.goal.type = document.getElementById('goalType')?.value || 'wealth';
+        appData.goal.priority = document.getElementById('goalPriority')?.value || 'medium';
+        appData.goal.month = parseInt(document.getElementById('goalMonth')?.value || 12, 10);
+        appData.goal.minSavingsRate = minSavingsRate;
+        appData.goal.maxSavingsRate = maxSavingsRate;
+        appData.goal.bufferPct = parseInt(document.getElementById('goalBuffer')?.value || 0, 10) || 0;
+        appData.goal.annualReturnPct = parseFloat(document.getElementById('goalReturn')?.value || 0) || 0;
       }
       const totals = renderTotals();
       const goal = renderGoal(totals);
@@ -7394,13 +7496,14 @@ function buildChatSystemPrompt() {
     const pnlPct = valuation.pnlPct;
     return `- ${pos.name} (${pos.type}, ${pos.symbol || ''}): ${valuation.shares} Stk × ${fmtNum(live.price, priceDecimalsForPosition(pos, live.price))} € = ${value.toFixed(2)} € (${pct.toFixed(1)}% Allokation, P&L ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
   }).join('\n');
-  const goal = appData.goal || { year: 2026, amount: 15000 };
+  const goal = appData.goal || { year: 2026, month: 12, amount: 15000, bufferPct: 0, minSavingsRate: 0, maxSavingsRate: 0, annualReturnPct: 0, type: 'wealth', priority: 'medium' };
   const strategy = getGoalStrategy(goal);
   // Faktenblatt + abgeleitete Goal-Daten für Tiefe
   const today = new Date();
-  const endDate = new Date(goal.year, 11, 31);
+  const endDate = endOfGoalMonth(goal.year, goal.month || 12);
   const monthsToGoal = Math.max(1, Math.round((endDate - today) / (1000 * 60 * 60 * 24 * 30.44)));
-  const goalEnriched = { ...goal, ...strategy, monthsToGoal, gap: goal.amount - totalCur, monthlyNeeded: (goal.amount - totalCur) / monthsToGoal, requiredReturnPct: totalCur > 0 ? ((goal.amount / totalCur) - 1) * 100 : 0 };
+  const planAmount = goalPlanAmount(goal.amount, goal.bufferPct || 0);
+  const goalEnriched = { ...goal, ...strategy, planAmount, typeLabel: GOAL_TYPE_LABELS[goal.type] || 'Vermögen', priorityLabel: GOAL_PRIORITY_LABELS[goal.priority] || 'Mittel', monthsToGoal, gap: planAmount - totalCur, monthlyNeeded: (planAmount - totalCur) / monthsToGoal, requiredReturnPct: totalCur > 0 ? ((planAmount / totalCur) - 1) * 100 : 0, projectedWithReturn: futureValueWithMonthlySavings(totalCur, goal.savingsRate || 0, monthsToGoal, goal.annualReturnPct || 0) };
   const factSheet = buildFactSheet({ totalCur, totalCost, totalPnl, totalPnlPct }, goalEnriched);
   return `Du bist ein intelligenter KI-Chat fuer dieses Portfolio und fuer komplexe Fragen des Nutzers. Sprache: Deutsch.
 
@@ -7424,8 +7527,9 @@ Gesamtwert: ${totalCur.toFixed(2)} €
 Einstand: ${totalCost.toFixed(2)} €
 P&L: ${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)} € (${totalPnlPct.toFixed(1)}%)
 
-ZIEL des Nutzers: ${goal.amount} € bis Ende ${goal.year}
+ZIEL des Nutzers: ${goal.amount} € bis ${monthNameAT(goal.month || 12)} ${goal.year}; Planbetrag inkl. Puffer: ${planAmount.toFixed(2)} €
 SPARRATE des Nutzers: ${goal.savingsRate || 0} €/Monat (regelmäßige Einzahlung)
+SPARRATEN-KORRIDOR: ${goal.minSavingsRate || 0}–${goal.maxSavingsRate || 0} €/Monat; Rendite-Szenario: ${fmtNum(goal.annualReturnPct || 0, 1)}% p.a.; Zielart/Priorität: ${GOAL_TYPE_LABELS[goal.type] || 'Vermögen'} / ${GOAL_PRIORITY_LABELS[goal.priority] || 'Mittel'}
 STRATEGIE des Nutzers: ${fmtNum(strategy.savingsPct, 0)}% Sparrate / ${fmtNum(strategy.returnPct, 0)}% Rendite (${strategy.pathLabel}); Risiko ${strategy.riskLabel} (${fmtNum(strategy.riskPct, 0)}%).
 Diese Strategie ist wichtig: Antworten sollen dazu passen, ob der Nutzer sein Ziel eher über Sparrate oder Rendite erreichen will.
 
@@ -7556,8 +7660,15 @@ async function confirmResetPortfolio() {
     appData.layout = null;
     appData.goal = {
       year: new Date().getFullYear() + 1,
+      month: 12,
       amount: 15000,
       savingsRate: 0,
+      minSavingsRate: 0,
+      maxSavingsRate: 1000,
+      bufferPct: 10,
+      annualReturnPct: 4,
+      type: 'wealth',
+      priority: 'medium',
       cash: 0,
       goldGrams: 0, silverGrams: 0, platinumGrams: 0, palladiumGrams: 0,
       metalLots: {},
