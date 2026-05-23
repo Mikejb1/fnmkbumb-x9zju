@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Portfolio 1">
 <meta name="robots" content="noindex,nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://morning-tree-9bb.michael-bummer.workers.dev; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://morning-tree-9bb.michael-bummer.workers.dev; img-src 'self' data: blob: https:; font-src 'self'; manifest-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Mein Portfolio 1</title>
@@ -1032,6 +1032,64 @@
   @media (max-width: 720px) {
     .security-status-grid, .security-control-grid { grid-template-columns: 1fr; }
   }
+
+  /* ===== DEPOT-NEWS ===== */
+  .news-body { display: flex; flex-direction: column; gap: 10px; }
+  .news-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .news-filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .news-filter, .news-refresh-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .news-filter.active { color: var(--positive); border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.08); }
+  .news-refresh-btn { display: inline-flex; align-items: center; gap: 7px; color: var(--text-primary); }
+  .news-refresh-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  .news-refresh-btn.loading svg { animation: spin 0.9s linear infinite; }
+  .news-refresh-btn:disabled { opacity: 0.55; cursor: default; }
+  .news-status { color: var(--text-tertiary); font-size: 11px; line-height: 1.4; }
+  .news-list { display: flex; flex-direction: column; gap: 8px; max-height: 430px; overflow-y: auto; padding-right: 2px; }
+  .news-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .news-card.has-image { grid-template-columns: 116px minmax(0, 1fr); }
+  .news-image {
+    width: 116px;
+    height: 82px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-input);
+  }
+  .news-main { min-width: 0; }
+  .news-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; color: var(--text-tertiary); font-size: 10px; margin-bottom: 5px; }
+  .news-impact { color: #fbbf24; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
+  .news-title { color: var(--text-primary); font-size: 14px; font-weight: 750; line-height: 1.3; margin-bottom: 5px; }
+  .news-summary { color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin-bottom: 9px; }
+  .news-footer { display: flex; justify-content: space-between; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .news-tags { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
+  .news-tag { background: rgba(34,197,94,0.1); color: var(--positive); border-radius: 6px; padding: 3px 6px; font-size: 10px; font-weight: 700; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .news-source-link { color: var(--text-primary); text-decoration: none; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .news-source-link:hover { color: var(--positive); }
+  .news-empty { border: 1px dashed var(--border); border-radius: 10px; padding: 18px; color: var(--text-tertiary); font-size: 12px; text-align: center; line-height: 1.5; }
+  @media (max-width: 620px) {
+    .news-card.has-image { grid-template-columns: 1fr; }
+    .news-image { width: 100%; height: 150px; }
+    .news-toolbar { align-items: stretch; }
+    .news-refresh-btn { justify-content: center; }
+  }
 </style>
 <script src="chart.umd.js"></script>
 </head>
@@ -1089,6 +1147,7 @@
     <button class="mini-nav-btn" data-jump="anchor-rebalancing">Rebalancing</button>
     <button class="mini-nav-btn" data-jump="anchor-scenario">Szenario</button>
     <button class="mini-nav-btn" data-jump="anchor-alerts">Hinweise</button>
+    <button class="mini-nav-btn" data-jump="anchor-news">News</button>
     <button class="mini-nav-btn" data-jump="anchor-watchlist">Watchlist</button>
     <button class="mini-nav-btn" data-jump="anchor-journal">Journal</button>
     <button class="mini-nav-btn" data-jump="anchor-income">Erträge</button>
@@ -1434,6 +1493,33 @@
       </div>
       <div style="display:flex; justify-content:flex-end; margin-top:8px;"><button class="scenario-reset-btn" id="scenarioResetBtn" type="button">Zurücksetzen</button></div>
       <div class="scenario-result" id="scenarioResult"></div>
+    </div>
+  </details>
+
+  <span id="anchor-news"></span>
+  <details class="strat-section" id="newsSection" open>
+    <summary>
+      <span class="left">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v18z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+        <span>Depot-News</span>
+      </span>
+      <span class="count-badge" id="newsCount">0</span>
+    </summary>
+    <div class="strat-body news-body">
+      <div class="news-toolbar">
+        <div class="news-filter-row" id="newsFilterRow">
+          <button class="news-filter active" data-news-filter="all" type="button">Alle</button>
+          <button class="news-filter" data-news-filter="important" type="button">Wichtig</button>
+          <button class="news-filter" data-news-filter="securities" type="button">Aktien/ETF</button>
+          <button class="news-filter" data-news-filter="crypto" type="button">Krypto</button>
+        </div>
+        <button class="news-refresh-btn" id="newsRefreshBtn" type="button">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
+          Aktualisieren
+        </button>
+      </div>
+      <div class="news-status" id="newsStatus">Noch keine News geladen.</div>
+      <div class="news-list" id="newsList"></div>
     </div>
   </details>
 
@@ -2068,6 +2154,7 @@ const LAYOUT_SECTIONS = [
   { key: 'quality', label: 'Datenqualität', meta: 'Prüfung der Eingaben', selectors: ['#qualitySection'] },
   { key: 'dailyCheck', label: 'Heute prüfen', meta: 'Tages-Check und To-dos', selectors: ['#dailyCheckSection'] },
   { key: 'alerts', label: 'Hinweise', meta: 'Lokale Warnungen und Aufgaben', selectors: ['#anchor-alerts', '#alertsSection'], nav: 'anchor-alerts' },
+  { key: 'news', label: 'Depot-News', meta: 'Aktuelle Meldungen zu Depotpositionen', selectors: ['#anchor-news', '#newsSection'], nav: 'anchor-news' },
   { key: 'positions', label: 'Positionen', meta: 'Aktien, ETF und Krypto', selectors: ['#anchor-positions'], nav: 'anchor-positions' },
   { key: 'metalsCard', label: 'Edelmetalle', meta: 'Karte innerhalb Positionen', selectors: ['#card-metals'] },
   { key: 'cashCard', label: 'Cash', meta: 'Cash-Saldo und Bewegungen', selectors: ['#card-cash'] },
@@ -4319,6 +4406,196 @@ function renderJournal() {
       </div>
     </div>`;
   }).join('');
+}
+
+// Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
+// ===== DEPOT-NEWS =====
+const NEWS_AUTO_REFRESH_MS = 30 * 60 * 1000;
+const NEWS_POSITION_LIMIT = 12;
+let portfolioNewsState = {
+  items: [],
+  loading: false,
+  error: '',
+  filter: 'all',
+  updatedAt: '',
+  lastFetchAt: 0,
+};
+
+function newsEscapeAttr(value) {
+  return escapeHtml(value == null ? '' : value).replace(/"/g, '&quot;');
+}
+
+function newsPositionName(pos) {
+  return String(pos?.name || pos?.symbol || 'Position').trim();
+}
+
+function newsPositionsPayload() {
+  if (!appData) return [];
+  return currentPortfolioPositions()
+    .filter(pos => pos && !pos.special)
+    .slice()
+    .sort((a, b) => getPositionValuation(b).currentValue - getPositionValuation(a).currentValue)
+    .slice(0, NEWS_POSITION_LIMIT)
+    .map(pos => ({
+      id: pos.id,
+      name: newsPositionName(pos),
+      symbol: pos.symbol || '',
+      isin: pos.isin || '',
+      wkn: pos.wkn || '',
+      type: pos.type || '',
+      sector: pos.sector || '',
+      isCrypto: String(pos.type || '').toLowerCase().includes('crypto') || !!pos.cgId,
+    }));
+}
+
+function newsTimeAgo(iso) {
+  if (!iso) return 'Zeit unbekannt';
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return 'Zeit unbekannt';
+  const diff = Date.now() - ts;
+  const minutes = Math.max(0, Math.round(diff / 60000));
+  if (minutes < 2) return 'gerade eben';
+  if (minutes < 60) return `vor ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `vor ${hours} Std.`;
+  const days = Math.round(hours / 24);
+  return `vor ${days} Tg.`;
+}
+
+function newsDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return d.toLocaleString('de-AT', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function setNewsFilter(filter) {
+  portfolioNewsState.filter = filter || 'all';
+  document.querySelectorAll('[data-news-filter]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.newsFilter === portfolioNewsState.filter);
+  });
+  renderPortfolioNews();
+}
+
+function filteredPortfolioNews() {
+  const filter = portfolioNewsState.filter || 'all';
+  return (portfolioNewsState.items || []).filter(item => {
+    if (filter === 'all') return true;
+    if (filter === 'important') return item.impact === 'hoch' || item.impact === 'mittel';
+    if (filter === 'crypto') return (item.positions || []).some(pos => pos.isCrypto);
+    if (filter === 'securities') return !(item.positions || []).every(pos => pos.isCrypto);
+    return true;
+  });
+}
+
+function renderPortfolioNews() {
+  const list = document.getElementById('newsList');
+  const status = document.getElementById('newsStatus');
+  const count = document.getElementById('newsCount');
+  const btn = document.getElementById('newsRefreshBtn');
+  if (!list || !status || !count) return;
+
+  const positions = newsPositionsPayload();
+  const items = filteredPortfolioNews();
+  count.textContent = String((portfolioNewsState.items || []).length);
+  if (btn) {
+    btn.disabled = portfolioNewsState.loading;
+    btn.classList.toggle('loading', portfolioNewsState.loading);
+  }
+
+  if (!positions.length) {
+    status.textContent = 'Keine aktuellen Depotpositionen vorhanden.';
+    list.innerHTML = '<div class="news-empty">Sobald Positionen im Depot liegen, erscheinen hier passende Meldungen.</div>';
+    return;
+  }
+
+  if (portfolioNewsState.loading) {
+    status.textContent = 'Depot-News werden geladen und auf Deutsch verdichtet…';
+  } else if (portfolioNewsState.error) {
+    status.textContent = portfolioNewsState.error;
+  } else if (portfolioNewsState.updatedAt) {
+    status.textContent = `Aktualisiert ${newsTimeAgo(portfolioNewsState.updatedAt)} · Quellen werden pro Position über den Worker gesucht.`;
+  } else {
+    status.textContent = 'Noch keine News geladen.';
+  }
+
+  if (!items.length) {
+    list.innerHTML = '<div class="news-empty">Für den aktuellen Filter wurden keine passenden Meldungen gefunden.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    const positionsHtml = (item.positions || []).slice(0, 4).map(pos =>
+      `<span class="news-tag">${escapeHtml(pos.name || pos.symbol || 'Position')}</span>`
+    ).join('');
+    const source = item.source ? escapeHtml(item.source) : 'Quelle';
+    const impact = item.impact && item.impact !== 'normal'
+      ? `<span class="news-impact">${escapeHtml(item.impact)}</span><span>·</span>`
+      : '';
+    const image = item.imageUrl
+      ? `<img class="news-image" src="${newsEscapeAttr(item.imageUrl)}" alt="">`
+      : '';
+    return `<article class="news-card ${item.imageUrl ? 'has-image' : ''}">
+      ${image}
+      <div class="news-main">
+        <div class="news-meta">${impact}<span>${source}</span><span>·</span><span>${escapeHtml(newsDateTime(item.publishedAt) || newsTimeAgo(item.publishedAt))}</span></div>
+        <div class="news-title">${escapeHtml(item.title || 'Meldung')}</div>
+        <div class="news-summary">${escapeHtml(item.summary || 'Keine Zusammenfassung verfügbar.')}</div>
+        <div class="news-footer">
+          <div class="news-tags">${positionsHtml}</div>
+          <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+async function fetchPortfolioNews(opts = {}) {
+  if (!appData || portfolioNewsState.loading) return;
+  const positions = newsPositionsPayload();
+  if (!positions.length) {
+    portfolioNewsState.items = [];
+    renderPortfolioNews();
+    return;
+  }
+  portfolioNewsState.loading = true;
+  portfolioNewsState.error = '';
+  renderPortfolioNews();
+  try {
+    const resp = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        action: 'get-position-news',
+        positions,
+        forceRefresh: opts.forceRefresh === true,
+        userKey: kvKeyActive(),
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.ok === false) throw new Error(data.error || data.message || 'News konnten nicht geladen werden');
+    portfolioNewsState.items = Array.isArray(data.items) ? data.items : [];
+    portfolioNewsState.updatedAt = data.updatedAt || new Date().toISOString();
+    portfolioNewsState.lastFetchAt = Date.now();
+  } catch (e) {
+    portfolioNewsState.error = `Newsfeed nicht verfügbar: ${e.message || e}`;
+  } finally {
+    portfolioNewsState.loading = false;
+    renderPortfolioNews();
+  }
+}
+
+function maybeFetchPortfolioNews() {
+  if (!appData || portfolioNewsState.loading) return;
+  const age = Date.now() - (portfolioNewsState.lastFetchAt || 0);
+  if (!portfolioNewsState.items.length || age > NEWS_AUTO_REFRESH_MS) {
+    fetchPortfolioNews({ forceRefresh: false });
+  }
 }
 
 // Auto-split from src/app.js. Edit this file, then run tools/build-account-html.js.
@@ -8107,6 +8384,7 @@ async function refreshUI(opts = {}) {
   renderSavingsSim(totals, goal);
   if (alloc) renderRebalancing(totals, alloc);
   if (alloc) renderScenario(totals, alloc);
+  renderPortfolioNews();
   renderWatchlist();
   renderJournal();
   renderIncome();
@@ -8200,6 +8478,7 @@ async function initApp() {
   await Promise.all([fetchCryptoPrices(), fetchAllCryptoHistories(370), fetchMarketPrices(), fetchMarketHistory(370), fetchMetalPrices(), fetchMetalHistory(365)]);
   await fetchAllWeeklyCharts();
   await refreshUI();
+  maybeFetchPortfolioNews();
 }
 
 function wireEvents() {
@@ -8235,6 +8514,10 @@ function wireEvents() {
   document.getElementById('layoutResetBtn').addEventListener('click', resetLayoutModal);
   document.getElementById('layoutModal').addEventListener('click', e => { if (e.target.id === 'layoutModal') closeLayoutModal(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
+  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => fetchPortfolioNews({ forceRefresh: true }));
+  document.querySelectorAll('[data-news-filter]').forEach(btn => {
+    btn.addEventListener('click', () => setNewsFilter(btn.dataset.newsFilter || 'all'));
+  });
   document.getElementById('goalApplyBtn').addEventListener('click', applyGoalSettingsUpdate);
   ['goalYear', 'goalAmount', 'goalSavings', 'goalPath', 'goalRisk', 'goalType', 'goalPriority', 'goalMonth', 'goalMinSavings', 'goalMaxSavings', 'goalBuffer', 'goalReturn'].forEach(id => {
     const goalInputEl = document.getElementById(id);
