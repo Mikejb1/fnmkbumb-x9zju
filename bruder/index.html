@@ -379,6 +379,11 @@
   .positions-toggle { display: inline-flex; background: var(--bg-track); border-radius: 6px; padding: 2px; gap: 0; }
   .positions-toggle-btn { background: transparent; border: 0; color: var(--text-tertiary); font-size: 10px; font-family: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
   .positions-toggle-btn.active { background: var(--bg-card); color: var(--text-primary); font-weight: 500; }
+  .positions-size-tools { display: inline-flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: 10px; text-transform: none; letter-spacing: 0; }
+  .positions-size-btn { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; font-family: inherit; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+  .positions-size-btn:hover:not(:disabled) { background: var(--bg-card); color: var(--text-primary); }
+  .positions-size-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .positions-size-label { min-width: 54px; text-align: center; color: var(--text-muted); }
   .positions-section { background: transparent; margin: 0 0 14px; padding: 0; }
   .positions-section > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; color: var(--text-tertiary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
   .positions-section > summary::-webkit-details-marker { display: none; }
@@ -387,7 +392,9 @@
   .positions-summary-chevron { width: 14px; height: 14px; stroke: currentColor; fill: none; transition: transform 0.2s; }
   .positions-section[open] .positions-summary-chevron { transform: rotate(180deg); }
   .positions-section .positions-head-label { justify-content: flex-end; margin-top: -2px; }
+  .positions-section .positions-head-label > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
   .positions-section:not([open]) .positions-toggle { display: none; }
+  .positions-section:not([open]) .positions-size-tools { display: none; }
   .positions-section:not([open]) { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .positions-section:not([open]) > summary { margin: 0; padding: 12px 14px; color: var(--text-primary); font-size: 13px; font-weight: 500; text-transform: none; letter-spacing: 0; }
   .positions-section:not([open]) .positions-summary-left { gap: 10px; min-width: 0; }
@@ -967,7 +974,14 @@
       <svg class="positions-summary-chevron" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </summary>
     <div class="positions-head-label">
-      <span></span>
+      <span>
+        <span class="positions-size-tools" role="group" aria-label="Positionsfenster Höhe">
+          <button type="button" class="positions-size-btn" data-pos-size="down" title="Positionsfenster kleiner" aria-label="Positionsfenster kleiner">−</button>
+          <span class="positions-size-label" id="positionsSizeLabel">3 Karten</span>
+          <button type="button" class="positions-size-btn" data-pos-size="up" title="Positionsfenster größer" aria-label="Positionsfenster größer">+</button>
+          <button type="button" class="positions-size-btn" data-pos-size="reset" title="Standardhöhe" aria-label="Standardhöhe">↺</button>
+        </span>
+      </span>
       <span class="positions-toggle" role="group" aria-label="Ansicht">
         <button type="button" class="positions-toggle-btn active" data-view="details">Details</button>
         <button type="button" class="positions-toggle-btn" data-view="compact">Kompakt</button>
@@ -1636,6 +1650,10 @@ let aiProgressState = null, aiRegenTimer = null, refreshProgressState = null;
 
 const LAYOUT_STORAGE_KEY = STORAGE_PREFIX + 'layout_v1';
 const POSITIONS_PANEL_OPEN_KEY = STORAGE_PREFIX + 'positions_panel_open_v1';
+const POSITIONS_HEIGHT_KEY = STORAGE_PREFIX + 'positions_visible_cards_v1';
+const POSITIONS_VISIBLE_DEFAULT = 3;
+const POSITIONS_VISIBLE_MIN = 2;
+const POSITIONS_VISIBLE_MAX = 8;
 const LAYOUT_SECTIONS = [
   { key: 'overview', label: 'Depot Stand', meta: 'Gesamtwert, Tageswert, Drawdown, Sparrate', selectors: ['#anchor-top'], nav: 'anchor-top' },
   { key: 'addPosition', label: 'Position hinzufügen', meta: 'Manuell oder per Screenshot & KI', selectors: ['.add-position-section'] },
@@ -5716,18 +5734,47 @@ function buildSpecialCard(kind, totals) {
 }
 
 let renderExpandedRestore = new Set();
+function getPositionsVisibleCards() {
+  try {
+    const saved = Number(localStorage.getItem(POSITIONS_HEIGHT_KEY));
+    if (Number.isFinite(saved)) return Math.max(POSITIONS_VISIBLE_MIN, Math.min(POSITIONS_VISIBLE_MAX, Math.round(saved)));
+  } catch (e) {}
+  return POSITIONS_VISIBLE_DEFAULT;
+}
+function setPositionsVisibleCards(value) {
+  const next = Math.max(POSITIONS_VISIBLE_MIN, Math.min(POSITIONS_VISIBLE_MAX, Math.round(value)));
+  try { localStorage.setItem(POSITIONS_HEIGHT_KEY, String(next)); } catch (e) {}
+  updatePositionsSizeControls();
+  requestAnimationFrame(updatePositionsScrollLimit);
+}
+function updatePositionsSizeControls() {
+  const visibleCards = getPositionsVisibleCards();
+  const label = document.getElementById('positionsSizeLabel');
+  if (label) label.textContent = `${visibleCards} Karte${visibleCards === 1 ? '' : 'n'}`;
+  document.querySelectorAll('[data-pos-size="down"]').forEach(btn => { btn.disabled = visibleCards <= POSITIONS_VISIBLE_MIN; });
+  document.querySelectorAll('[data-pos-size="up"]').forEach(btn => { btn.disabled = visibleCards >= POSITIONS_VISIBLE_MAX; });
+}
+function collapsedCardHeight(card) {
+  const row = card?.querySelector?.('.card-collapsed-row, .special-card-row, .metals-summary');
+  if (!row) return card?.getBoundingClientRect?.().height || 0;
+  const cardStyle = getComputedStyle(card);
+  const paddingY = (parseFloat(cardStyle.paddingTop) || 0) + (parseFloat(cardStyle.paddingBottom) || 0);
+  return row.getBoundingClientRect().height + paddingY;
+}
 function updatePositionsScrollLimit() {
   const container = document.getElementById('positions');
   if (!container) return;
   const cards = [...container.children].filter(el => el.classList?.contains('card'));
-  if (cards.length <= 3) {
+  const visibleCards = getPositionsVisibleCards();
+  updatePositionsSizeControls();
+  if (cards.length <= visibleCards) {
     container.classList.remove('positions-list-scroll');
     container.style.maxHeight = '';
     return;
   }
   const styles = getComputedStyle(container);
   const gap = parseFloat(styles.rowGap || styles.gap || '10') || 10;
-  const visibleHeight = cards.slice(0, 3).reduce((sum, card) => sum + card.getBoundingClientRect().height, 0) + gap * 2 + 4;
+  const visibleHeight = cards.slice(0, visibleCards).reduce((sum, card) => sum + collapsedCardHeight(card), 0) + gap * Math.max(0, visibleCards - 1) + 8;
   container.classList.add('positions-list-scroll');
   container.style.maxHeight = `${Math.ceil(Math.max(280, visibleHeight))}px`;
 }
@@ -6651,12 +6698,14 @@ function wireEvents() {
     // Special-Karten (Cash/Edelmetalle) sind nicht klappbar
     const specialCard = e.target.closest('.card.special');
     if (specialCard) return;
-    // Slider/Input nicht als Klapp-Trigger werten
-    if (e.target.closest('input, button, a, select, details, summary')) return;
+    // Eingaben und echte Bedienelemente nicht als Klapp-Trigger werten.
+    // Kein "details" hier: der gesamte Positionen-Bereich ist selbst ein details-Element.
+    if (e.target.closest('input, button, a, select, textarea, summary, [contenteditable="true"]')) return;
     const card = e.target.closest('.card');
     if (!card) return;
     const wasExpanded = card.classList.contains('expanded');
     card.classList.toggle('expanded');
+    requestAnimationFrame(updatePositionsScrollLimit);
     if (!wasExpanded) {
       // Erst-Öffnung: Chart laden (Wochen-Tab default)
       const posId = card.dataset.posId;
@@ -6753,6 +6802,18 @@ function wireEvents() {
     try { localStorage.setItem(POSVIEW_KEY, view); } catch (e) {}
   };
   document.querySelectorAll('.positions-toggle-btn').forEach(b => b.addEventListener('click', () => applyPosView(b.dataset.view)));
+  document.querySelectorAll('.positions-size-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const action = btn.dataset.posSize;
+      const current = getPositionsVisibleCards();
+      if (action === 'down') setPositionsVisibleCards(current - 1);
+      else if (action === 'up') setPositionsVisibleCards(current + 1);
+      else setPositionsVisibleCards(POSITIONS_VISIBLE_DEFAULT);
+    });
+  });
+  updatePositionsSizeControls();
   try {
     const savedView = localStorage.getItem(POSVIEW_KEY);
     if (savedView === 'compact') applyPosView('compact');
