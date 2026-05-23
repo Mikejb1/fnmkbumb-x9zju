@@ -219,6 +219,7 @@
   .history-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
   .history-legend-toggle { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-tertiary); border-radius: 6px; padding: 4px 8px; font-size: 10px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity 0.15s, background 0.15s; opacity: 0.5; }
   .history-legend-toggle.active { background: var(--bg-card); color: var(--text-primary); opacity: 1; }
+  .history-legend-toggle:disabled, .history-legend-toggle.unavailable { opacity: 0.28; cursor: not-allowed; }
   .history-legend-toggle .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .cash-tx-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .cash-tx-btn { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
@@ -5860,17 +5861,21 @@ function renderChartFallback(canvas, points, valueKey, opts) {
   const wrap = canvas?.parentElement;
   if (!wrap) return;
   clearChartFallback(canvas);
-  const rows = (points || [])
-    .map((p, index) => ({ point: p, index, value: Number(p?.[valueKey]) }))
-    .filter(row => Number.isFinite(row.value));
-  if (rows.length < 2) return;
+  const rows = (points || []).map((p, index) => ({ point: p, index }));
+  const mainValues = rows.map(row => Number(row.point?.[valueKey])).filter(Number.isFinite);
+  if (rows.length < 2 || mainValues.length < 2) return;
   canvas.style.display = 'none';
 
   const width = 640;
   const height = 180;
   const pad = { left: 58, right: 16, top: 16, bottom: 30 };
-  let min = Math.min(...rows.map(r => r.value));
-  let max = Math.max(...rows.map(r => r.value));
+  const allSeries = [
+    { key: valueKey, label: opts?.mainLabel || 'Depotwert', color: mainValues[mainValues.length - 1] >= mainValues[0] ? '#22c55e' : '#f87171', dashed: !!opts?.mainDashed, fill: true },
+    ...(opts?.extraSeries || []).filter(s => !s.hidden)
+  ];
+  const allValues = allSeries.flatMap(series => rows.map(row => Number(row.point?.[series.key])).filter(Number.isFinite));
+  let min = Math.min(...allValues);
+  let max = Math.max(...allValues);
   if (min === max) {
     const spread = Math.max(1, Math.abs(max) * 0.01);
     min -= spread;
@@ -5878,10 +5883,21 @@ function renderChartFallback(canvas, points, valueKey, opts) {
   }
   const xFor = (rowIndex) => pad.left + (rowIndex / Math.max(1, rows.length - 1)) * (width - pad.left - pad.right);
   const yFor = (value) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
-  const linePath = rows.map((row, i) => `${i ? 'L' : 'M'} ${xFor(i).toFixed(1)} ${yFor(row.value).toFixed(1)}`).join(' ');
+  const pathForSeries = (key) => {
+    let drawing = false;
+    return rows.map((row, i) => {
+      const value = Number(row.point?.[key]);
+      if (!Number.isFinite(value)) { drawing = false; return ''; }
+      const cmd = drawing ? 'L' : 'M';
+      drawing = true;
+      return `${cmd} ${xFor(i).toFixed(1)} ${yFor(value).toFixed(1)}`;
+    }).filter(Boolean).join(' ');
+  };
+  const mainPath = pathForSeries(valueKey);
   const baseY = height - pad.bottom;
-  const areaPath = `${linePath} L ${xFor(rows.length - 1).toFixed(1)} ${baseY} L ${xFor(0).toFixed(1)} ${baseY} Z`;
-  const isUp = rows[rows.length - 1].value >= rows[0].value;
+  const mainRows = rows.filter(row => Number.isFinite(Number(row.point?.[valueKey])));
+  const areaPath = `${mainRows.map((row, idx) => `${idx ? 'L' : 'M'} ${xFor(row.index).toFixed(1)} ${yFor(Number(row.point[valueKey])).toFixed(1)}`).join(' ')} L ${xFor(mainRows[mainRows.length - 1].index).toFixed(1)} ${baseY} L ${xFor(mainRows[0].index).toFixed(1)} ${baseY} Z`;
+  const isUp = mainValues[mainValues.length - 1] >= mainValues[0];
   const color = isUp ? '#22c55e' : '#f87171';
   const grid = [0, 0.5, 1].map(t => {
     const value = max - (max - min) * t;
@@ -5896,7 +5912,14 @@ function renderChartFallback(canvas, points, valueKey, opts) {
     const isEdge = i === 0 || i === rows.length - 1;
     const isEvent = !!(row.point?.events && row.point.events.length);
     if (!isEdge && !isEvent && !opts?.bigPoints) return '';
-    return `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(row.value).toFixed(1)}" r="${isEvent ? 3.5 : 2.8}" fill="${isEvent ? '#fbbf24' : color}"></circle>`;
+    const value = Number(row.point?.[valueKey]);
+    if (!Number.isFinite(value)) return '';
+    return `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(value).toFixed(1)}" r="${isEvent ? 3.5 : 2.8}" fill="${isEvent ? '#fbbf24' : color}"></circle>`;
+  }).join('');
+  const extraPaths = allSeries.slice(1).map(series => {
+    const path = pathForSeries(series.key);
+    if (!path) return '';
+    return `<path class="line extra" d="${path}" stroke="${series.color || '#888'}" ${series.dashed ? 'stroke-dasharray="6 4"' : ''}></path>`;
   }).join('');
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'history-svg-fallback');
@@ -5906,7 +5929,8 @@ function renderChartFallback(canvas, points, valueKey, opts) {
   svg.innerHTML = `
     ${grid}
     <path class="area" d="${areaPath}" fill="${color}"></path>
-    <path class="line" d="${linePath}" stroke="${color}"></path>
+    ${extraPaths}
+    <path class="line main" d="${mainPath}" stroke="${color}" ${opts?.mainDashed ? 'stroke-dasharray="6 4"' : ''}></path>
     ${markers}
     ${labels}
   `;
@@ -5969,6 +5993,18 @@ function showHistoryHoverInfo(wrap, point, points, index, valueKey, clientX) {
 function hideHistoryHoverInfo(wrap) {
   const box = wrap?.querySelector('.history-hover-info');
   if (box) box.classList.remove('visible');
+}
+
+function syncHistoryLegendControls(intraday) {
+  document.querySelectorAll('.history-legend-toggle').forEach(btn => {
+    const key = btn.dataset.series;
+    const unavailable = intraday && (key === 'pnl' || key === 'goal');
+    btn.disabled = unavailable;
+    btn.classList.toggle('unavailable', unavailable);
+    btn.classList.toggle('active', !unavailable && !!historyVisibleSeries[key]);
+    if (unavailable) btn.title = 'In der Heute-Ansicht nicht sinnvoll, weil es nur um die Tagesbewegung geht.';
+    else btn.removeAttribute('title');
+  });
 }
 
 function attachFallbackChartHover(wrap, svg, rows, valueKey) {
@@ -7450,6 +7486,7 @@ function renderHistory() {
   if (points.length < 2) return;
   const futureProjection = isFutureHistoryPeriod(currentHistoryPeriod);
   const intraday = points[0]?.intraday === true;
+  syncHistoryLegendControls(intraday);
   // Zielpfad: linear interpolation vom Startpunkt bis zum Ziel-Enddatum
   if (!intraday && historyVisibleSeries.goal && appData.goal?.amount && appData.goal?.year) {
     const goalEnd = endOfGoalMonth(appData.goal.year, appData.goal.month || 12);
@@ -7470,6 +7507,10 @@ function renderHistory() {
   if (!intraday && historyVisibleSeries.pnl) extraSeries.push({ key: 'pnl', label: 'G/V', color: '#3b82f6', dashed: false });
   if (!intraday && historyVisibleSeries.goal) extraSeries.push({ key: 'goal', label: 'Zielpfad', color: '#fbbf24', dashed: true });
   // Wenn Hauptlinie ausgeblendet, erste sichtbare Zusatzlinie als Hauptlinie nutzen
+  if (!historyVisibleSeries.value && !extraSeries.length) {
+    historyVisibleSeries.value = true;
+    syncHistoryLegendControls(intraday);
+  }
   const mainKey = historyVisibleSeries.value ? 'value' : (extraSeries[0]?.key || 'value');
   renderChart('historyChart', points, mainKey, { compactY: true, daily: true, bigPoints: intraday, eventMarkers: !intraday, mainDashed: futureProjection, mainLabel: mainKey === 'value' ? (futureProjection ? 'Sparpfad' : intraday ? 'Depotwert heute' : 'Depotwert') : extraSeries[0]?.label, extraSeries: extraSeries.filter(s => s.key !== mainKey) });
   const qualitySummary = summarizeHistoryQuality(points, futureProjection);
@@ -8093,6 +8134,7 @@ function wireEvents() {
   // Legenden-Toggles für Depotchart-Serien
   document.querySelectorAll('.history-legend-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       const key = btn.dataset.series;
       if (!key) return;
       historyVisibleSeries[key] = !historyVisibleSeries[key];
