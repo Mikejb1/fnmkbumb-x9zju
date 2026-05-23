@@ -6112,32 +6112,47 @@ function historyDataQualityForDate(date, isToday, futureProjection = false) {
   const active = (appData?.positions || []).filter(pos => !pos.special && sharesAtDate(pos, date) > 0);
   if (active.length === 0) return { level: 'exact', label: 'Keine aktiven Titel', note: 'Keine aktiven Titel an diesem Tag' };
   if (isToday) return { level: 'exact', label: 'Aktuelle Live-/Quellwerte', note: 'Aktuelle Bewertung aus Live-/Quellwerten' };
-  let exact = 0, approx = 0, weak = 0;
-  const examples = [];
+  let exact = 0, dailyFx = 0, monthly = 0, weak = 0, scoreTotal = 0;
+  const causes = { dailyFx: [], monthly: [], weak: [] };
+  const addCause = (key, name) => {
+    if (!causes[key].includes(name)) causes[key].push(name);
+  };
   active.forEach(pos => {
-    let basis = '';
+    const name = qualityPositionName(pos);
     if (dailyHistoryPriceAtDate(pos, date) > 0) {
-      if (pos.dailyHistoryFxApproximate) { approx++; basis = 'Tageskurs mit FX-Näherung'; }
-      else { exact++; basis = 'Tageskurs'; }
+      if (pos.dailyHistoryFxApproximate) {
+        dailyFx++;
+        scoreTotal += 0.9;
+        addCause('dailyFx', name);
+      } else {
+        exact++;
+        scoreTotal += 1;
+      }
     } else if (Array.isArray(pos.monthlyHistory) && pos.monthlyHistory.length > 0) {
-      approx++;
-      basis = 'Monatskurs';
+      monthly++;
+      scoreTotal += 0.7;
+      addCause('monthly', name);
     } else {
       weak++;
-      basis = 'Ersatzkurs';
+      scoreTotal += 0.25;
+      addCause('weak', name);
     }
-    if (basis && examples.length < 3 && basis !== 'Tageskurs') examples.push(`${qualityPositionName(pos)}: ${basis}`);
   });
+  const approx = dailyFx + monthly;
   const level = weak > 0 ? 'weak' : approx > 0 ? 'approx' : 'exact';
   const label = level === 'weak'
     ? 'Ersatzkurse aktiv'
     : level === 'approx'
       ? 'Näherungen aktiv'
       : 'Tageskurse';
-  const note = examples.length
-    ? `${label}: ${examples.join(', ')}${(weak + approx) > examples.length ? ' ...' : ''}`
+  const causeParts = [];
+  if (causes.dailyFx.length) causeParts.push(`FX-Näherung: ${causes.dailyFx.slice(0, 3).join(', ')}${causes.dailyFx.length > 3 ? ' ...' : ''}`);
+  if (causes.monthly.length) causeParts.push(`Monatskurs: ${causes.monthly.slice(0, 3).join(', ')}${causes.monthly.length > 3 ? ' ...' : ''}`);
+  if (causes.weak.length) causeParts.push(`Ersatzkurs: ${causes.weak.slice(0, 3).join(', ')}${causes.weak.length > 3 ? ' ...' : ''}`);
+  const note = causeParts.length
+    ? `${label}: ${causeParts.join(' · ')}`
     : `${label}: ${exact} von ${active.length} aktiven Titeln mit Tageskursen`;
-  return { level, label, note, exact, approx, weak, total: active.length };
+  return { level, label, note, exact, approx, dailyFx, monthly, weak, total: active.length, score: scoreTotal / active.length, causes };
 }
 function summarizeHistoryQuality(points, futureProjection) {
   if (!points || points.length === 0) return { level: 'weak', pct: 0, text: 'Datenqualität: —', basis: 'Keine Verlaufspunkte verfügbar', events: 0 };
@@ -6153,9 +6168,16 @@ function summarizeHistoryQuality(points, futureProjection) {
   let score = 0, exactDays = 0, approxDays = 0, weakDays = 0;
   points.forEach(p => {
     const level = p.quality?.level || 'weak';
-    if (level === 'exact') { score += 1; exactDays++; }
-    else if (level === 'approx') { score += 0.65; approxDays++; }
-    else { score += 0.3; weakDays++; }
+    if (level === 'exact') exactDays++;
+    else if (level === 'approx') approxDays++;
+    else weakDays++;
+    score += Number.isFinite(p.quality?.score)
+      ? p.quality.score
+      : level === 'exact'
+        ? 1
+        : level === 'approx'
+          ? 0.7
+          : 0.25;
   });
   const pct = Math.round((score / points.length) * 100);
   const level = weakDays > 0 ? 'weak' : approxDays > 0 ? 'approx' : 'exact';
@@ -6178,8 +6200,26 @@ function buildHistoryQualityRows(points, summary, futureProjection) {
   const exactDays = points.filter(p => p.quality?.level === 'exact').length;
   const approxDays = points.filter(p => p.quality?.level === 'approx').length;
   const weakDays = points.filter(p => p.quality?.level === 'weak').length;
+  const causeStats = {
+    dailyFx: { days: 0, names: new Set() },
+    monthly: { days: 0, names: new Set() },
+    weak: { days: 0, names: new Set() }
+  };
+  points.forEach(p => {
+    ['dailyFx', 'monthly', 'weak'].forEach(key => {
+      const names = p.quality?.causes?.[key] || [];
+      if (names.length > 0) {
+        causeStats[key].days++;
+        names.forEach(name => causeStats[key].names.add(name));
+      }
+    });
+  });
+  const listNames = set => {
+    const names = Array.from(set).filter(Boolean);
+    return `${names.slice(0, 6).join(', ')}${names.length > 6 ? ' ...' : ''}`;
+  };
   const rows = [
-    { title: 'So wird der Score berechnet', text: `Der Zeitraum enthält ${points.length} Tagespunkte: ${exactDays} mit Tagesdaten, ${approxDays} mit Näherung und ${weakDays} mit Ersatzkursen. Tagesdaten zählen voll, Näherungen teilweise, Ersatzkurse deutlich schwächer.` }
+    { title: 'So wird der Score berechnet', text: `Der Zeitraum enthält ${points.length} Tagespunkte: ${exactDays} vollständig, ${approxDays} mit Näherung und ${weakDays} mit Ersatzkursen. Die App bewertet jeden Tag nach den betroffenen Positionen: echte Tagesdaten zählen voll, FX-Näherungen fast voll, Monatskurse teilweise und Ersatzkurse deutlich schwächer.` }
   ];
 
   if (summary.pct >= 100) {
@@ -6187,20 +6227,14 @@ function buildHistoryQualityRows(points, summary, futureProjection) {
     return rows;
   }
 
-  if (approxDays > 0) {
-    rows.push({ title: 'Näherungen drücken den Score', text: 'An manchen Tagen nutzt die App Monatskurse oder Tageskurse mit Währungs-Näherung. Das ist besser als kein Wert, aber weniger exakt als ein echter Tageskurs in EUR.' });
+  if (causeStats.dailyFx.days > 0) {
+    rows.push({ title: 'Tageskurse mit Währungs-Näherung', text: `An ${causeStats.dailyFx.days} Tagen gibt es echte Tageskurse, aber die EUR-Umrechnung ist angenähert. Das ist meist nahe am Verlauf und wird nur leicht abgezogen. Betroffen: ${listNames(causeStats.dailyFx.names)}.` });
   }
-  if (weakDays > 0) {
-    rows.push({ title: 'Ersatzkurse drücken den Score stark', text: 'Für einzelne Tage oder Titel fehlen historische Tages- beziehungsweise Monatskurse. Dann verwendet die App ersatzweise aktuelle, manuelle oder ältere Kursbasen, damit der Verlauf trotzdem berechnet werden kann.' });
+  if (causeStats.monthly.days > 0) {
+    rows.push({ title: 'Monatskurse statt Tageskurse', text: `An ${causeStats.monthly.days} Tagen fehlen für mindestens eine Position echte Tageskurse. Die App nutzt dann Monatswerte. Betroffen: ${listNames(causeStats.monthly.names)}.` });
   }
-
-  const notes = [];
-  points.forEach(p => {
-    const note = p.historyNote || p.quality?.note || '';
-    if (p.quality?.level !== 'exact' && note && !notes.includes(note)) notes.push(note);
-  });
-  if (notes.length > 0) {
-    rows.push({ title: 'Konkrete Ursachen im Zeitraum', text: `${notes.slice(0, 4).join(' · ')}${notes.length > 4 ? ' ...' : ''}` });
+  if (causeStats.weak.days > 0) {
+    rows.push({ title: 'Ersatzkurse drücken den Score stark', text: `An ${causeStats.weak.days} Tagen fehlen für mindestens eine Position historische Tages- und Monatskurse. Dann nutzt die App ersatzweise aktuelle, manuelle oder ältere Kursbasen. Betroffen: ${listNames(causeStats.weak.names)}.` });
   }
 
   rows.push({ title: 'Wie kommst du näher an 100/100?', text: 'Am meisten hilft eine vollständige CSV-Historie mit Käufen/Verkäufen und möglichst vielen historischen Kursdaten. Zusätzlich sollten Symbol, ISIN/WKN und Kursquelle je aktueller Position stimmen.' });
