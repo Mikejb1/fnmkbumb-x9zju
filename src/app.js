@@ -2628,8 +2628,10 @@ function renderPortfolioNews() {
         <div class="news-summary">${escapeHtml(item.summary || 'Keine Zusammenfassung verfügbar.')}</div>
         <div class="news-footer">
           <div class="news-tags">${positionsHtml}</div>
-          ${summaryButton}
-          <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+          <div class="news-actions">
+            ${summaryButton}
+            <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+          </div>
         </div>
         ${reportHtml}
       </div>

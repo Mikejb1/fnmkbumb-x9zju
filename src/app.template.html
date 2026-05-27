@@ -453,11 +453,36 @@ __APP_CSS__
         </div>
       </div>
       <div class="news-settings-panel" id="newsSettingsPanel" style="display:none;">
-        <label class="news-setting-toggle"><input type="checkbox" id="newsAiEnabled"> <span>KI-Zusammenfassungen anbieten</span></label>
-        <label><span>News pro Titel</span><div class="news-setting-range"><input type="range" id="newsPerPositionLimit" min="1" max="8" step="1"><input type="number" id="newsPerPositionNumber" min="1" max="8" step="1"><em>max. 8</em></div></label>
-        <label><span>Speicherung</span><div class="news-setting-range"><input type="range" id="newsRetentionDays" min="1" max="14" step="1"><input type="number" id="newsRetentionNumber" min="1" max="14" step="1"><em>Tage</em></div></label>
-        <label><span>Automatisch suchen</span><div class="news-setting-range"><input type="range" id="newsRefreshMinutes" min="30" max="360" step="30"><input type="number" id="newsRefreshNumber" min="30" max="360" step="30"><em>Min</em></div></label>
-        <button class="news-settings-save" id="newsSettingsSaveBtn" type="button">Speichern</button>
+        <div class="news-settings-head">
+          <div>
+            <strong>News-Einstellungen</strong>
+            <span>Die News beziehen sich auf deine Positionen.</span>
+          </div>
+          <label class="news-setting-toggle">
+            <input type="checkbox" id="newsAiEnabled">
+            <span>KI-Zusammenfassungen</span>
+          </label>
+        </div>
+        <div class="news-settings-grid">
+          <label class="news-setting-card">
+            <span>News pro Titel</span>
+            <div class="news-setting-range"><input type="range" id="newsPerPositionLimit" min="1" max="8" step="1"><input type="number" id="newsPerPositionNumber" min="1" max="8" step="1"></div>
+            <em>Maximal 8 Meldungen je Position.</em>
+          </label>
+          <label class="news-setting-card">
+            <span>Speicherung</span>
+            <div class="news-setting-range"><input type="range" id="newsRetentionDays" min="1" max="14" step="1"><input type="number" id="newsRetentionNumber" min="1" max="14" step="1"></div>
+            <em>Automatisch löschen nach 1 bis 14 Tagen.</em>
+          </label>
+          <label class="news-setting-card">
+            <span>Automatisch suchen</span>
+            <div class="news-setting-range"><input type="range" id="newsRefreshMinutes" min="30" max="360" step="30"><input type="number" id="newsRefreshNumber" min="30" max="360" step="30"></div>
+            <em>Intervall in Minuten.</em>
+          </label>
+        </div>
+        <div class="news-settings-save-row">
+          <button class="news-settings-save" id="newsSettingsSaveBtn" type="button">Einstellungen speichern</button>
+        </div>
       </div>
       <div class="news-status" id="newsStatus">Noch keine News geladen.</div>
       <div class="news-list" id="newsList"></div>
