@@ -50,7 +50,7 @@ function findFlatexAccountOrderTransaction(entry) {
   const txType = entry.kind === 'order-sell' ? 'sell' : 'buy';
   const orderDate = entry.valuta || entry.date;
   const candidates = (appData?.transactions || []).filter(tx => {
-    if (!tx || tx.assetType === 'cash' || tx.assetType === 'metal' || tx.txType !== txType || tx.cashNeutral) return false;
+    if (!tx || tx.assetType === 'cash' || tx.assetType === 'metal' || tx.txType !== txType) return false;
     return true;
   });
   const exactOrder = candidates.find(tx => noteHasFlatexOrderNumber(tx, entry.orderNumber));
@@ -58,7 +58,7 @@ function findFlatexAccountOrderTransaction(entry) {
   return candidates.find(tx => {
     const sameIsin = entry.isin && positionIsinForTransaction(tx) === entry.isin;
     const sameDate = orderDate && (tx.valuta === orderDate || tx.date === orderDate);
-    return sameIsin && sameDate && String(tx.note || '').includes('Flatex CSV');
+    return sameIsin && sameDate && /CSV/.test(String(tx.note || ''));
   }) || null;
 }
 function roundImportMoney(value) {
@@ -141,7 +141,7 @@ function renderFlatexAccountCsvAnalysis(analysis) {
   </div>`;
   const items = [
     { kind: 'info', text: `${analysis.entries.length} Kontobewegungen erkannt · ${analysis.counts.deposit || 0} Einzahlung${analysis.counts.deposit === 1 ? '' : 'en'} (${fmt.format(analysis.totals.deposits)}) · ${analysis.counts.dividend || 0} Dividende${analysis.counts.dividend === 1 ? '' : 'n'} · ${analysis.counts.interest || 0} Zinsgutschrift${analysis.counts.interest === 1 ? '' : 'en'}.` },
-    { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen Depotumsätzen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depotumsätze-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
+    { kind: analysis.unmatchedOrders.length ? 'warn' : 'info', text: `${analysis.matchedOrders.length} von ${analysis.orders.length} Order-Kontobewegungen passen zu vorhandenen CSV-Depotbuchungen. ${analysis.unmatchedOrders.length ? 'Nicht passende Orders bleiben unangetastet; zuerst die Depot-/Positions-CSV importieren oder die Vorschau prüfen.' : 'Die echten Kontobelastungen werden auf diese Wertpapierbuchungen gelegt.'}` },
     { kind: 'info', text: `Sonder-Cash: ${analysis.counts.tax || 0} Thesaurierung/Steuer · ${analysis.counts.refund || 0} Storno/Erstattung · ${analysis.counts['interest-fee'] || 0} Zinsbelastung. Wertpapier-Stückzahlen werden durch diesen Import nicht verändert.` }
   ];
   if (analysis.orders.length && !(analysis.counts.deposit > 0)) {
@@ -173,7 +173,7 @@ async function handleFlatexAccountCsvFile(file) {
     renderFlatexAccountCsvAnalysis(analyzeFlatexAccountCsvText(await readFlatexCsvFile(file)));
   } catch (e) {
     flatexAccountCsvAnalysis = null;
-    alert('Flatex Kontoumsätze konnten nicht gelesen werden: ' + (e.message || e));
+    alert('Kontoumsätze konnten nicht gelesen werden: ' + (e.message || e));
   }
 }
 function closeFlatexAccountCsvModal() {
@@ -232,7 +232,7 @@ function pushFlatexAccountIncome(entry) {
     gross: amount,
     tax: 0,
     net: amount,
-    note: `Flatex Kontoumsätze · ${entry.info || accountKindLabel(entry.kind)} · Betrag aus Kontoauszug`,
+    note: `Kontoumsätze CSV · ${entry.info || accountKindLabel(entry.kind)} · Betrag aus Kontoauszug`,
     accountImportSource: FLATEX_ACCOUNT_SOURCE,
     accountImportKey: entry.importKey
   };
@@ -258,31 +258,47 @@ function applyFlatexAccountOrder(entry) {
   tx.accountBookingDate = entry.date;
   tx.accountValuta = entry.valuta;
   tx.accountOrderNumber = entry.orderNumber;
+  tx.cashNeutral = false;
   return true;
 }
 async function importFlatexAccountCsvAnalysis() {
   if (!flatexAccountCsvAnalysis) return;
   const matched = flatexAccountCsvAnalysis.matchedOrders.length;
-  const ok = confirm(`Flatex Kontoumsätze wirklich übernehmen?\n\nEinzahlungen, Erträge und Sonder-Cash-Bewegungen werden in dein Cash-Kassenbuch geschrieben. ${matched} Order-Kontobewegungen werden mit vorhandenen Depotumsätzen abgeglichen. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
+  const ok = confirm(`Kontoumsätze wirklich übernehmen?\n\nEinzahlungen, Erträge und Sonder-Cash-Bewegungen werden in dein Cash-Kassenbuch geschrieben. ${matched} Order-Kontobewegungen werden mit vorhandenen CSV-Depotbuchungen abgeglichen. Vorher wird ein JSON-Sicherheitsbackup heruntergeladen.`);
   if (!ok) return;
   await backupEncryptedJson('vor-flatex-kontoumsaetze');
+  const result = await applyFlatexAccountCsvAnalysis(flatexAccountCsvAnalysis, { skipSave: true, skipRefresh: true });
+  closeFlatexAccountCsvModal();
+  await savePositionsToKV();
+  await refreshUI({ skipAI: true });
+  alert(`Kontoumsätze übernommen. Cash-Verlauf ergänzt; ${result.orderMatches} Depotumsatz-Order${result.orderMatches === 1 ? '' : 's'} mit echter Kontobelastung abgeglichen.`);
+}
+
+async function applyFlatexAccountCsvAnalysis(analysis, opts = {}) {
+  if (!analysis) throw new Error('Keine Kontoumsatz-Analyse vorhanden.');
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
   ensureIncome();
   clearFlatexAccountCsvImports();
   let orderMatches = 0;
-  flatexAccountCsvAnalysis.entries.forEach(entry => {
-    if (entry.kind === 'deposit') pushFlatexAccountCashTx(entry, 'deposit', entry.amount, 'Flatex Kontoumsätze · Einzahlung Verrechnungskonto');
+  analysis.entries.forEach(entry => {
+    if (entry.kind === 'deposit') pushFlatexAccountCashTx(entry, 'deposit', entry.amount, 'Kontoumsätze CSV · Einzahlung Verrechnungskonto');
     else if (entry.kind === 'dividend' || entry.kind === 'interest') pushFlatexAccountIncome(entry);
-    else if (entry.kind === 'tax') pushFlatexAccountCashTx(entry, 'tax', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Thesaurierung'}`);
-    else if (entry.kind === 'interest-fee') pushFlatexAccountCashTx(entry, 'fee', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Zinsbelastung'}`);
-    else if (entry.kind === 'refund') pushFlatexAccountCashTx(entry, 'refund', entry.amount, `Flatex Kontoumsätze · ${entry.info || 'Erstattung'}`);
+    else if (entry.kind === 'tax') pushFlatexAccountCashTx(entry, 'tax', entry.amount, `Kontoumsätze CSV · ${entry.info || 'Thesaurierung'}`);
+    else if (entry.kind === 'interest-fee') pushFlatexAccountCashTx(entry, 'fee', entry.amount, `Kontoumsätze CSV · ${entry.info || 'Zinsbelastung'}`);
+    else if (entry.kind === 'refund') pushFlatexAccountCashTx(entry, 'refund', entry.amount, `Kontoumsätze CSV · ${entry.info || 'Erstattung'}`);
     else if ((entry.kind === 'order-buy' || entry.kind === 'order-sell') && applyFlatexAccountOrder(entry)) orderMatches++;
   });
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  closeFlatexAccountCsvModal();
-  await savePositionsToKV();
-  await refreshUI({ skipAI: true });
-  alert(`Kontoumsätze übernommen. Cash-Verlauf ergänzt; ${orderMatches} Depotumsatz-Order${orderMatches === 1 ? '' : 's'} mit echter Kontobelastung abgeglichen.`);
+  if (!opts.skipSave) await savePositionsToKV();
+  if (!opts.skipRefresh) await refreshUI({ skipAI: true });
+  return {
+    entryCount: analysis.entries.length,
+    orderCount: analysis.orders.length,
+    orderMatches,
+    depositTotal: analysis.totals.deposits,
+    incomeTotal: analysis.totals.income,
+    debitTotal: analysis.totals.debits
+  };
 }
 
 function parseImportNumber(value) {
@@ -373,21 +389,82 @@ function importRowKey(row) {
   return [row.date, row.symbol || row.isin, row.name, row.txType, row.signedQuantity, row.signedAmount, row.price].join('|');
 }
 
-function findMatchingPosition(name, symbol) {
+function securityTokenVariants(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return [];
+  const clean = cleanQuoteSymbol(raw).replace(/[^A-Z0-9.:_-]/g, '');
+  const compact = clean.replace(/[^A-Z0-9]/g, '');
+  const variants = [clean, compact];
+  clean.split(/[.:_-]/).forEach(part => {
+    if (part && part.length >= 2) variants.push(part.replace(/[^A-Z0-9]/g, ''));
+  });
+  return [...new Set(variants.filter(Boolean))];
+}
+
+function positionIdentityTokens(pos) {
+  const tokens = new Set();
+  [
+    pos?.symbol,
+    pos?.quoteSymbol,
+    pos?.isin,
+    pos?.wkn,
+    pos?.cgId,
+    metaValueForQuality(pos, 'isin'),
+    metaValueForQuality(pos, 'wkn')
+  ].forEach(value => securityTokenVariants(value).forEach(token => tokens.add(token)));
+  return tokens;
+}
+
+function simplifiedSecurityName(value) {
+  return normalizeText(value)
+    .replace(/&/g, ' und ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\b(inc|incorporated|corp|corporation|company|co|ag|se|sa|plc|ltd|limited|holdings|holding|hldg|rg|vz|ordinary|shares|class|aktie|etf|fonds|fund|acc|dist|usd|eur)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sameImportType(pos, wantedType) {
+  if (!wantedType) return true;
+  const a = String(pos?.type || '').toLowerCase();
+  const b = String(wantedType || '').toLowerCase();
+  if (!a || !b) return true;
+  return a === b || (a === 'aktie' && b === 'stock') || (a === 'stock' && b === 'aktie');
+}
+
+function findMatchingPosition(name, symbol, opts = {}) {
   if (!Array.isArray(appData?.positions)) return null;
-  const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
-  const nName = normalize(name);
-  const nSym = normalize(symbol);
-  // 1) Exakter Symbol-Match (wenn vorhanden)
-  if (nSym) {
-    const bySym = appData.positions.find(p => normalize(p.symbol) === nSym);
+  const wantedType = opts.type || '';
+  const wantedCg = cleanQuoteSymbol(opts.cgId || '');
+  const candidates = appData.positions.filter(pos => !pos.special && sameImportType(pos, wantedType));
+  const inputTokens = new Set();
+  [symbol, opts.isin, opts.wkn, opts.cgId].forEach(value => securityTokenVariants(value).forEach(token => inputTokens.add(token)));
+  if (wantedCg) inputTokens.add(wantedCg);
+  if (inputTokens.size) {
+    const byToken = candidates.find(pos => {
+      const posTokens = positionIdentityTokens(pos);
+      return [...inputTokens].some(token => posTokens.has(token));
+    });
+    if (byToken) return byToken;
+  }
+  const nName = simplifiedSecurityName(name);
+  if (!nName || nName.length < 4) return null;
+  const byName = candidates.find(pos => {
+    const pn = simplifiedSecurityName(pos.name);
+    if (!pn || pn.length < 4) return false;
+    if (pn === nName) return true;
+    const minLen = Math.min(pn.length, nName.length);
+    return minLen >= 8 && (pn.includes(nName) || nName.includes(pn));
+  });
+  if (byName) return byName;
+  if (opts.allowLooseSymbol && inputTokens.size) {
+    const bySym = appData.positions.find(pos => {
+      const posTokens = positionIdentityTokens(pos);
+      return [...inputTokens].some(token => posTokens.has(token));
+    });
     if (bySym) return bySym;
   }
-  // 2) Name-Substring-Match
-  return appData.positions.find(p => {
-    const pn = normalize(p.name);
-    return pn === nName || pn.includes(nName) || nName.includes(pn);
-  });
+  return null;
 }
 
 function summarizeBatchImportImpact(rows) {
@@ -454,7 +531,7 @@ function openScreenshotPreviewModal(data) {
   const matched = findMatchingPosition(data.name, data.symbol);
   if (matched) {
     ssPreviewMatchedPosId = matched.id;
-    items.push({ kind: 'warn', text: `Position <strong>${escapeHtml(matched.name)}</strong> existiert bereits (${matched.shares} Stk @ ${fmtNum(matched.costPrice)} €). Standard: als Nachkauf-Transaktion hinzufügen.` });
+    items.push({ kind: 'warn', text: `Position <strong>${escapeHtml(matched.name)}</strong> existiert bereits (${matched.shares} Stk @ ${fmtNum(matched.costPrice)} €). Standard: als Bestand/Nachkauf hinzufügen, ohne Cash zu verändern.` });
     existingWrap.style.display = '';
     document.getElementById('sspMergeMode').value = 'addTx';
   } else {
@@ -474,7 +551,7 @@ function openScreenshotPreviewModal(data) {
     items.push({ kind: 'warn', text: `Sehr hoher Einstandspreis (${fmtPrice(data, data.costPrice)}). Bitte verifizieren.` });
   }
   if (items.length === 0) {
-    items.push({ kind: 'info', text: 'Alle Werte plausibel. Tap "Übernehmen" zum Speichern.' });
+    items.push({ kind: 'info', text: 'Alle Werte plausibel. Beim Speichern wird der Bestand erfasst; Cash bleibt unverändert.' });
   }
   conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('');
   document.getElementById('ssPreviewModal').classList.add('active');
@@ -551,7 +628,8 @@ async function saveScreenshotPreview() {
     appData.transactions.push({
       id: makeTxId(), date, assetId: pos.id, assetType: assetTypeOf(pos),
       txType: 'buy', quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
-      note: 'Per Screenshot-Import'
+      cashNeutral: true,
+      note: 'Per Screenshot-Bestandserfassung · Cash unverändert'
     });
   } else {
     // Neue Position + Tx
@@ -562,7 +640,8 @@ async function saveScreenshotPreview() {
     appData.transactions.push({
       id: makeTxId(), date, assetId: id, assetType: assetTypeOf(newPos),
       txType: 'buy', quantity: shares, price: costPrice, value: shares * costPrice, fees: 0,
-      note: 'Per Screenshot-Import (neue Position)'
+      cashNeutral: true,
+      note: 'Per Screenshot-Bestandserfassung (neue Position) · Cash unverändert'
     });
   }
   appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -616,6 +695,7 @@ async function saveScreenshotBatchPreview() {
         id: makeTxId(), date: row.date, assetId: pos.id, assetType: assetTypeOf(pos),
         txType: 'buy', quantity: row.quantity, price: row.price, value, fees: 0,
         importKey: key,
+        cashNeutral: true,
         note: `${row.txType === 'fusion' ? 'Fusion/Umtausch' : 'Per Screenshot-Tabellenimport'}${row.note ? ' · ' + row.note : ''}`
       });
       booked++;
@@ -628,6 +708,7 @@ async function saveScreenshotBatchPreview() {
         id: makeTxId(), date: row.date, assetId: pos.id, assetType: assetTypeOf(pos),
         txType: 'sell', quantity: sellQty, price: row.price, value: sellQty * row.price, fees: 0,
         importKey: key,
+        cashNeutral: true,
         note: `${row.txType === 'fusion' ? 'Fusion/Umtausch' : 'Per Screenshot-Tabellenimport'}${row.note ? ' · ' + row.note : ''}`
       });
       if (pos.shares <= 1e-9) appData.positions = appData.positions.filter(p => p.id !== pos.id);

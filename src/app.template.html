@@ -130,6 +130,10 @@ __APP_CSS__
       <span>Position hinzufügen</span>
     </div>
     <div class="add-pos-buttons">
+      <button class="add-pos-btn primary" id="importAssistantBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Import-Assistent</span>
+      </button>
       <button class="add-pos-btn" id="addPosManualBtn">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span>Manuell eingeben</span>
@@ -140,7 +144,7 @@ __APP_CSS__
       </button>
       <button class="add-pos-btn" id="addPosFlatexCsvBtn">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-        <span>Depotumsätze CSV</span>
+        <span>CSV importieren</span>
       </button>
       <input type="file" id="flatexCsvFileInput" accept=".csv,text/csv" style="display:none;">
       <button class="add-pos-btn" id="flatexAccountCsvBtn">
@@ -148,8 +152,10 @@ __APP_CSS__
         <span>Kontoumsätze CSV</span>
       </button>
       <input type="file" id="flatexAccountCsvFileInput" accept=".csv,text/csv" style="display:none;">
+      <input type="file" id="importAssistantDepotFileInput" accept=".csv,text/csv" style="display:none;">
+      <input type="file" id="importAssistantAccountFileInput" accept=".csv,text/csv" style="display:none;">
     </div>
-    <div class="add-pos-hint">Depotumsätze rekonstruieren Titel und Stückzahlen. Kontoumsätze ergänzen Einzahlungen, Erträge und die echte Cash-Belastung passender Orders.</div>
+    <div class="add-pos-hint">CSV-Dateien rekonstruieren Titel, Stückzahlen und Einstand cash-neutral. Kontoumsätze ergänzen separat Einzahlungen, Erträge und echte Order-Cashflows.</div>
   </div>
   <div class="alloc-section">
     <div class="alloc-head">
@@ -436,11 +442,22 @@ __APP_CSS__
           <button class="news-filter" data-news-filter="important" type="button">Wichtig</button>
           <button class="news-filter" data-news-filter="securities" type="button">Aktien/ETF</button>
           <button class="news-filter" data-news-filter="crypto" type="button">Krypto</button>
+          <button class="news-filter" id="newsSettingsBtn" type="button">Einstellungen</button>
         </div>
-        <button class="news-refresh-btn" id="newsRefreshBtn" type="button">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
-          Aktualisieren
-        </button>
+        <div class="news-refresh-side">
+          <div class="news-refresh-timer" id="newsRefreshTimer" aria-live="polite"></div>
+          <button class="news-refresh-btn" id="newsRefreshBtn" type="button">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 14.85-6.85L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-14.85 6.85L3 16"/><path d="M3 21v-5h5"/></svg>
+            Aktualisieren
+          </button>
+        </div>
+      </div>
+      <div class="news-settings-panel" id="newsSettingsPanel" style="display:none;">
+        <label class="news-setting-toggle"><input type="checkbox" id="newsAiEnabled"> <span>KI-Zusammenfassungen anbieten</span></label>
+        <label><span>News pro Titel</span><div class="news-setting-range"><input type="range" id="newsPerPositionLimit" min="1" max="8" step="1"><input type="number" id="newsPerPositionNumber" min="1" max="8" step="1"><em>max. 8</em></div></label>
+        <label><span>Speicherung</span><div class="news-setting-range"><input type="range" id="newsRetentionDays" min="1" max="14" step="1"><input type="number" id="newsRetentionNumber" min="1" max="14" step="1"><em>Tage</em></div></label>
+        <label><span>Automatisch suchen</span><div class="news-setting-range"><input type="range" id="newsRefreshMinutes" min="30" max="360" step="30"><input type="number" id="newsRefreshNumber" min="30" max="360" step="30"><em>Min</em></div></label>
+        <button class="news-settings-save" id="newsSettingsSaveBtn" type="button">Speichern</button>
       </div>
       <div class="news-status" id="newsStatus">Noch keine News geladen.</div>
       <div class="news-list" id="newsList"></div>
@@ -651,6 +668,8 @@ __APP_CSS__
         <option value="duesseldorf">Düsseldorf</option>
       </select>
     </div>
+    <div class="quote-suggestion-box" id="editQuoteSuggestions" style="display:none;"></div>
+    <button type="button" class="auth-btn secondary" id="editResolveQuoteBtn" style="width:100%;margin:0 0 10px 0;">Kursquellen-Vorschläge suchen</button>
     <div class="modal-field"><label>Stückzahl</label><input type="number" step="0.000001" class="auth-input" id="editShares"></div>
     <div class="modal-field"><label>Einstandspreis pro Stück (EUR)</label><input type="number" step="0.01" class="auth-input" id="editCost"></div>
     <div class="modal-field"><label>Risiko-Level</label>
@@ -721,7 +740,7 @@ __APP_CSS__
     <div class="modal-field"><label>Einstandspreis € pro Stück</label><input type="number" step="0.01" class="auth-input" id="apCost" placeholder="z.B. 145.50"></div>
     <div class="modal-field"><label>Aktueller Kurs € (optional)</label><input type="number" step="0.01" class="auth-input" id="apPrice" placeholder="leer = Einstandspreis"></div>
     <div class="modal-field" id="apCgIdField" style="display:none;"><label>Krypto-ID (optional für Charts)</label><input type="text" class="auth-input" id="apCgId" placeholder="z.B. bitcoin, ethereum, solana"></div>
-    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="apDate"><span style="font-size:10px;color:var(--text-muted);">Für Käufe in der Vergangenheit ein älteres Datum wählen.</span></div>
+    <div class="modal-field"><label>Kaufdatum</label><input type="date" class="auth-input" id="apDate"><span style="font-size:10px;color:var(--text-muted);">Erfasst den vorhandenen Bestand. Cash bleibt unverändert; echte Konto-Cashflows kommen über Kontoumsätze CSV.</span></div>
     <div class="modal-actions"><button class="auth-btn secondary" id="apCancel">Abbrechen</button><button class="auth-btn" id="apSave">Hinzufügen</button></div>
   </div>
 </div>
@@ -836,6 +855,44 @@ __APP_CSS__
   </div>
 </div>
 
+<div class="modal-backdrop" id="importAssistantModal">
+  <div class="modal import-assistant-modal">
+    <h3>Import-Assistent</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Führe CSV-Tabellen und Kontoumsätze gemeinsam ein. Der Assistent prüft beide Dateien, zeigt die Auswirkungen und übernimmt sie in der richtigen Reihenfolge: zuerst Wertpapier-Verlauf, dann Cash- und Order-Abgleich.</p>
+    <div class="import-steps import-steps-four" data-import-steps="importAssistant">
+      <span class="import-step active" data-ia-step="files">1 Dateien</span>
+      <span class="import-step" data-ia-step="check">2 Prüfung</span>
+      <span class="import-step" data-ia-step="preview">3 Vorschau</span>
+      <span class="import-step" data-ia-step="apply">4 Übernehmen</span>
+    </div>
+    <div class="import-assistant-files">
+      <div class="import-file-card" id="importAssistantDepotCard">
+        <div>
+          <div class="import-file-title">Depot-/Positions-CSV</div>
+          <div class="import-file-sub">Baut Positionen, Stückzahlen, Einstand und historische Wertpapierbuchungen neu auf. Unterstützt Flatex, Trade Republic und allgemeine Tabellen.</div>
+          <div class="import-file-name" id="importAssistantDepotName">Keine Datei gewählt</div>
+        </div>
+        <button class="auth-btn secondary" id="importAssistantChooseDepot">Auswählen</button>
+      </div>
+      <div class="import-file-card" id="importAssistantAccountCard">
+        <div>
+          <div class="import-file-title">Kontoumsätze CSV</div>
+          <div class="import-file-sub">Ergänzt Einzahlungen, Erträge, Steuern und echte Cash-Belastungen der Orders.</div>
+          <div class="import-file-name" id="importAssistantAccountName">Keine Datei gewählt</div>
+        </div>
+        <button class="auth-btn secondary" id="importAssistantChooseAccount">Auswählen</button>
+      </div>
+    </div>
+    <div class="ss-conflicts" id="importAssistantSummary"></div>
+    <div class="ss-batch-preview import-assistant-preview" id="importAssistantPreview"></div>
+    <div class="modal-actions">
+      <button class="auth-btn secondary" id="importAssistantCancel">Abbrechen</button>
+      <button class="auth-btn secondary" id="importAssistantReset">Zurücksetzen</button>
+      <button class="auth-btn" id="importAssistantApply" disabled>Import übernehmen</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="ssPreviewModal">
   <div class="modal">
     <h3>KI-Vorschau prüfen</h3>
@@ -875,8 +932,8 @@ __APP_CSS__
 
 <div class="modal-backdrop" id="flatexCsvModal">
   <div class="modal">
-    <h3>Flatex CSV prüfen</h3>
-    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Die Vorschau rechnet die Endbestände aus der Depotumsatzliste nach. Aktuelle Positionen entstehen nur bei positivem Endbestand; verkaufte Titel bleiben für die Depot-Entwicklung historisch erhalten.</p>
+    <h3>CSV prüfen</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Die Vorschau rechnet Endbestände aus deiner CSV nach. Aktuelle Positionen entstehen nur bei positivem Endbestand; verkaufte Titel bleiben für die Depot-Entwicklung historisch erhalten. Cash wird dabei nicht verändert.</p>
     <div class="import-steps" data-import-steps="flatexCsv">
       <span class="import-step done">1 Datei gewählt</span>
       <span class="import-step active">2 Vorschau prüfen</span>
@@ -884,13 +941,13 @@ __APP_CSS__
     </div>
     <div class="ss-conflicts" id="flatexCsvSummary"></div>
     <div class="ss-batch-preview" id="flatexCsvPreview"></div>
-    <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Historie neu aufbauen</button></div>
+    <div class="modal-actions"><button class="auth-btn secondary" id="flatexCsvCancel">Abbrechen</button><button class="auth-btn" id="flatexCsvImport" disabled>CSV-Daten übernehmen</button></div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="flatexAccountCsvModal">
   <div class="modal">
-    <h3>Flatex Kontoumsätze prüfen</h3>
+    <h3>Kontoumsätze prüfen</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin: 0 0 12px 0; line-height:1.4;">Diese Liste ergänzt den Cash-Verlauf. Einzahlungen und Erträge werden übernommen; Käufe und Verkäufe werden über ISIN und Ordernummer mit bestehenden Depotumsätzen verknüpft.</p>
     <div class="import-steps" data-import-steps="flatexAccountCsv">
       <span class="import-step done">1 Datei gewählt</span>

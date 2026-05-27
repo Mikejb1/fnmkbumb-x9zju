@@ -1373,7 +1373,7 @@ function renderPositions(totals) {
       <div class="empty-actions">
         <button type="button" class="empty-action-btn" data-empty-action="manual">Manuell eingeben</button>
         <button type="button" class="empty-action-btn primary" data-empty-action="screenshot">Screenshot &amp; KI</button>
-        <button type="button" class="empty-action-btn" data-empty-action="depotCsv">Depotumsätze CSV</button>
+        <button type="button" class="empty-action-btn" data-empty-action="depotCsv">CSV importieren</button>
       </div>`;
     container.appendChild(empty);
   }
@@ -2305,6 +2305,99 @@ function renderAnalysisLocal(totals, goal) {
 }
 
 let editingId = null;
+function editQuoteSuggestionEl() {
+  return document.getElementById('editQuoteSuggestions');
+}
+function renderQuoteSuggestionMessage(message, kind = 'info') {
+  const box = editQuoteSuggestionEl();
+  if (!box) return;
+  box.style.display = '';
+  box.innerHTML = `<div class="quote-suggestion-title">${kind === 'warn' ? 'Kursquelle prüfen' : 'Kursquellen-Vorschläge'}</div><div>${escapeHtml(message)}</div>`;
+}
+function quoteAttr(value) {
+  return escapeHtml(String(value || '')).replace(/"/g, '&quot;');
+}
+function quoteSuggestionPayloadForPosition(pos) {
+  return {
+    id: pos.id,
+    name: pos.name,
+    symbol: cleanQuoteSymbol(document.getElementById('editQuoteSymbol')?.value || pos.quoteSymbol || pos.symbol || ''),
+    type: pos.type,
+    venue: document.getElementById('editVenue')?.value || venueOf(pos),
+    isin: (document.getElementById('editIsin')?.value || pos.stammdaten?.isin || pos.isin || '').trim(),
+    wkn: (document.getElementById('editWkn')?.value || pos.stammdaten?.wkn || pos.wkn || '').trim()
+  };
+}
+function applyQuoteSuggestion(symbol, venue) {
+  const symbolEl = document.getElementById('editQuoteSymbol');
+  const venueEl = document.getElementById('editVenue');
+  if (symbolEl && symbol) symbolEl.value = cleanQuoteSymbol(symbol);
+  if (venueEl && venue) venueEl.value = venue;
+  renderQuoteSuggestionMessage('Vorschlag übernommen. Bitte jetzt speichern, dann werden die Livekurse mit dieser Kursquelle neu geladen.');
+}
+function renderQuoteSuggestions(result, pos) {
+  const box = editQuoteSuggestionEl();
+  if (!box) return;
+  const resolution = result?.resolutions?.[pos.id];
+  const missing = (result?.missing || []).find(item => item.id === pos.id);
+  if (resolution) {
+    const items = [];
+    const primarySymbol = resolution.googleSymbol || resolution.symbol || resolution.quoteSymbol;
+    if (primarySymbol) {
+      items.push({
+        symbol: primarySymbol,
+        venue: resolution.venue || venueOf(pos),
+        title: primarySymbol,
+        meta: `${resolution.venueLabel || resolution.source || 'Kursquelle'} · Testkurs ${fmt.format(Number(resolution.price) || 0)}`
+      });
+    }
+    (resolution.candidates || []).forEach(candidate => {
+      if (!candidate || items.some(item => item.symbol === candidate)) return;
+      items.push({
+        symbol: candidate,
+        venue: '',
+        title: candidate,
+        meta: 'Alternative aus Symbol-/Handelsplatzsuche'
+      });
+    });
+    box.style.display = '';
+    box.innerHTML = `<div class="quote-suggestion-title">Gefundene Kursquellen</div>
+      <div class="quote-suggestion-list">${items.slice(0, 5).map(item => `
+        <div class="quote-suggestion-item">
+          <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.meta)}</span></div>
+          <button type="button" class="quote-suggestion-pick" data-quote-pick="${quoteAttr(item.symbol)}" data-quote-venue="${quoteAttr(item.venue || '')}">Übernehmen</button>
+        </div>`).join('')}</div>`;
+    return;
+  }
+  const msg = missing?.suggestion || missing?.reason || 'Keine sichere Kursquelle gefunden. Prüfe ISIN/WKN oder versuche ein eindeutigeres Symbol.';
+  renderQuoteSuggestionMessage(msg, 'warn');
+}
+async function resolveQuoteSuggestionsForEditing(showBusy = true) {
+  if (!editingId) return;
+  const pos = appData.positions.find(p => p.id === editingId);
+  if (!pos) return;
+  if (isCryptoPos(pos)) {
+    const cg = cgIdForCrypto(pos);
+    renderQuoteSuggestionMessage(cg ? `Krypto wird über CoinGecko erkannt: ${cg}. Das Feld „Live-Symbol“ ist hier nicht nötig.` : 'Für Krypto bitte den Namen oder das Symbol klar setzen, z.B. BTC, XRP oder SOL.');
+    return;
+  }
+  if (showBusy) renderQuoteSuggestionMessage('Suche passende Kursquellen im Hintergrund …');
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        action: 'resolve-market-symbols',
+        positions: [quoteSuggestionPayloadForPosition(pos)],
+        userKey: kvKeyActive()
+      })
+    });
+    if (!res.ok) throw new Error('Worker HTTP ' + res.status);
+    renderQuoteSuggestions(await res.json(), pos);
+  } catch (e) {
+    renderQuoteSuggestionMessage('Kursquellen konnten gerade nicht gesucht werden: ' + (e.message || e), 'warn');
+  }
+}
 function openEditModal(posId) {
   const pos = appData.positions.find(p => p.id === posId);
   if (!pos) return;
@@ -2328,7 +2421,13 @@ function openEditModal(posId) {
   setVal('editWkn', sd.wkn);
   setVal('editLand', sd.land);
   setVal('editSektor', sd.sektor);
+  const suggestions = editQuoteSuggestionEl();
+  if (suggestions) {
+    suggestions.style.display = 'none';
+    suggestions.innerHTML = '';
+  }
   document.getElementById('editModal').classList.add('active');
+  if (quoteIssues[posId]) resolveQuoteSuggestionsForEditing(false);
 }
 async function saveEditModal() {
   if (!editingId) return;
@@ -2603,6 +2702,20 @@ function wireEvents() {
   document.getElementById('layoutModal').addEventListener('click', e => { if (e.target.id === 'layoutModal') closeLayoutModal(); });
   document.getElementById('aiRefreshBtn').addEventListener('click', async () => { if (!appData) return; const totals = renderTotals(); const goal = renderGoal(totals); await generateAIAnalysis(totals, goal); });
   document.getElementById('newsRefreshBtn')?.addEventListener('click', () => fetchPortfolioNews({ forceRefresh: true }));
+  document.getElementById('newsSettingsBtn')?.addEventListener('click', () => {
+    const panel = document.getElementById('newsSettingsPanel');
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'grid';
+    if (!isOpen) renderNewsSettingsPanel();
+  });
+  document.getElementById('newsSettingsSaveBtn')?.addEventListener('click', saveNewsSettingsFromUI);
+  document.getElementById('newsList')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-news-summary]');
+    if (!btn) return;
+    e.preventDefault();
+    summarizePortfolioNewsItem(btn.dataset.newsSummary || '');
+  });
   document.querySelectorAll('[data-news-filter]').forEach(btn => {
     btn.addEventListener('click', () => setNewsFilter(btn.dataset.newsFilter || 'all'));
   });
@@ -2795,7 +2908,15 @@ function wireEvents() {
   });
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   document.getElementById('editSave').addEventListener('click', saveEditModal);
-  document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
+  document.getElementById('editResolveQuoteBtn')?.addEventListener('click', () => resolveQuoteSuggestionsForEditing(true));
+  document.getElementById('editModal').addEventListener('click', e => {
+    const pick = e.target.closest?.('[data-quote-pick]');
+    if (pick) {
+      applyQuoteSuggestion(pick.dataset.quotePick, pick.dataset.quoteVenue);
+      return;
+    }
+    if (e.target.id === 'editModal') closeEditModal();
+  });
   document.getElementById('qualityIssues').addEventListener('click', e => {
     const actionBtn = e.target.closest('[data-quality-action]');
     if (actionBtn) runQualityAction(actionBtn.dataset.qualityAction);
@@ -2952,6 +3073,15 @@ function wireEvents() {
   });
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chatSend(); } });
   // Position-Management
+  document.getElementById('importAssistantBtn').addEventListener('click', openImportAssistantModal);
+  document.getElementById('importAssistantChooseDepot').addEventListener('click', () => document.getElementById('importAssistantDepotFileInput').click());
+  document.getElementById('importAssistantChooseAccount').addEventListener('click', () => document.getElementById('importAssistantAccountFileInput').click());
+  document.getElementById('importAssistantDepotFileInput').addEventListener('change', e => handleImportAssistantDepotFile(e.target.files && e.target.files[0]));
+  document.getElementById('importAssistantAccountFileInput').addEventListener('change', e => handleImportAssistantAccountFile(e.target.files && e.target.files[0]));
+  document.getElementById('importAssistantCancel').addEventListener('click', closeImportAssistantModal);
+  document.getElementById('importAssistantReset').addEventListener('click', resetImportAssistant);
+  document.getElementById('importAssistantApply').addEventListener('click', applyImportAssistant);
+  document.getElementById('importAssistantModal').addEventListener('click', e => { if (e.target.id === 'importAssistantModal') closeImportAssistantModal(); });
   document.getElementById('addPosManualBtn').addEventListener('click', () => openAddPositionModal());
   document.getElementById('addPosScreenshotBtn').addEventListener('click', openScreenshotModal);
   document.getElementById('addPosFlatexCsvBtn').addEventListener('click', () => document.getElementById('flatexCsvFileInput').click());
