@@ -525,14 +525,20 @@
   .news-refresh-timer { min-width: 180px; max-width: 230px; border: 1px solid rgba(250,204,21,0.3); border-radius: 8px; padding: 7px 10px; color: #facc15; font-size: 11px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(2px); transition: opacity 0.18s ease, transform 0.18s ease; background: linear-gradient(90deg, rgba(250,204,21,0.22) var(--news-refresh-pct, 8%), rgba(250,204,21,0.06) var(--news-refresh-pct, 8%)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .news-refresh-timer.active { opacity: 1; transform: translateY(0); }
   .news-refresh-timer::before, .news-refresh-timer::after { display: none; content: none; }
-  .news-settings-panel { border: 1px solid var(--border-light); background: var(--bg-secondary); border-radius: 10px; padding: 10px; margin: 8px 0 10px; display: grid; grid-template-columns: minmax(170px, 1.15fr) repeat(3, minmax(150px, 1fr)) auto; gap: 8px; align-items: end; }
-  .news-settings-panel label { display: grid; gap: 4px; color: var(--text-tertiary); font-size: 10px; font-weight: 650; letter-spacing: 0.03em; text-transform: uppercase; }
-  .news-setting-range { display: grid; grid-template-columns: minmax(70px, 1fr) 58px auto; gap: 6px; align-items: center; }
+  .news-settings-panel { border: 1px solid var(--border-light); background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.018)); border-radius: 12px; padding: 12px; margin: 8px 0 12px; display: grid; gap: 12px; overflow: hidden; }
+  .news-settings-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-light); }
+  .news-settings-head strong { display: block; color: var(--text-primary); font-size: 14px; font-weight: 750; letter-spacing: 0; }
+  .news-settings-head span { display: block; color: var(--text-tertiary); font-size: 11px; line-height: 1.35; margin-top: 2px; }
+  .news-settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 10px; }
+  .news-setting-card { display: grid; gap: 8px; min-width: 0; border: 1px solid var(--border-light); background: rgba(0,0,0,0.12); border-radius: 10px; padding: 11px; color: var(--text-tertiary); font-size: 10px; font-weight: 650; letter-spacing: 0.03em; text-transform: uppercase; }
+  .news-setting-card > span { color: var(--text-tertiary); }
+  .news-setting-card em { color: var(--text-muted); font-style: normal; font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; line-height: 1.35; }
+  .news-setting-range { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; align-items: center; }
   .news-setting-range input[type="range"] { width: 100%; accent-color: var(--positive); }
-  .news-setting-range input[type="number"] { width: 58px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 7px; padding: 6px 7px; font: inherit; font-size: 12px; text-align: right; }
-  .news-setting-range em { color: var(--text-muted); font-style: normal; font-size: 10px; text-transform: none; letter-spacing: 0; white-space: nowrap; }
-  .news-setting-toggle { display: flex !important; align-items: center; gap: 8px; min-height: 34px; color: var(--text-secondary) !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; }
+  .news-setting-range input[type="number"] { width: 64px; max-width: 100%; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 8px; padding: 7px 8px; font: inherit; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  .news-setting-toggle { display: inline-flex !important; align-items: center; gap: 8px; min-height: 34px; color: var(--text-secondary) !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; white-space: nowrap; }
   .news-setting-toggle input { accent-color: var(--positive); }
+  .news-settings-save-row { display: flex; justify-content: flex-end; }
   .news-settings-save { border: 1px solid rgba(34,197,94,0.42); background: rgba(34,197,94,0.1); color: var(--positive); border-radius: 7px; padding: 8px 12px; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; white-space: nowrap; }
   .news-settings-save:hover { background: rgba(34,197,94,0.16); }
   .news-ai-btn { border: 1px solid rgba(250,204,21,0.35); background: rgba(250,204,21,0.08); color: #facc15; border-radius: 7px; padding: 6px 10px; font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s, color 0.15s; }
@@ -597,8 +603,10 @@
   .positions.compact .card.special details[open] .metals-body { display: flex; }
   @media (max-width: 720px) {
     .news-refresh-side { min-width: 0; width: 100%; justify-content: space-between; }
-    .news-settings-panel { grid-template-columns: 1fr 1fr; }
-    .news-settings-save { grid-column: 1 / -1; }
+    .news-settings-head { align-items: flex-start; flex-direction: column; }
+    .news-settings-grid { grid-template-columns: 1fr; }
+    .news-settings-save-row { justify-content: stretch; }
+    .news-settings-save { width: 100%; }
   }
   .card.special details[open] .card-chevron { transform: rotate(180deg); }
   .ss-conflicts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
@@ -1127,9 +1135,10 @@
   .news-impact { color: #fbbf24; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
   .news-title { color: var(--text-primary); font-size: 14px; font-weight: 750; line-height: 1.3; margin-bottom: 5px; }
   .news-summary { color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin-bottom: 9px; }
-  .news-footer { display: flex; justify-content: space-between; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .news-footer { display: flex; justify-content: space-between; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
   .news-tags { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
   .news-tag { background: rgba(34,197,94,0.1); color: var(--positive); border-radius: 6px; padding: 3px 6px; font-size: 10px; font-weight: 700; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .news-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-left: auto; }
   .news-source-link { color: var(--text-primary); text-decoration: none; font-size: 11px; font-weight: 700; white-space: nowrap; }
   .news-source-link:hover { color: var(--positive); }
   .news-empty { border: 1px dashed var(--border); border-radius: 10px; padding: 18px; color: var(--text-tertiary); font-size: 12px; text-align: center; line-height: 1.5; }
@@ -1578,11 +1587,36 @@
         </div>
       </div>
       <div class="news-settings-panel" id="newsSettingsPanel" style="display:none;">
-        <label class="news-setting-toggle"><input type="checkbox" id="newsAiEnabled"> <span>KI-Zusammenfassungen anbieten</span></label>
-        <label><span>News pro Titel</span><div class="news-setting-range"><input type="range" id="newsPerPositionLimit" min="1" max="8" step="1"><input type="number" id="newsPerPositionNumber" min="1" max="8" step="1"><em>max. 8</em></div></label>
-        <label><span>Speicherung</span><div class="news-setting-range"><input type="range" id="newsRetentionDays" min="1" max="14" step="1"><input type="number" id="newsRetentionNumber" min="1" max="14" step="1"><em>Tage</em></div></label>
-        <label><span>Automatisch suchen</span><div class="news-setting-range"><input type="range" id="newsRefreshMinutes" min="30" max="360" step="30"><input type="number" id="newsRefreshNumber" min="30" max="360" step="30"><em>Min</em></div></label>
-        <button class="news-settings-save" id="newsSettingsSaveBtn" type="button">Speichern</button>
+        <div class="news-settings-head">
+          <div>
+            <strong>News-Einstellungen</strong>
+            <span>Die News beziehen sich auf deine Positionen.</span>
+          </div>
+          <label class="news-setting-toggle">
+            <input type="checkbox" id="newsAiEnabled">
+            <span>KI-Zusammenfassungen</span>
+          </label>
+        </div>
+        <div class="news-settings-grid">
+          <label class="news-setting-card">
+            <span>News pro Titel</span>
+            <div class="news-setting-range"><input type="range" id="newsPerPositionLimit" min="1" max="8" step="1"><input type="number" id="newsPerPositionNumber" min="1" max="8" step="1"></div>
+            <em>Maximal 8 Meldungen je Position.</em>
+          </label>
+          <label class="news-setting-card">
+            <span>Speicherung</span>
+            <div class="news-setting-range"><input type="range" id="newsRetentionDays" min="1" max="14" step="1"><input type="number" id="newsRetentionNumber" min="1" max="14" step="1"></div>
+            <em>Automatisch löschen nach 1 bis 14 Tagen.</em>
+          </label>
+          <label class="news-setting-card">
+            <span>Automatisch suchen</span>
+            <div class="news-setting-range"><input type="range" id="newsRefreshMinutes" min="30" max="360" step="30"><input type="number" id="newsRefreshNumber" min="30" max="360" step="30"></div>
+            <em>Intervall in Minuten.</em>
+          </label>
+        </div>
+        <div class="news-settings-save-row">
+          <button class="news-settings-save" id="newsSettingsSaveBtn" type="button">Einstellungen speichern</button>
+        </div>
       </div>
       <div class="news-status" id="newsStatus">Noch keine News geladen.</div>
       <div class="news-list" id="newsList"></div>
@@ -4862,8 +4896,10 @@ function renderPortfolioNews() {
         <div class="news-summary">${escapeHtml(item.summary || 'Keine Zusammenfassung verfügbar.')}</div>
         <div class="news-footer">
           <div class="news-tags">${positionsHtml}</div>
-          ${summaryButton}
-          <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+          <div class="news-actions">
+            ${summaryButton}
+            <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+          </div>
         </div>
         ${reportHtml}
       </div>
