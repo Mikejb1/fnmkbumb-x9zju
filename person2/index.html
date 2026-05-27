@@ -1135,9 +1135,10 @@
   .news-impact { color: #fbbf24; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
   .news-title { color: var(--text-primary); font-size: 14px; font-weight: 750; line-height: 1.3; margin-bottom: 5px; }
   .news-summary { color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin-bottom: 9px; }
-  .news-footer { display: flex; justify-content: space-between; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .news-footer { display: flex; justify-content: space-between; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
   .news-tags { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
   .news-tag { background: rgba(34,197,94,0.1); color: var(--positive); border-radius: 6px; padding: 3px 6px; font-size: 10px; font-weight: 700; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .news-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-left: auto; }
   .news-source-link { color: var(--text-primary); text-decoration: none; font-size: 11px; font-weight: 700; white-space: nowrap; }
   .news-source-link:hover { color: var(--positive); }
   .news-empty { border: 1px dashed var(--border); border-radius: 10px; padding: 18px; color: var(--text-tertiary); font-size: 12px; text-align: center; line-height: 1.5; }
@@ -1589,7 +1590,7 @@
         <div class="news-settings-head">
           <div>
             <strong>News-Einstellungen</strong>
-            <span>Gilt nur für dieses Depot und wird getrennt gespeichert.</span>
+            <span>Die News beziehen sich auf deine Positionen.</span>
           </div>
           <label class="news-setting-toggle">
             <input type="checkbox" id="newsAiEnabled">
@@ -4895,8 +4896,10 @@ function renderPortfolioNews() {
         <div class="news-summary">${escapeHtml(item.summary || 'Keine Zusammenfassung verfügbar.')}</div>
         <div class="news-footer">
           <div class="news-tags">${positionsHtml}</div>
-          ${summaryButton}
-          <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+          <div class="news-actions">
+            ${summaryButton}
+            <a class="news-source-link" href="${newsEscapeAttr(item.url || '#')}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a>
+          </div>
         </div>
         ${reportHtml}
       </div>
