@@ -521,14 +521,16 @@
   .venue-item .vprice.muted { color: var(--text-muted); font-style: italic; font-size: 11px; }
   .venue-item .check { color: var(--positive); margin-left: 8px; }
   .venue-item .check svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
-  .news-refresh-side { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 260px; }
-  .news-refresh-timer { min-width: 130px; color: #facc15; font-size: 11px; font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(2px); transition: opacity 0.18s ease, transform 0.18s ease; }
+  .news-refresh-side { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 320px; }
+  .news-refresh-timer { min-width: 180px; max-width: 230px; border: 1px solid rgba(250,204,21,0.3); border-radius: 8px; padding: 7px 10px; color: #facc15; font-size: 11px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(2px); transition: opacity 0.18s ease, transform 0.18s ease; background: linear-gradient(90deg, rgba(250,204,21,0.22) var(--news-refresh-pct, 8%), rgba(250,204,21,0.06) var(--news-refresh-pct, 8%)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .news-refresh-timer.active { opacity: 1; transform: translateY(0); }
-  .news-refresh-timer::before { content: ""; display: block; height: 3px; border-radius: 999px; background: rgba(250,204,21,0.18); margin-bottom: 4px; overflow: hidden; }
-  .news-refresh-timer.active::after { content: ""; display: block; height: 3px; border-radius: 999px; background: #facc15; margin-top: -7px; margin-bottom: 4px; width: var(--news-refresh-pct, 8%); transition: width 0.2s ease; }
-  .news-settings-panel { border: 1px solid var(--border-light); background: var(--bg-secondary); border-radius: 10px; padding: 10px; margin: 8px 0 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 8px; align-items: end; }
+  .news-refresh-timer::before, .news-refresh-timer::after { display: none; content: none; }
+  .news-settings-panel { border: 1px solid var(--border-light); background: var(--bg-secondary); border-radius: 10px; padding: 10px; margin: 8px 0 10px; display: grid; grid-template-columns: minmax(170px, 1.15fr) repeat(3, minmax(150px, 1fr)) auto; gap: 8px; align-items: end; }
   .news-settings-panel label { display: grid; gap: 4px; color: var(--text-tertiary); font-size: 10px; font-weight: 650; letter-spacing: 0.03em; text-transform: uppercase; }
-  .news-settings-panel select { width: 100%; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 7px; padding: 7px 8px; font: inherit; font-size: 12px; }
+  .news-setting-range { display: grid; grid-template-columns: minmax(70px, 1fr) 58px auto; gap: 6px; align-items: center; }
+  .news-setting-range input[type="range"] { width: 100%; accent-color: var(--positive); }
+  .news-setting-range input[type="number"] { width: 58px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 7px; padding: 6px 7px; font: inherit; font-size: 12px; text-align: right; }
+  .news-setting-range em { color: var(--text-muted); font-style: normal; font-size: 10px; text-transform: none; letter-spacing: 0; white-space: nowrap; }
   .news-setting-toggle { display: flex !important; align-items: center; gap: 8px; min-height: 34px; color: var(--text-secondary) !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; }
   .news-setting-toggle input { accent-color: var(--positive); }
   .news-settings-save { border: 1px solid rgba(34,197,94,0.42); background: rgba(34,197,94,0.1); color: var(--positive); border-radius: 7px; padding: 8px 12px; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; white-space: nowrap; }
@@ -1082,7 +1084,7 @@
 
   /* ===== DEPOT-NEWS ===== */
   .news-body { display: flex; flex-direction: column; gap: 10px; }
-  .news-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .news-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; }
   .news-filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .news-filter, .news-refresh-btn {
     border: 1px solid var(--border);
@@ -1134,7 +1136,7 @@
   @media (max-width: 620px) {
     .news-card.has-image { grid-template-columns: 1fr; }
     .news-image { width: 100%; height: 150px; }
-    .news-toolbar { align-items: stretch; }
+    .news-toolbar { grid-template-columns: 1fr; align-items: stretch; }
     .news-refresh-btn { justify-content: center; }
   }
 </style>
@@ -1577,9 +1579,9 @@
       </div>
       <div class="news-settings-panel" id="newsSettingsPanel" style="display:none;">
         <label class="news-setting-toggle"><input type="checkbox" id="newsAiEnabled"> <span>KI-Zusammenfassungen anbieten</span></label>
-        <label><span>News pro Titel</span><select id="newsPerPositionLimit"><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="8">8</option></select></label>
-        <label><span>Speicherung</span><select id="newsRetentionDays"><option value="3">3 Tage</option><option value="7">7 Tage</option><option value="14">14 Tage</option></select></label>
-        <label><span>Automatisch suchen</span><select id="newsRefreshMinutes"><option value="30">alle 30 Min</option><option value="60">stündlich</option><option value="120">alle 2 Std</option><option value="360">alle 6 Std</option></select></label>
+        <label><span>News pro Titel</span><div class="news-setting-range"><input type="range" id="newsPerPositionLimit" min="1" max="8" step="1"><input type="number" id="newsPerPositionNumber" min="1" max="8" step="1"><em>max. 8</em></div></label>
+        <label><span>Speicherung</span><div class="news-setting-range"><input type="range" id="newsRetentionDays" min="1" max="14" step="1"><input type="number" id="newsRetentionNumber" min="1" max="14" step="1"><em>Tage</em></div></label>
+        <label><span>Automatisch suchen</span><div class="news-setting-range"><input type="range" id="newsRefreshMinutes" min="30" max="360" step="30"><input type="number" id="newsRefreshNumber" min="30" max="360" step="30"><em>Min</em></div></label>
         <button class="news-settings-save" id="newsSettingsSaveBtn" type="button">Speichern</button>
       </div>
       <div class="news-status" id="newsStatus">Noch keine News geladen.</div>
@@ -4528,6 +4530,7 @@ let portfolioNewsState = {
   checkedAt: '',
   nextRefreshAt: '',
   addedCount: 0,
+  warnings: [],
   lastFetchAt: 0,
   summarizing: {},
   reportOpen: {},
@@ -4567,21 +4570,49 @@ function renderNewsSettingsPanel() {
   const settings = getNewsSettings();
   const ai = document.getElementById('newsAiEnabled');
   const per = document.getElementById('newsPerPositionLimit');
+  const perNumber = document.getElementById('newsPerPositionNumber');
   const retention = document.getElementById('newsRetentionDays');
+  const retentionNumber = document.getElementById('newsRetentionNumber');
   const refresh = document.getElementById('newsRefreshMinutes');
+  const refreshNumber = document.getElementById('newsRefreshNumber');
   if (ai) ai.checked = settings.aiSummaries;
   if (per) per.value = String(settings.perPositionLimit);
+  if (perNumber) perNumber.value = String(settings.perPositionLimit);
   if (retention) retention.value = String(settings.retentionDays);
+  if (retentionNumber) retentionNumber.value = String(settings.retentionDays);
   if (refresh) refresh.value = String(settings.refreshMinutes);
+  if (refreshNumber) refreshNumber.value = String(settings.refreshMinutes);
+}
+
+function bindNewsRangePair(rangeId, numberId, min, max) {
+  const range = document.getElementById(rangeId);
+  const number = document.getElementById(numberId);
+  if (!range || !number || range.dataset.bound === '1') return;
+  range.dataset.bound = '1';
+  const syncFromRange = () => { number.value = String(newsClamp(range.value, min, max, min)); };
+  const syncFromNumber = () => {
+    const value = newsClamp(number.value, min, max, min);
+    number.value = String(value);
+    range.value = String(value);
+  };
+  range.addEventListener('input', syncFromRange);
+  number.addEventListener('input', syncFromNumber);
+  number.addEventListener('blur', syncFromNumber);
+}
+
+function bindNewsSettingsInputs() {
+  bindNewsRangePair('newsPerPositionLimit', 'newsPerPositionNumber', 1, 8);
+  bindNewsRangePair('newsRetentionDays', 'newsRetentionNumber', 1, 14);
+  bindNewsRangePair('newsRefreshMinutes', 'newsRefreshNumber', 30, 360);
 }
 
 async function saveNewsSettingsFromUI() {
   if (!appData) return;
   const settings = {
     aiSummaries: document.getElementById('newsAiEnabled')?.checked !== false,
-    perPositionLimit: newsClamp(document.getElementById('newsPerPositionLimit')?.value, 1, 8, 8),
-    retentionDays: newsClamp(document.getElementById('newsRetentionDays')?.value, 1, 14, 14),
-    refreshMinutes: newsClamp(document.getElementById('newsRefreshMinutes')?.value, 30, 360, 60),
+    perPositionLimit: newsClamp(document.getElementById('newsPerPositionNumber')?.value || document.getElementById('newsPerPositionLimit')?.value, 1, 8, 8),
+    retentionDays: newsClamp(document.getElementById('newsRetentionNumber')?.value || document.getElementById('newsRetentionDays')?.value, 1, 14, 14),
+    refreshMinutes: newsClamp(document.getElementById('newsRefreshNumber')?.value || document.getElementById('newsRefreshMinutes')?.value, 30, 360, 60),
   };
   appData.newsSettings = settings;
   await savePositionsToKV(0);
@@ -4758,6 +4789,7 @@ function renderPortfolioNews() {
   const positions = newsPositionsPayload();
   const items = filteredPortfolioNews();
   const settings = getNewsSettings();
+  bindNewsSettingsInputs();
   renderNewsSettingsPanel();
   count.textContent = String((portfolioNewsState.items || []).length);
   if (btn) {
@@ -4778,7 +4810,8 @@ function renderPortfolioNews() {
   } else if (portfolioNewsState.updatedAt) {
     const added = Number(portfolioNewsState.addedCount || 0);
     const next = portfolioNewsState.nextRefreshAt ? ` · nächste automatische Suche ${newsTimeUntil(portfolioNewsState.nextRefreshAt)}` : '';
-    status.textContent = `Aktualisiert ${newsTimeAgo(portfolioNewsState.updatedAt)} · ${added > 0 ? `${added} neue Meldung${added === 1 ? '' : 'en'} ergänzt` : 'keine neuen Meldungen'} · Historie: max. ${settings.perPositionLimit} News je Titel, ${settings.retentionDays} Tage · KI ${settings.aiSummaries ? 'an' : 'aus'}${next}`;
+    const warningText = portfolioNewsState.warnings?.length ? ` · Hinweise: ${portfolioNewsState.warnings.slice(0, 2).join(' · ')}` : '';
+    status.textContent = `Aktualisiert ${newsTimeAgo(portfolioNewsState.updatedAt)} · ${added > 0 ? `${added} neue Meldung${added === 1 ? '' : 'en'} ergänzt` : 'keine neuen Meldungen'} · Historie: max. ${settings.perPositionLimit} News je Titel, ${settings.retentionDays} Tage · KI ${settings.aiSummaries ? 'an' : 'aus'}${next}${warningText}`;
   } else {
     status.textContent = 'Noch keine News geladen.';
   }
@@ -4873,6 +4906,7 @@ async function fetchPortfolioNews(opts = {}) {
     portfolioNewsState.checkedAt = data.checkedAt || data.lastCheckedAt || portfolioNewsState.updatedAt;
     portfolioNewsState.nextRefreshAt = data.nextRefreshAt || '';
     portfolioNewsState.addedCount = Number(data.addedCount || 0);
+    portfolioNewsState.warnings = Array.isArray(data.warnings) ? data.warnings : [];
     portfolioNewsState.lastFetchAt = Date.now();
     success = true;
   } catch (e) {
