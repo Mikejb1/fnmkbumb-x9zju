@@ -33,7 +33,7 @@ async function analyzeScreenshot() {
   status.textContent = 'Haiku liest den Screenshot — kann ~5-10 Sek dauern …';
   btn.disabled = true;
   const prompt = `Du bekommst einen Screenshot aus einer Banking-/Broker-App.
-Er kann entweder eine einzelne Depotposition ODER eine Tabelle mit vielen Buchungszeilen enthalten.
+Er kann entweder eine einzelne Depotposition, eine Bestandsliste mit mehreren aktuellen Positionen ODER eine Tabelle mit vielen Buchungszeilen enthalten.
 Lies die Daten präzise aus.
 
 Gib AUSSCHLIESSLICH ein JSON-Objekt zurück (kein Text drumherum, keine Markdown-Codeblöcke):
@@ -48,7 +48,23 @@ Variante A: einzelne Position
   "manualPrice": <aktueller Kurs pro Stück in EUR als Zahl, falls sichtbar>
 }
 
-Variante B: Buchungstabelle mit mehreren Titeln
+Variante B: Bestandsliste / Depotaufstellung mit mehreren aktuellen Positionen
+{
+  "positions": [
+    {
+      "name": "<vollständiger Name des Wertpapiers>",
+      "isin": "<ISIN falls sichtbar>",
+      "symbol": "<Ticker/WKN/ISIN falls sichtbar>",
+      "type": "<ETF | Aktie | Crypto>",
+      "shares": <Stückzahl/Nominale als Zahl>,
+      "manualPrice": <aktueller Kurs pro Stück in EUR als Zahl>,
+      "marketValue": <Kurswert/Gesamtwert in EUR als Zahl>,
+      "date": "YYYY-MM-DD"
+    }
+  ]
+}
+
+Variante C: Buchungstabelle mit mehreren Käufen/Verkäufen
 {
   "transactions": [
     {
@@ -71,6 +87,8 @@ Wichtig:
 - Bei deutschem Format (Komma als Dezimaltrennzeichen) in Punkt konvertieren
 - Wenn ein Feld nicht erkennbar ist: ganz weglassen (NICHT null oder "")
 - Typ: ETF bei ETF/Fonds, Aktie bei Einzelaktien, Crypto bei Kryptowährungen
+- Screenshots mit Überschriften wie "BROKERAGE", "CRYPTO WALLET", "Kurswert in EUR", "Anzahl Positionen" sind Bestandslisten: Gib sie als "positions" zurück, nicht als "transactions"
+- Wenn bei einer Bestandsliste kein Einstandspreis sichtbar ist, costPrice weglassen; manualPrice und marketValue reichen
 - Tabellenzeilen "Ausführung ORDER Kauf" sind txType "buy"
 - Tabellenzeilen "Ausführung ORDER Verkauf" sind txType "sell"
 - Tabellenzeilen "Fusion" sind txType "fusion" und behalten das Mengen-Vorzeichen
@@ -91,7 +109,8 @@ NUR JSON, sonst nichts.`;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Keine JSON-Daten erkannt — bitte manuell eingeben');
     const data = JSON.parse(jsonMatch[0]);
-    const batchRows = normalizeScreenshotTransactions(data);
+    const holdingRows = normalizeScreenshotHoldings(data);
+    const batchRows = holdingRows.length > 0 ? holdingRows : normalizeScreenshotTransactions(data);
     if (batchRows.length === 0 && (!data.name || !data.shares || !data.costPrice)) throw new Error('Wichtige Felder fehlen (Name/Stück/Einstand) — bitte manuell ergänzen');
     closeScreenshotModal();
     if (batchRows.length > 0) openScreenshotBatchPreviewModal(batchRows);

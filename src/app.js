@@ -7907,7 +7907,7 @@ async function analyzeScreenshot() {
   status.textContent = 'Haiku liest den Screenshot — kann ~5-10 Sek dauern …';
   btn.disabled = true;
   const prompt = `Du bekommst einen Screenshot aus einer Banking-/Broker-App.
-Er kann entweder eine einzelne Depotposition ODER eine Tabelle mit vielen Buchungszeilen enthalten.
+Er kann entweder eine einzelne Depotposition, eine Bestandsliste mit mehreren aktuellen Positionen ODER eine Tabelle mit vielen Buchungszeilen enthalten.
 Lies die Daten präzise aus.
 
 Gib AUSSCHLIESSLICH ein JSON-Objekt zurück (kein Text drumherum, keine Markdown-Codeblöcke):
@@ -7922,7 +7922,23 @@ Variante A: einzelne Position
   "manualPrice": <aktueller Kurs pro Stück in EUR als Zahl, falls sichtbar>
 }
 
-Variante B: Buchungstabelle mit mehreren Titeln
+Variante B: Bestandsliste / Depotaufstellung mit mehreren aktuellen Positionen
+{
+  "positions": [
+    {
+      "name": "<vollständiger Name des Wertpapiers>",
+      "isin": "<ISIN falls sichtbar>",
+      "symbol": "<Ticker/WKN/ISIN falls sichtbar>",
+      "type": "<ETF | Aktie | Crypto>",
+      "shares": <Stückzahl/Nominale als Zahl>,
+      "manualPrice": <aktueller Kurs pro Stück in EUR als Zahl>,
+      "marketValue": <Kurswert/Gesamtwert in EUR als Zahl>,
+      "date": "YYYY-MM-DD"
+    }
+  ]
+}
+
+Variante C: Buchungstabelle mit mehreren Käufen/Verkäufen
 {
   "transactions": [
     {
@@ -7945,6 +7961,8 @@ Wichtig:
 - Bei deutschem Format (Komma als Dezimaltrennzeichen) in Punkt konvertieren
 - Wenn ein Feld nicht erkennbar ist: ganz weglassen (NICHT null oder "")
 - Typ: ETF bei ETF/Fonds, Aktie bei Einzelaktien, Crypto bei Kryptowährungen
+- Screenshots mit Überschriften wie "BROKERAGE", "CRYPTO WALLET", "Kurswert in EUR", "Anzahl Positionen" sind Bestandslisten: Gib sie als "positions" zurück, nicht als "transactions"
+- Wenn bei einer Bestandsliste kein Einstandspreis sichtbar ist, costPrice weglassen; manualPrice und marketValue reichen
 - Tabellenzeilen "Ausführung ORDER Kauf" sind txType "buy"
 - Tabellenzeilen "Ausführung ORDER Verkauf" sind txType "sell"
 - Tabellenzeilen "Fusion" sind txType "fusion" und behalten das Mengen-Vorzeichen
@@ -7965,7 +7983,8 @@ NUR JSON, sonst nichts.`;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Keine JSON-Daten erkannt — bitte manuell eingeben');
     const data = JSON.parse(jsonMatch[0]);
-    const batchRows = normalizeScreenshotTransactions(data);
+    const holdingRows = normalizeScreenshotHoldings(data);
+    const batchRows = holdingRows.length > 0 ? holdingRows : normalizeScreenshotTransactions(data);
     if (batchRows.length === 0 && (!data.name || !data.shares || !data.costPrice)) throw new Error('Wichtige Felder fehlen (Name/Stück/Einstand) — bitte manuell ergänzen');
     closeScreenshotModal();
     if (batchRows.length > 0) openScreenshotBatchPreviewModal(batchRows);
@@ -8958,6 +8977,8 @@ function inferImportType(row) {
   if (/^crypto$/i.test(explicit)) return 'Crypto';
   const name = normalizeText(row.name || row.bezeichnung || '');
   const isin = String(row.isin || row.symbol || '').toUpperCase();
+  const symbol = String(row.symbol || row.ticker || '').trim().toUpperCase();
+  if (/bitcoin|ripple|solana|ethereum|crypto|krypto/.test(name) || /^(BTC|XRP|SOL|ETH)$/.test(symbol)) return 'Crypto';
   if (/etf|msci|fonds|fund|acc|dist/.test(name) || /^(IE|LU)/.test(isin)) return 'ETF';
   return 'Aktie';
 }
@@ -9002,6 +9023,64 @@ function normalizeScreenshotTransactions(data) {
       price: px,
       txType,
       note
+    };
+  }).filter(row => row.name && row.quantity > 0 && row.price > 0);
+}
+
+function screenshotHoldingSourceRows(data) {
+  const direct = [
+    data?.positions,
+    data?.holdings,
+    data?.bestand,
+    data?.bestaende,
+    data?.bestände,
+    data?.depotPositions,
+    data?.depotpositionen,
+    data?.assets
+  ].find(Array.isArray);
+  if (direct) return direct;
+  const rows = Array.isArray(data?.transactions) ? data.transactions : Array.isArray(data?.rows) ? data.rows : [];
+  if (!rows.length) return [];
+  const looksLikeHoldingList = rows.every(row => {
+    const explicit = normalizeText(row.txType || row.action || row.kind || row.category || '');
+    const note = normalizeText(row.note || row.bookingInfo || row.buchungsinformation || row.section || '');
+    const hasQuantity = parseImportNumber(row.quantity ?? row.shares ?? row.nominal ?? row.stueck ?? row.stück) > 0;
+    const hasPriceOrValue = parseImportNumber(row.manualPrice ?? row.currentPrice ?? row.price ?? row.kurs ?? row.costPrice) > 0
+      || parseImportNumber(row.marketValue ?? row.currentValue ?? row.kurswert ?? row.amount ?? row.value ?? row.betrag) > 0;
+    const hasBookingWords = /kauf|verkauf|order|fusion|split|thesaur|steuer|gebuhr|gebühr|dividend|ausschutt|ausschütt/.test(`${explicit} ${note}`);
+    const hasHoldingWords = /position|bestand|holding|wallet|brokerage|depot|kurswert|ignore/.test(`${explicit} ${note}`);
+    const hasRawDate = row.date || row.datum || row.bookingDate || row.buchungstag;
+    return hasQuantity && hasPriceOrValue && !hasBookingWords && (hasHoldingWords || !hasRawDate);
+  });
+  return looksLikeHoldingList ? rows : [];
+}
+
+function normalizeScreenshotHoldings(data) {
+  const rows = screenshotHoldingSourceRows(data);
+  return rows.map((row, idx) => {
+    const quantity = parseImportNumber(row.shares ?? row.quantity ?? row.nominal ?? row.stueck ?? row.stück);
+    const value = parseImportNumber(row.marketValue ?? row.currentValue ?? row.kurswert ?? row.amount ?? row.value ?? row.betrag);
+    const price = parseImportNumber(row.manualPrice ?? row.currentPrice ?? row.price ?? row.kurs ?? row.costPrice);
+    const px = price && price > 0 ? price : (quantity > 0 && value > 0 ? value / quantity : null);
+    const costPrice = parseImportNumber(row.costPrice ?? row.einstand ?? row.einstandspreis) || px;
+    const name = String(row.name || row.bezeichnung || row.title || row.wertpapierbezeichnung || '').trim();
+    const isin = String(row.isin || '').trim().toUpperCase();
+    const rawSymbol = String(row.symbol || row.ticker || row.wkn || '').trim().toUpperCase();
+    const type = inferImportType({ ...row, name, isin, symbol: rawSymbol });
+    const symbol = type === 'Crypto' ? (flatexCryptoSymbol(name) || rawSymbol || isin) : (rawSymbol || isin);
+    const date = normalizeImportDate(row.date || row.datum || data?.date || data?.datum);
+    return {
+      importKind: 'holding',
+      rowIndex: idx + 1,
+      date, name, isin, symbol, type,
+      quantity: Math.abs(quantity || 0),
+      signedQuantity: Math.abs(quantity || 0),
+      amount: Math.abs(value || ((quantity || 0) * (px || 0))),
+      signedAmount: Math.abs(value || ((quantity || 0) * (px || 0))),
+      price: px,
+      costPrice,
+      txType: 'holding',
+      note: String(row.note || row.section || 'Bestand aus Screenshot').trim()
     };
   }).filter(row => row.name && row.quantity > 0 && row.price > 0);
 }
@@ -9119,6 +9198,14 @@ function summarizeBatchImportImpact(rows) {
   return { importable: importable.length, titles: byKey.size, netNew: netNew.length, closing: closing.length, buyValue, sellValue };
 }
 
+function summarizeHoldingImportImpact(rows) {
+  const holdings = (rows || []).filter(row => row.importKind === 'holding');
+  const totalValue = holdings.reduce((sum, row) => sum + (Number(row.amount) || (Number(row.quantity) || 0) * (Number(row.price) || 0)), 0);
+  const existing = holdings.filter(row => findMatchingPosition(row.name, row.symbol || row.isin, { isin: row.isin, type: row.type, allowLooseSymbol: true })).length;
+  const cryptos = holdings.filter(row => String(row.type || '').toLowerCase() === 'crypto').length;
+  return { holdings: holdings.length, totalValue, existing, newPositions: holdings.length - existing, cryptos };
+}
+
 function renderImportImpactCards(summary) {
   if (!summary) return '';
   return `<div class="import-impact-grid">
@@ -9181,6 +9268,40 @@ function openScreenshotPreviewModal(data) {
 function openScreenshotBatchPreviewModal(rows) {
   ssPreviewMatchedPosId = null;
   ssBatchRows = rows;
+  const holdingRows = rows.filter(row => row.importKind === 'holding');
+  if (holdingRows.length === rows.length) {
+    const summary = summarizeHoldingImportImpact(holdingRows);
+    const conflictsEl = document.getElementById('ssConflicts');
+    const batchEl = document.getElementById('ssBatchPreview');
+    document.getElementById('ssSingleFields').style.display = 'none';
+    batchEl.style.display = 'block';
+    document.getElementById('sspSave').textContent = `${holdingRows.length} Position${holdingRows.length === 1 ? '' : 'en'} übernehmen`;
+    const items = [
+      { kind: 'info', text: `${holdingRows.length} aktuelle Bestand${holdingRows.length === 1 ? '' : 's'}position${holdingRows.length === 1 ? '' : 'en'} erkannt. Diese werden als cash-neutrale Bestände gespeichert, nicht als echte Käufe.` },
+      { kind: 'info', text: `Vorschau: ${summary.existing} bestehend, ${summary.newPositions} neu, Kurswert zusammen ${fmt.format(summary.totalValue)}.` }
+    ];
+    conflictsEl.innerHTML = items.map(i => `<div class="ss-conflict-item ${i.kind}">${i.text}</div>`).join('') + `<div class="import-impact-grid">
+      <div class="import-impact-card"><div class="label">Positionen</div><div class="value">${summary.holdings}</div></div>
+      <div class="import-impact-card"><div class="label">neu</div><div class="value">${summary.newPositions}</div></div>
+      <div class="import-impact-card"><div class="label">bestehend</div><div class="value">${summary.existing}</div></div>
+      <div class="import-impact-card"><div class="label">Krypto</div><div class="value">${summary.cryptos}</div></div>
+      <div class="import-impact-card"><div class="label">Kurswert</div><div class="value">${fmt.format(summary.totalValue)}</div></div>
+    </div>`;
+    batchEl.innerHTML = holdingRows.map(row => {
+      const matched = findMatchingPosition(row.name, row.symbol || row.isin, { isin: row.isin, type: row.type, allowLooseSymbol: true });
+      return `<div class="ss-batch-row buy">
+        <div class="date">${formatDateAT(row.date)}</div>
+        <div>
+          <div class="name">${escapeHtml(row.name)}</div>
+          <div class="meta">${escapeHtml(row.symbol || row.isin || '')} · ${escapeHtml(row.type)} · ${fmtNum(row.quantity, row.quantity % 1 ? 6 : 0)} Stk · ${fmtPrice(row, row.price)} · ${fmt.format(row.amount || row.quantity * row.price)}</div>
+          <div class="meta">${matched ? `wird mit bestehender Position "${escapeHtml(matched.name)}" abgeglichen` : 'wird als neue Position angelegt'} · Cash unverändert</div>
+        </div>
+        <div class="type">POSITION</div>
+      </div>`;
+    }).join('');
+    document.getElementById('ssPreviewModal').classList.add('active');
+    return;
+  }
   const importable = rows.filter(r => r.txType === 'buy' || r.txType === 'sell' || r.txType === 'fusion');
   const ignored = rows.length - importable.length;
   const conflictsEl = document.getElementById('ssConflicts');
@@ -9291,8 +9412,99 @@ function upsertImportedPosition(row, asBuy) {
   return pos;
 }
 
+function holdingImportKey(row) {
+  return ['holding', row.date, row.symbol || row.isin, row.name, row.quantity, row.price].join('|');
+}
+
+function ensurePositionMetadataFromHolding(pos, row) {
+  if (!pos) return;
+  if (!pos.symbol && (row.symbol || row.isin)) pos.symbol = row.symbol || row.isin;
+  if (!pos.type && row.type) pos.type = row.type;
+  if (row.isin) applyIdentifierMetadata(pos, row.isin);
+  else if (row.symbol) applyIdentifierMetadata(pos, row.symbol);
+  if (row.type === 'Crypto') {
+    const cg = cgIdForCrypto(pos);
+    if (cg) pos.cgId = cg;
+  }
+  if (!pos.cgId && row.price > 0) pos.manualPrice = row.price;
+  pos.archived = false;
+}
+
+function upsertScreenshotHolding(row, existingKeys) {
+  const key = holdingImportKey(row);
+  if (existingKeys.has(key)) return 'skipped';
+  let pos = findMatchingPosition(row.name, row.symbol || row.isin, { isin: row.isin, type: row.type, allowLooseSymbol: true });
+  const date = row.date || toIsoDate(new Date());
+  if (!pos) {
+    pos = {
+      id: 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      name: row.name,
+      symbol: row.symbol || row.isin || '',
+      type: row.type,
+      shares: 0,
+      costPrice: row.costPrice || row.price,
+      manualPrice: row.price
+    };
+    ensurePositionMetadataFromHolding(pos, row);
+    appData.positions.push(pos);
+  } else {
+    ensureExistingPositionLedgerBaseline(pos, date);
+    ensurePositionMetadataFromHolding(pos, row);
+  }
+  const currentQty = Number(getPositionValuation(pos).shares) || 0;
+  const delta = row.quantity - currentQty;
+  if (Math.abs(delta) <= 1e-9) {
+    existingKeys.add(key);
+    return 'updated';
+  }
+  const txType = delta >= 0 ? 'buy' : 'sell';
+  const quantity = Math.abs(delta);
+  appData.transactions.push({
+    id: makeTxId(),
+    date,
+    assetId: pos.id,
+    assetType: assetTypeOf(pos),
+    txType,
+    quantity,
+    price: row.costPrice || row.price,
+    value: quantity * (row.costPrice || row.price),
+    fees: 0,
+    importKey: key,
+    cashNeutral: true,
+    note: `Per Screenshot-Bestandsabgleich · Zielbestand ${fmtNum(row.quantity, row.quantity % 1 ? 6 : 0)} Stk · Cash unverändert`
+  });
+  existingKeys.add(key);
+  return txType === 'buy' && currentQty === 0 ? 'created' : 'updated';
+}
+
+async function saveScreenshotHoldingsPreview(rows) {
+  if (!Array.isArray(appData.positions)) appData.positions = [];
+  if (!Array.isArray(appData.transactions)) appData.transactions = [];
+  const existingKeys = new Set(appData.transactions.map(t => t.importKey).filter(Boolean));
+  let created = 0, updated = 0, skipped = 0;
+  for (const row of rows) {
+    if (row.importKind !== 'holding') { skipped++; continue; }
+    const result = upsertScreenshotHolding(row, existingKeys);
+    if (result === 'created') created++;
+    else if (result === 'updated') updated++;
+    else skipped++;
+  }
+  appData.transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  syncPositionsFromLedger();
+  closeScreenshotPreviewModal();
+  await savePositionsToKV();
+  await Promise.all([fetchCryptoPrices(), fetchMarketPrices({ forceRefresh: true })]);
+  await fetchAllWeeklyCharts();
+  await refreshUI({ skipAI: true });
+  alert(`${created + updated} Positionen übernommen.${created ? ` ${created} neu.` : ''}${updated ? ` ${updated} abgeglichen.` : ''}${skipped ? ` ${skipped} Zeilen übersprungen/ignoriert.` : ''}`);
+}
+
 async function saveScreenshotBatchPreview() {
   if (!Array.isArray(ssBatchRows) || ssBatchRows.length === 0) return;
+  if (ssBatchRows.every(row => row.importKind === 'holding')) {
+    await saveScreenshotHoldingsPreview(ssBatchRows);
+    return;
+  }
   if (!Array.isArray(appData.transactions)) appData.transactions = [];
   const existingKeys = new Set(appData.transactions.map(t => t.importKey).filter(Boolean));
   let booked = 0, skipped = 0;
