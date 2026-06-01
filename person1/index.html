@@ -6127,6 +6127,8 @@ const CRYPTO_CG_IDS = {
   trx: 'tron', tron: 'tron',
   sui: 'sui',
   hype: 'hyperliquid', hyperliquid: 'hyperliquid',
+  hbar: 'hedera-hashgraph', hedera: 'hedera-hashgraph', hederahashgraph: 'hedera-hashgraph',
+  ton: 'the-open-network', toncoin: 'the-open-network',
   atom: 'cosmos', cosmos: 'cosmos',
   uni: 'uniswap', uniswap: 'uniswap',
   xlm: 'stellar', stellar: 'stellar',
@@ -10434,7 +10436,7 @@ function flatexBookingKind(info) {
 function inferFlatexType(name, isin) {
   const cleanName = normalizeText(name);
   const cleanIsin = String(isin || '').toUpperCase();
-  if (/^XFC/.test(cleanIsin) || /(^|\s)(ripple|solana|bitcoin)(\s|$)/.test(cleanName)) return 'Crypto';
+  if (/^XFC/.test(cleanIsin) || /(^|\s)(ripple|solana|bitcoin|hyperliquid|hype|sui|near|hedera|hashgraph|hbar|toncoin|ton)(\s|$)/.test(cleanName)) return 'Crypto';
   return inferImportType({ name, isin: cleanIsin, symbol: cleanIsin });
 }
 function flatexCryptoSymbol(name) {
@@ -10442,6 +10444,11 @@ function flatexCryptoSymbol(name) {
   if (n.includes('ripple')) return 'XRP';
   if (n.includes('solana')) return 'SOL';
   if (n.includes('bitcoin')) return 'BTC';
+  if (n.includes('hyperliquid') || n.includes('hype')) return 'HYPE';
+  if (n.includes('sui')) return 'SUI';
+  if (n.includes('near')) return 'NEAR';
+  if (n.includes('hedera') || n.includes('hashgraph') || n.includes('hbar')) return 'HBAR';
+  if (n.includes('toncoin') || n === 'ton') return 'TON';
   return '';
 }
 function flatexPositionKey(isin, name) {
@@ -11247,7 +11254,7 @@ function inferImportType(row) {
   const name = normalizeText(row.name || row.bezeichnung || '');
   const isin = String(row.isin || row.symbol || '').toUpperCase();
   const symbol = String(row.symbol || row.ticker || '').trim().toUpperCase();
-  if (/bitcoin|ripple|solana|ethereum|crypto|krypto/.test(name) || /^(BTC|XRP|SOL|ETH)$/.test(symbol)) return 'Crypto';
+  if (/bitcoin|ripple|solana|ethereum|hyperliquid|hype|hedera|hashgraph|hbar|toncoin|near protocol|near|sui|crypto|krypto/.test(name) || /^(BTC|XRP|SOL|ETH|HYPE|HBAR|TON|NEAR|SUI)$/.test(symbol)) return 'Crypto';
   if (/etf|msci|fonds|fund|acc|dist/.test(name) || /^(IE|LU)/.test(isin)) return 'ETF';
   return 'Aktie';
 }
@@ -11317,7 +11324,7 @@ function screenshotHoldingSourceRows(data) {
     const hasPriceOrValue = parseImportNumber(row.manualPrice ?? row.currentPrice ?? row.price ?? row.kurs ?? row.costPrice) > 0
       || parseImportNumber(row.marketValue ?? row.currentValue ?? row.kurswert ?? row.amount ?? row.value ?? row.betrag) > 0;
     const hasBookingWords = /kauf|verkauf|order|fusion|split|thesaur|steuer|gebuhr|gebühr|dividend|ausschutt|ausschütt/.test(`${explicit} ${note}`);
-    const hasHoldingWords = /position|bestand|holding|wallet|brokerage|depot|kurswert|ignore/.test(`${explicit} ${note}`);
+    const hasHoldingWords = /position|bestand|holding|wallet|brokerage|depot|kurswert|verbucht|verwahrer|tangany|ignore/.test(`${explicit} ${note}`);
     const hasRawDate = row.date || row.datum || row.bookingDate || row.buchungstag;
     return hasQuantity && hasPriceOrValue && !hasBookingWords && (hasHoldingWords || !hasRawDate);
   });
